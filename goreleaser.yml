@@ -1,0 +1,23 @@
+before:
+    hooks:
+    - go mod download
+
+builds:
+    - main: ./cmd/sabre/
+      goos:
+        - linux
+        - darwin
+        - windows
+      goarch:
+        - amd64
+
+archive:
+    replacements:
+        amd64: 64-bit
+        386: 32-bit
+        darwin: macOS
+    format: zip
+    files:
+        - LICENSE*
+        - README.md
+        - CHANGELOG*

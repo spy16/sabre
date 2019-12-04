@@ -2,7 +2,7 @@ all: clean fmt test build
 
 fmt:
 	@echo "Formatting..."
-	@gofmt -l -s -w ./
+	@goimports -l -w ./
 
 install:
 	@echo "Installing sabre to GOBIN..."

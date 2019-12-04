@@ -1,26 +1,44 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"os"
-	"strings"
 
 	"github.com/spy16/sabre"
 )
 
+var executeFile = flag.String("f", "", "File to read and execute")
+var executeStr = flag.String("e", "", "Execute string")
+
 func main() {
-	if len(os.Args) <= 1 {
-		fmt.Println("Usage: sabre <src>")
-		os.Exit(1)
+	flag.Parse()
+
+	scope := sabre.NewScope(nil)
+
+	var result interface{}
+	var err error
+
+	if executeFile != nil && *executeFile != "" {
+		fh, err := os.Open(*executeFile)
+		if err != nil {
+			log.Fatalf("failed to open file: %v", err)
+		}
+		defer fh.Close()
+
+		result, err = sabre.ReadEval(scope, fh)
+		if err != nil {
+			log.Fatalf("failed to read-eval file content: %v", err)
+		}
 	}
 
-	mod, err := sabre.New("<arg>", strings.NewReader(os.Args[1])).All()
-	if err != nil {
-		fmt.Printf("error: %v\n", err)
-		os.Exit(1)
+	if executeStr != nil {
+		result, err = sabre.ReadEvalStr(scope, *executeStr)
+		if err != nil {
+			log.Fatalf("failed to read-eval string: %v", err)
+		}
 	}
 
-	for _, expr := range mod {
-		fmt.Println(expr)
-	}
+	fmt.Println(result)
 }
