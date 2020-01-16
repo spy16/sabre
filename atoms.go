@@ -1,41 +1,34 @@
 package sabre
 
 import (
-	"errors"
 	"fmt"
-	"io"
-	"strconv"
-	"strings"
-	"unicode"
 )
 
-var (
-	errStringEOF = errors.New("EOF while reading string")
-	errCharEOF   = errors.New("EOF while reading character")
-)
+// Bool represents a boolean value.
+type Bool bool
 
-var (
-	escapeMap = map[rune]rune{
-		'"':  '"',
-		'n':  '\n',
-		'\\': '\\',
-		't':  '\t',
-		'a':  '\a',
-		'f':  '\a',
-		'r':  '\r',
-		'b':  '\b',
-		'v':  '\v',
-	}
+// Eval returns the underlying value.
+func (b Bool) Eval(_ Scope) (Value, error) { return b, nil }
 
-	charLiterals = map[string]rune{
-		"tab":       '\t',
-		"space":     ' ',
-		"newline":   '\n',
-		"return":    '\r',
-		"backspace": '\b',
-		"formfeed":  '\f',
-	}
-)
+func (b Bool) String() string { return fmt.Sprintf("%t", b) }
+
+// Float64 represents double precision floating point numbers represented
+// using float or scientific number formats.
+type Float64 float64
+
+// Eval returns the underlying value.
+func (f64 Float64) Eval(_ Scope) (Value, error) { return f64, nil }
+
+func (f64 Float64) String() string { return fmt.Sprintf("%f", f64) }
+
+// Int64 represents integer values represented using decimal, octal, radix
+// and hexadecimal formats.
+type Int64 int64
+
+// Eval returns the underlying value.
+func (i64 Int64) Eval(_ Scope) (Value, error) { return i64, nil }
+
+func (i64 Int64) String() string { return fmt.Sprintf("%d", i64) }
 
 // String represents double-quoted string literals. String Form represents
 // the true string value obtained from the reader. Escape sequences are not
@@ -72,111 +65,3 @@ type Symbol string
 func (sym Symbol) Eval(scope Scope) (Value, error) { return scope.Resolve(string(sym)) }
 
 func (sym Symbol) String() string { return string(sym) }
-
-func readString(rd *Reader, _ rune) (Value, error) {
-	var b strings.Builder
-
-	for {
-		r, err := rd.NextRune()
-		if err != nil {
-			if err == io.EOF {
-				return nil, errStringEOF
-			}
-
-			return nil, err
-		}
-
-		if r == '\\' {
-			r2, err := rd.NextRune()
-			if err != nil {
-				if err == io.EOF {
-					return nil, errStringEOF
-				}
-
-				return nil, err
-			}
-
-			// TODO: Support for Unicode escape \uNN format.
-
-			escaped, err := getEscape(r2)
-			if err != nil {
-				return nil, err
-			}
-			r = escaped
-		} else if r == '"' {
-			break
-		}
-
-		b.WriteRune(r)
-	}
-
-	return String(b.String()), nil
-}
-
-func readSymbol(rd *Reader, init rune) (Value, error) {
-	s, err := readToken(rd, init)
-	if err != nil {
-		return nil, err
-	}
-
-	return Symbol(s), nil
-}
-
-func readKeyword(rd *Reader, init rune) (Value, error) {
-	token, err := readToken(rd, init)
-	if err != nil {
-		return nil, err
-	}
-
-	return Keyword(token), nil
-}
-
-func readCharacter(rd *Reader, _ rune) (Value, error) {
-	r, err := rd.NextRune()
-	if err != nil {
-		return nil, errCharEOF
-	}
-
-	token, err := readToken(rd, r)
-	if err != nil {
-		return nil, err
-	}
-	runes := []rune(token)
-
-	if len(runes) == 1 {
-		return Character(runes[0]), nil
-	}
-
-	v, found := charLiterals[token]
-	if found {
-		return Character(v), nil
-	}
-
-	if token[0] == 'u' {
-		return readUnicodeChar(token[1:], 16)
-	}
-
-	return nil, fmt.Errorf("unsupported character: '\\%s'", token)
-}
-
-func readUnicodeChar(token string, base int) (Character, error) {
-	num, err := strconv.ParseInt(token, base, 64)
-	if err != nil {
-		return -1, fmt.Errorf("invalid unicode character: '\\%s'", token)
-	}
-
-	if num < 0 || num >= unicode.MaxRune {
-		return -1, fmt.Errorf("invalid unicode character: '\\%s'", token)
-	}
-
-	return Character(num), nil
-}
-
-func getEscape(r rune) (rune, error) {
-	escaped, found := escapeMap[r]
-	if !found {
-		return -1, fmt.Errorf("illegal escape sequence '\\%c'", r)
-	}
-
-	return escaped, nil
-}

@@ -2,14 +2,12 @@
 
 [![GoDoc](https://godoc.org/github.com/spy16/sabre?status.svg)](https://godoc.org/github.com/spy16/sabre) [![Go Report Card](https://goreportcard.com/badge/github.com/spy16/sabre)](https://goreportcard.com/report/github.com/spy16/sabre) [![Build Status](https://travis-ci.org/spy16/sabre.svg?branch=master)](https://travis-ci.org/spy16/sabre)
 
-> WIP (See TODO)
-
 Sabre is highly customizable, embeddable LISP engine for Go.
 
 ## Features
 
-* Highly Customizable reader/parser through a read table (Inspired by Clojure)
-* Built-in data types: string, number, character, keyword, symbol, list, vector
+* Highly Customizable reader/parser through a read table (Inspired by Clojure) (See [Extending](#reader))
+* Built-in data types: bool, string, number, character, keyword, symbol, list, vector
 * Multiple number formats supported: decimal, octal, hexadecimal, radix and scientific notations.
 * Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π` etc.)
 * Character Literals with support for:
@@ -17,6 +15,8 @@ Sabre is highly customizable, embeddable LISP engine for Go.
   2. special literals (e.g., `\newline`, `\tab` etc.)
   3. unicode literals (e.g., `\u00A5` for `¥` etc.)
 * Simple evaluation logic with support for adding custom special-forms.
+* Simple interface `sabre.Value` (and optional `sabre.Invokable`) for adding custom
+  data types. (See [Extending](#evaluation))
 
 ## Usage
 
@@ -32,7 +32,7 @@ import "github.com/spy16/sabre"
 func main() {
     scope := sabre.NewScope(nil)
 
-    result, err := sabre.ReadEvalStr(scope, "(+ 1 2)")
+    result, err := sabre.EvalStr(scope, "(+ 1 2)")
     if err != nil {
         log.Fatalf("failed to eval: %v", err)
     }
@@ -107,6 +107,10 @@ func readUnixPath(rd *sabre.Reader, init rune) (sabre.Value, error) {
 Eval logic for standard data types is fixed. But custom `sabre.Value` types can be
 implemented to customize evaluation logic. Custom macros/special forms can be added
 by wrapping a custom Go function with `SpecianFn` type.
+
+In additional, `sabre.Value` types can also implement `sabre.Invokable` interface to
+enable invocation. For example `Vector` uses this to enable Clojure style element
+access using `([1 2 3] 0)` (returns `1`)
 
 > Please note that Sabre is _NOT_ an implementation of a particular LISP dialect.
 

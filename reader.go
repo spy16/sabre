@@ -2,9 +2,15 @@ package sabre
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"math"
+	"net"
+	"os"
+	"reflect"
+	"strconv"
 	"strings"
 	"unicode"
 )
@@ -12,6 +18,34 @@ import (
 // ErrSkip can be returned by reader macro to indicate a no-op form which
 // should be discarded (e.g., Comments).
 var ErrSkip = errors.New("skip expr")
+
+var (
+	errStringEOF = errors.New("EOF while reading string")
+	errCharEOF   = errors.New("EOF while reading character")
+)
+
+var (
+	escapeMap = map[rune]rune{
+		'"':  '"',
+		'n':  '\n',
+		'\\': '\\',
+		't':  '\t',
+		'a':  '\a',
+		'f':  '\a',
+		'r':  '\r',
+		'b':  '\b',
+		'v':  '\v',
+	}
+
+	charLiterals = map[string]rune{
+		"tab":       '\t',
+		"space":     ' ',
+		"newline":   '\n',
+		"return":    '\r',
+		"backspace": '\b',
+		"formfeed":  '\f',
+	}
+)
 
 // NewReader returns a lisp reader instance which can read forms from rs.
 // Reader behavior can be customized by using SetMacro to override or remove
@@ -217,7 +251,23 @@ func (rd *Reader) readOne() (Value, error) {
 		}
 	}
 
-	return readSymbol(rd, r)
+	v, err := readSymbol(rd, r)
+	if err != nil {
+		return nil, err
+	}
+
+	switch v.(Symbol) {
+	case "true":
+		return Bool(true), nil
+
+	case "false":
+		return Bool(false), nil
+
+	case "nil":
+		return List(nil), nil
+	}
+
+	return v, nil
 }
 
 func (rd *Reader) annotateErr(e error) error {
@@ -226,12 +276,166 @@ func (rd *Reader) annotateErr(e error) error {
 	}
 
 	file, line, col := rd.Info()
-	return Error{
+	return ReadError{
 		Cause:  e,
 		File:   file,
 		Line:   line,
 		Column: col,
 	}
+}
+
+func readString(rd *Reader, _ rune) (Value, error) {
+	var b strings.Builder
+
+	for {
+		r, err := rd.NextRune()
+		if err != nil {
+			if err == io.EOF {
+				return nil, errStringEOF
+			}
+
+			return nil, err
+		}
+
+		if r == '\\' {
+			r2, err := rd.NextRune()
+			if err != nil {
+				if err == io.EOF {
+					return nil, errStringEOF
+				}
+
+				return nil, err
+			}
+
+			// TODO: Support for Unicode escape \uNN format.
+
+			escaped, err := getEscape(r2)
+			if err != nil {
+				return nil, err
+			}
+			r = escaped
+		} else if r == '"' {
+			break
+		}
+
+		b.WriteRune(r)
+	}
+
+	return String(b.String()), nil
+}
+
+func readNumber(rd *Reader, init rune) (Value, error) {
+	numStr, err := readToken(rd, init)
+	if err != nil {
+		return nil, err
+	}
+
+	decimalPoint := strings.ContainsRune(numStr, '.')
+	isRadix := strings.ContainsRune(numStr, 'r')
+	isScientific := strings.ContainsRune(numStr, 'e')
+
+	switch {
+	case isRadix && (decimalPoint || isScientific):
+		return nil, fmt.Errorf("illegal number format: '%s'", numStr)
+
+	case isScientific:
+		return parseScientific(numStr)
+
+	case decimalPoint:
+		v, err := strconv.ParseFloat(numStr, 64)
+		if err != nil {
+			return nil, fmt.Errorf("illegal number format: '%s'", numStr)
+		}
+		return Float64(v), nil
+
+	case isRadix:
+		return parseRadix(numStr)
+
+	default:
+		v, err := strconv.ParseInt(numStr, 0, 64)
+		if err != nil {
+			return nil, fmt.Errorf("illegal number format '%s'", numStr)
+		}
+
+		return Int64(v), nil
+	}
+}
+
+func readSymbol(rd *Reader, init rune) (Value, error) {
+	s, err := readToken(rd, init)
+	if err != nil {
+		return nil, err
+	}
+
+	return Symbol(s), nil
+}
+
+func readKeyword(rd *Reader, init rune) (Value, error) {
+	token, err := readToken(rd, -1)
+	if err != nil {
+		return nil, err
+	}
+
+	return Keyword(token), nil
+}
+
+func readCharacter(rd *Reader, _ rune) (Value, error) {
+	r, err := rd.NextRune()
+	if err != nil {
+		return nil, errCharEOF
+	}
+
+	token, err := readToken(rd, r)
+	if err != nil {
+		return nil, err
+	}
+	runes := []rune(token)
+
+	if len(runes) == 1 {
+		return Character(runes[0]), nil
+	}
+
+	v, found := charLiterals[token]
+	if found {
+		return Character(v), nil
+	}
+
+	if token[0] == 'u' {
+		return readUnicodeChar(token[1:], 16)
+	}
+
+	return nil, fmt.Errorf("unsupported character: '\\%s'", token)
+}
+
+func readList(rd *Reader, _ rune) (Value, error) {
+	forms, err := readContainer(rd, '(', ')', "list")
+	if err != nil {
+		return nil, err
+	}
+
+	return List(forms), nil
+}
+
+func readVector(rd *Reader, _ rune) (Value, error) {
+	forms, err := readContainer(rd, '[', ']', "vector")
+	if err != nil {
+		return nil, err
+	}
+
+	return Vector(forms), nil
+}
+
+func readUnicodeChar(token string, base int) (Character, error) {
+	num, err := strconv.ParseInt(token, base, 64)
+	if err != nil {
+		return -1, fmt.Errorf("invalid unicode character: '\\%s'", token)
+	}
+
+	if num < 0 || num >= unicode.MaxRune {
+		return -1, fmt.Errorf("invalid unicode character: '\\%s'", token)
+	}
+
+	return Character(num), nil
 }
 
 func readComment(rd *Reader, _ rune) (Value, error) {
@@ -266,6 +470,59 @@ func quoteFormReader(expandFunc string) Macro {
 			expr,
 		}, nil
 	}
+}
+
+func parseRadix(numStr string) (Int64, error) {
+	parts := strings.Split(numStr, "r")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("illegal radix notation '%s'", numStr)
+	}
+
+	base, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("illegal radix notation '%s'", numStr)
+	}
+
+	repr := parts[1]
+	if base < 0 {
+		base = -1 * base
+		repr = "-" + repr
+	}
+
+	v, err := strconv.ParseInt(repr, int(base), 64)
+	if err != nil {
+		return 0, fmt.Errorf("illegal radix notation '%s'", numStr)
+	}
+
+	return Int64(v), nil
+}
+
+func parseScientific(numStr string) (Float64, error) {
+	parts := strings.Split(numStr, "e")
+	if len(parts) != 2 {
+		return 0, fmt.Errorf("illegal scientific notation '%s'", numStr)
+	}
+
+	base, err := strconv.ParseFloat(parts[0], 64)
+	if err != nil {
+		return 0, fmt.Errorf("illegal scientific notation '%s'", numStr)
+	}
+
+	pow, err := strconv.ParseInt(parts[1], 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("illegal scientific notation '%s'", numStr)
+	}
+
+	return Float64(base * math.Pow(10, float64(pow))), nil
+}
+
+func getEscape(r rune) (rune, error) {
+	escaped, found := escapeMap[r]
+	if !found {
+		return -1, fmt.Errorf("illegal escape sequence '\\%c'", r)
+	}
+
+	return escaped, nil
 }
 
 func unmatchedDelimiter(_ *Reader, initRune rune) (Value, error) {
@@ -335,18 +592,73 @@ func readContainer(rd *Reader, _ rune, end rune, formType string) ([]Value, erro
 	return forms, nil
 }
 
-// Error wraps the parsing error with file and positional information.
-type Error struct {
+func defaultReadTable() map[rune]Macro {
+	return map[rune]Macro{
+		'"':  readString,
+		';':  readComment,
+		':':  readKeyword,
+		'\\': readCharacter,
+		'\'': quoteFormReader("quote"),
+		'~':  quoteFormReader("unquote"),
+		'(':  readList,
+		')':  unmatchedDelimiter,
+		'[':  readVector,
+		']':  unmatchedDelimiter,
+	}
+}
+
+func containerString(vals []Value, begin, end, sep string) string {
+	parts := make([]string, len(vals))
+	for i, expr := range vals {
+		parts[i] = fmt.Sprintf("%v", expr)
+	}
+	return begin + strings.Join(parts, sep) + end
+}
+
+func isSpace(r rune) bool {
+	return unicode.IsSpace(r) || r == ','
+}
+
+func inferFileName(rs io.Reader) string {
+	switch r := rs.(type) {
+	case *os.File:
+		return r.Name()
+
+	case *strings.Reader:
+		return "<string>"
+
+	case *bytes.Reader:
+		return "<bytes>"
+
+	case net.Conn:
+		return fmt.Sprintf("<con:%s>", r.LocalAddr())
+
+	default:
+		return fmt.Sprintf("<%s>", reflect.TypeOf(rs))
+	}
+}
+
+// ReadError wraps the parsing/eval errors with relevant information.
+type ReadError struct {
 	Cause  error
+	Messag string
 	File   string
 	Line   int
 	Column int
 }
 
-func (err Error) Error() string {
-	if e, ok := err.Cause.(Error); ok {
+// Unwrap returns underlying cause of the error.
+func (err ReadError) Unwrap() error {
+	return err.Cause
+}
+
+func (err ReadError) Error() string {
+	if e, ok := err.Cause.(ReadError); ok {
 		return e.Error()
 	}
 
-	return fmt.Sprintf("syntax error in '%s' (Line %d Col %d): %v", err.File, err.Line, err.Column, err.Cause)
+	return fmt.Sprintf(
+		"syntax error in '%s' (Line %d Col %d): %v",
+		err.File, err.Line, err.Column, err.Cause,
+	)
 }

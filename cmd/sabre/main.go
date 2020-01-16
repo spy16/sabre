@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/spy16/sabre"
@@ -23,22 +22,27 @@ func main() {
 	if executeFile != nil && *executeFile != "" {
 		fh, err := os.Open(*executeFile)
 		if err != nil {
-			log.Fatalf("failed to open file: %v", err)
+			fatalf("error: %v\n", err)
 		}
 		defer fh.Close()
 
-		result, err = sabre.ReadEval(scope, fh)
+		result, err = sabre.Eval(scope, fh)
 		if err != nil {
-			log.Fatalf("failed to read-eval file content: %v", err)
+			fatalf("error: %v\n", err)
 		}
 	}
 
 	if executeStr != nil {
-		result, err = sabre.ReadEvalStr(scope, *executeStr)
+		result, err = sabre.EvalStr(scope, *executeStr)
 		if err != nil {
-			log.Fatalf("failed to read-eval string: %v", err)
+			fatalf("error: %v\n", err)
 		}
 	}
 
 	fmt.Println(result)
+}
+
+func fatalf(format string, args ...interface{}) {
+	fmt.Printf(format, args...)
+	os.Exit(1)
 }
