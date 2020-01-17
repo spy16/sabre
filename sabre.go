@@ -44,23 +44,22 @@ type Value interface {
 // Invokable represents any value that supports invocation. Vector, Fn
 // etc support invocation.
 type Invokable interface {
-	Invoke(argVals ...Value) (Value, error)
+	Invoke(scope Scope, argVals ...Value) (Value, error)
 }
 
-// SpecialFn implementations receive unevaluated list of forms during invoke.
-// This allows such values to define their own evaluation rules.
-type SpecialFn func(scope Scope, args []Value) (Value, error)
+// Fn implements Invokable using a function value.
+type Fn func(scope Scope, args []Value) (Value, error)
 
 // Eval simply returns the special fn.
-func (fn SpecialFn) Eval(_ Scope) (Value, error) {
+func (fn Fn) Eval(_ Scope) (Value, error) {
 	return fn, nil
 }
 
-func (fn SpecialFn) String() string {
-	return fmt.Sprintf("SpecialFn{%v}", reflect.ValueOf(fn))
+func (fn Fn) String() string {
+	return fmt.Sprintf("%s", reflect.ValueOf(fn).Type())
 }
 
-// Invoke simply dispaatches the call to the wrapped function.
-func (fn SpecialFn) Invoke(scope Scope, args []Value) (Value, error) {
+// Invoke simply dispatches the call to the wrapped function.
+func (fn Fn) Invoke(scope Scope, args ...Value) (Value, error) {
 	return fn(scope, args)
 }

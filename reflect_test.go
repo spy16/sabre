@@ -168,7 +168,7 @@ func Test_strictFn_Invoke(t *testing.T) {
 				rv: reflect.ValueOf(tt.v),
 			}
 
-			got, err := fn.Invoke(tt.args...)
+			got, err := fn.Invoke(nil, tt.args...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Invoke() error = %v, wantErr %v", err, tt.wantErr)
 				return

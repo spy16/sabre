@@ -59,21 +59,21 @@ func NewReader(rs io.Reader) *Reader {
 	}
 }
 
-// Macro implementations can be plugged into the Reader to extend, override
+// ReaderMacro implementations can be plugged into the Reader to extend, override
 // or customize behavior of the reader.
-type Macro func(rd *Reader, init rune) (Value, error)
+type ReaderMacro func(rd *Reader, init rune) (Value, error)
 
 // Reader provides functions to parse characters from a stream into symbolic
 // expressions or forms.
 type Reader struct {
 	File string
-	Hook Macro
+	Hook ReaderMacro
 
 	rs        io.RuneReader
 	buf       []rune
 	line, col int
 	lastCol   int
-	macros    map[rune]Macro
+	macros    map[rune]ReaderMacro
 }
 
 // All consumes characters from stream until EOF and returns a list of all the
@@ -128,7 +128,7 @@ func (rd *Reader) IsTerminal(r rune) bool {
 // SetMacro sets the given reader macro as the handler for init rune in the
 // read table. Overwrites if a macro is already present. If the macro value
 // given is nil, entry for the init rune will be removed from the read table.
-func (rd *Reader) SetMacro(init rune, macro Macro) {
+func (rd *Reader) SetMacro(init rune, macro ReaderMacro) {
 	if macro == nil {
 		delete(rd.macros, init)
 		return
@@ -453,7 +453,7 @@ func readComment(rd *Reader, _ rune) (Value, error) {
 	return nil, ErrSkip
 }
 
-func quoteFormReader(expandFunc string) Macro {
+func quoteFormReader(expandFunc string) ReaderMacro {
 	return func(rd *Reader, _ rune) (Value, error) {
 		expr, err := rd.One()
 		if err != nil {
@@ -592,8 +592,8 @@ func readContainer(rd *Reader, _ rune, end rune, formType string) ([]Value, erro
 	return forms, nil
 }
 
-func defaultReadTable() map[rune]Macro {
-	return map[rune]Macro{
+func defaultReadTable() map[rune]ReaderMacro {
+	return map[rune]ReaderMacro{
 		'"':  readString,
 		';':  readComment,
 		':':  readKeyword,

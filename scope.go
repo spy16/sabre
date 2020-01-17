@@ -5,12 +5,20 @@ import (
 	"sync"
 )
 
-// NewScope returns an instance of MapScope with no bindings.
-func NewScope(parent Scope) *MapScope {
+// NewScope returns an instance of MapScope with no bindings. If includeCore
+// is true, core functions like def, fn, eval etc. will be bound in the new
+// scope.
+func NewScope(parent Scope, includeCore bool) *MapScope {
 	scope := &MapScope{
 		parent:   parent,
 		mu:       new(sync.RWMutex),
 		bindings: map[string]Value{},
+	}
+
+	if includeCore {
+		_ = scope.Bind("fn", Fn(Lambda))
+		_ = scope.Bind("def", Fn(Def))
+		_ = scope.Bind("eval", Fn(evalFn))
 	}
 
 	return scope
@@ -23,9 +31,9 @@ type MapScope struct {
 	bindings map[string]Value
 }
 
-// BindGoVal is similar to Bind but handles covnertion of Go value 'v' to
+// BindGo is similar to Bind but handles covnertion of Go value 'v' to
 // sabre Val type.
-func (scope *MapScope) BindGoVal(symbol string, v interface{}) error {
+func (scope *MapScope) BindGo(symbol string, v interface{}) error {
 	return scope.Bind(symbol, ValueOf(v))
 }
 

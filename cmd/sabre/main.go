@@ -14,7 +14,7 @@ var executeStr = flag.String("e", "", "Execute string")
 func main() {
 	flag.Parse()
 
-	scope := sabre.NewScope(nil)
+	scope := sabre.NewScope(nil, true)
 
 	var result interface{}
 	var err error
@@ -32,7 +32,7 @@ func main() {
 		}
 	}
 
-	if executeStr != nil {
+	if executeStr != nil && *executeStr != "" {
 		result, err = sabre.EvalStr(scope, *executeStr)
 		if err != nil {
 			fatalf("error: %v\n", err)

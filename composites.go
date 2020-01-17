@@ -24,24 +24,19 @@ func (lf List) Eval(scope Scope) (Value, error) {
 		return nil, err
 	}
 
-	if specialFn, ok := target.(SpecialFn); ok {
-		return specialFn(scope, lf[1:])
-	}
-
 	fn, ok := target.(Invokable)
 	if !ok {
 		return nil, fmt.Errorf("cannot invoke value of type '%s'", reflect.TypeOf(target))
 	}
 
-	argVals, err := evalValueList(scope, lf[1:])
-	if err != nil {
-		return nil, err
-	}
-
-	return fn.Invoke(argVals...)
+	return fn.Invoke(scope, lf[1:]...)
 }
 
 func (lf List) String() string {
+	if len(lf) == 2 && isQuote(lf[0]) {
+		return fmt.Sprintf("'%s", lf[1])
+	}
+
 	return containerString(lf, "(", ")", " ")
 }
 
@@ -62,16 +57,21 @@ func (vf Vector) Eval(scope Scope) (Value, error) {
 
 // Invoke of a vector performs a index lookup. Only arity 1 is allowed
 // and should be an integer value to be used as index.
-func (vf Vector) Invoke(args ...Value) (Value, error) {
+func (vf Vector) Invoke(scope Scope, args ...Value) (Value, error) {
 	if len(args) != 1 {
 		return nil, arityErr(1, len(args), "")
 	}
 
-	if !isInt(args[0]) {
+	v, err := args[0].Eval(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isInt(v) {
 		return nil, fmt.Errorf("key must be integer")
 	}
 
-	index := reflect.ValueOf(args[0]).Int()
+	index := reflect.ValueOf(v).Int()
 
 	if int(index) >= len(vf) {
 		return nil, fmt.Errorf("index out of bounds")

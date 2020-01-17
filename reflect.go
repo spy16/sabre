@@ -53,7 +53,17 @@ type strictFn struct {
 func (fn strictFn) Eval(_ Scope) (Value, error) { return fn, nil }
 func (fn strictFn) String() string              { return fmt.Sprintf("StrictFn{%v}", fn.rv) }
 
-func (fn strictFn) Invoke(args ...Value) (Value, error) {
+func (fn strictFn) Invoke(scope Scope, args ...Value) (_ Value, err error) {
+	defer func() {
+		if v := recover(); v != nil {
+			if e, ok := v.(error); ok {
+				err = e
+			} else {
+				err = fmt.Errorf("panic: %v", v)
+			}
+		}
+	}()
+
 	rt := fn.rv.Type()
 	argVals := reflectValues(args)
 
