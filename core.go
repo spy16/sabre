@@ -47,8 +47,8 @@ func Not(scope Scope, args []Value) (Value, error) {
 // Def adds a binding to the scope. First argument must be a symbol
 // and second argument must be a value.
 func Def(scope Scope, args []Value) (Value, error) {
-	if len(args) != 2 {
-		return nil, arityErr(2, len(args), "")
+	if err := verifyArgCount([]int{2}, args); err != nil {
+		return nil, err
 	}
 
 	sym, isSymbol := args[0].(Symbol)
@@ -70,8 +70,8 @@ func Def(scope Scope, args []Value) (Value, error) {
 
 // Lambda defines an anonymous function and returns.
 func Lambda(_ Scope, args []Value) (Value, error) {
-	if len(args) < 2 {
-		return nil, arityErr(2, len(args), "")
+	if err := verifyArgCount([]int{1, 2}, args); err != nil {
+		return nil, err
 	}
 
 	lArgs, isVector := args[0].(Vector)
@@ -91,13 +91,18 @@ func Lambda(_ Scope, args []Value) (Value, error) {
 // LambdaFn creates a lambda function with given arguments and body.
 func LambdaFn(argNames []Symbol, body []Value) Fn {
 	return Fn(func(scope Scope, args []Value) (Value, error) {
-		if len(args) != len(argNames) {
-			return nil, arityErr(len(argNames), len(args), "")
+		argVals, err := evalValueList(scope, args)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := verifyArgCount([]int{len(argNames)}, argVals); err != nil {
+			return nil, err
 		}
 
 		fnScope := NewScope(scope, false)
 		for idx := range argNames {
-			if err := fnScope.Bind(argNames[idx].String(), args[idx]); err != nil {
+			if err := fnScope.Bind(argNames[idx].String(), argVals[idx]); err != nil {
 				return nil, err
 			}
 		}
@@ -120,8 +125,8 @@ func isTruthy(v Value) bool {
 }
 
 func evalFn(scope Scope, args []Value) (Value, error) {
-	if len(args) != 1 {
-		return nil, arityErr(1, len(args), "")
+	if err := verifyArgCount([]int{1}, args); err != nil {
+		return nil, err
 	}
 
 	v, err := args[0].Eval(scope)

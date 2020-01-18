@@ -3,6 +3,7 @@ package sabre
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // List represents an list of forms/vals. Evaluating a list leads to a
@@ -59,7 +60,7 @@ func (vf Vector) Eval(scope Scope) (Value, error) {
 // and should be an integer value to be used as index.
 func (vf Vector) Invoke(scope Scope, args ...Value) (Value, error) {
 	if len(args) != 1 {
-		return nil, arityErr(1, len(args), "")
+		return nil, verifyArgCount([]int{1}, args)
 	}
 
 	v, err := args[0].Eval(scope)
@@ -130,8 +131,8 @@ func isQuote(v Value) bool {
 }
 
 func quoteValue(args []Value) (Value, error) {
-	if len(args) != 1 {
-		return nil, arityErr(1, len(args), "")
+	if err := verifyArgCount([]int{1}, args); err != nil {
+		return nil, err
 	}
 
 	return args[0], nil
@@ -153,10 +154,10 @@ func isKind(rval reflect.Value, kinds ...reflect.Kind) bool {
 	return false
 }
 
-func arityErr(expected int, got int, msg string) error {
-	if msg == "" {
-		return fmt.Errorf("expected %d arguments, got %d", expected, got)
+func containerString(vals []Value, begin, end, sep string) string {
+	parts := make([]string, len(vals))
+	for i, expr := range vals {
+		parts[i] = fmt.Sprintf("%v", expr)
 	}
-
-	return fmt.Errorf("expected %d arguments, got %d: %s", expected, got, msg)
+	return begin + strings.Join(parts, sep) + end
 }

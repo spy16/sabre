@@ -1,6 +1,7 @@
 package sabre_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/spy16/sabre"
@@ -22,6 +23,33 @@ func TestList_Eval(t *testing.T) {
 			name:  "QuoteList",
 			value: sabre.List{sabre.Symbol("quote"), sabre.Symbol("hello")},
 			want:  sabre.Symbol("hello"),
+		},
+		{
+			name:  "Invocation",
+			value: sabre.List{sabre.Symbol("eval"), sabre.Keyword("hello")},
+			getScope: func() sabre.Scope {
+				scope := sabre.NewScope(nil, true)
+				return scope
+			},
+			want: sabre.Keyword("hello"),
+		},
+		{
+			name:    "InvalidQuoteForm",
+			value:   sabre.List{sabre.Symbol("quote")},
+			wantErr: true,
+		},
+		{
+			name:    "NonInvokable",
+			value:   sabre.List{sabre.Int64(10), sabre.Keyword("hello")},
+			wantErr: true,
+		},
+		{
+			name:  "EvalFailure",
+			value: sabre.List{sabre.Symbol("hello")},
+			getScope: func() sabre.Scope {
+				return sabre.NewScope(nil, true)
+			},
+			wantErr: true,
 		},
 	})
 }
@@ -52,4 +80,156 @@ func TestModule_Eval(t *testing.T) {
 			want: sabre.String("hello"),
 		},
 	})
+}
+
+func TestVector_Eval(t *testing.T) {
+	executeEvalTests(t, []evalTestCase{
+		{
+			name:  "NilVector",
+			value: sabre.Vector(nil),
+			want:  sabre.Vector(nil),
+		},
+		{
+			name:  "EmptyVector",
+			value: sabre.Vector{},
+			want:  sabre.Vector(nil),
+		},
+		{
+			name: "EvalFailure",
+			getScope: func() sabre.Scope {
+				return sabre.NewScope(nil, true)
+			},
+			value:   sabre.Vector{sabre.Symbol("hello")},
+			wantErr: true,
+		},
+	})
+}
+
+func TestList_String(t *testing.T) {
+	executeStringTestCase(t, []stringTestCase{
+		{
+			value: sabre.List(nil),
+			want:  "()",
+		},
+		{
+			value: sabre.List{},
+			want:  "()",
+		},
+		{
+			value: sabre.List{sabre.Keyword("hello")},
+			want:  "(:hello)",
+		},
+		{
+			value: sabre.List{sabre.Keyword("hello"), sabre.List{}},
+			want:  "(:hello ())",
+		},
+		{
+			value: sabre.List{sabre.Symbol("quote"), sabre.Symbol("hello")},
+			want:  "'hello",
+		},
+		{
+			value: sabre.List{sabre.Symbol("quote"), sabre.List{sabre.Symbol("hello")}},
+			want:  "'(hello)",
+		},
+	})
+}
+
+func TestVector_String(t *testing.T) {
+	executeStringTestCase(t, []stringTestCase{
+		{
+			value: sabre.Vector(nil),
+			want:  "[]",
+		},
+		{
+			value: sabre.Vector{},
+			want:  "[]",
+		},
+		{
+			value: sabre.Vector{sabre.Keyword("hello")},
+			want:  "[:hello]",
+		},
+		{
+			value: sabre.Vector{sabre.Keyword("hello"), sabre.List{}},
+			want:  "[:hello ()]",
+		},
+	})
+}
+
+func TestModule_String(t *testing.T) {
+	executeStringTestCase(t, []stringTestCase{
+		{
+			value: sabre.Module(nil),
+			want:  "",
+		},
+		{
+			value: sabre.Module{sabre.Symbol("hello")},
+			want:  "hello",
+		},
+		{
+			value: sabre.Module{sabre.Symbol("hello"), sabre.Keyword("world")},
+			want:  "hello\n:world",
+		},
+	})
+}
+
+func TestVector_Invoke(t *testing.T) {
+	t.Parallel()
+
+	vector := sabre.Vector{sabre.Keyword("hello")}
+
+	table := []struct {
+		name     string
+		getScope func() sabre.Scope
+		args     []sabre.Value
+		want     sabre.Value
+		wantErr  bool
+	}{
+		{
+			name:    "NoArgs",
+			args:    []sabre.Value{},
+			wantErr: true,
+		},
+		{
+			name:    "InvalidIndex",
+			args:    []sabre.Value{sabre.Int64(10)},
+			wantErr: true,
+		},
+		{
+			name:    "ValidIndex",
+			args:    []sabre.Value{sabre.Int64(0)},
+			want:    sabre.Keyword("hello"),
+			wantErr: false,
+		},
+		{
+			name:    "NonIntegerArg",
+			args:    []sabre.Value{sabre.Keyword("h")},
+			wantErr: true,
+		},
+		{
+			name: "EvalFailure",
+			getScope: func() sabre.Scope {
+				return sabre.NewScope(nil, true)
+			},
+			args:    []sabre.Value{sabre.Symbol("hello")},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range table {
+		t.Run(tt.name, func(t *testing.T) {
+			var scope sabre.Scope
+			if tt.getScope != nil {
+				scope = tt.getScope()
+			}
+
+			got, err := vector.Invoke(scope, tt.args...)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Eval() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Eval() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

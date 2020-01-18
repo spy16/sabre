@@ -7,6 +7,84 @@ import (
 	"github.com/spy16/sabre"
 )
 
+func TestCore(t *testing.T) {
+	t.Parallel()
+
+	table := []struct {
+		name     string
+		fn       sabre.Fn
+		args     []sabre.Value
+		getScope func() sabre.Scope
+		want     sabre.Value
+		wantErr  bool
+	}{
+		{
+			name: "Do",
+			fn:   sabre.Do,
+			args: []sabre.Value{},
+			want: sabre.Nil{},
+		},
+		{
+			name:    "Not_InsufficientArgs",
+			fn:      sabre.Not,
+			args:    []sabre.Value{},
+			wantErr: true,
+		},
+		{
+			name: "Not_Nil",
+			fn:   sabre.Not,
+			args: []sabre.Value{sabre.Nil{}},
+			want: sabre.Bool(true),
+		},
+		{
+			name: "Not_Integer",
+			fn:   sabre.Not,
+			args: []sabre.Value{sabre.Int64(10)},
+			want: sabre.Bool(false),
+		},
+		{
+			name: "Not_False",
+			fn:   sabre.Not,
+			args: []sabre.Value{sabre.Bool(false)},
+			want: sabre.Bool(true),
+		},
+		{
+			name: "Not_True",
+			fn:   sabre.Not,
+			args: []sabre.Value{sabre.Bool(true)},
+			want: sabre.Bool(false),
+		},
+		{
+			name: "Def",
+			fn:   sabre.Def,
+			args: []sabre.Value{sabre.Symbol("pi"), sabre.Float64(3.1412)},
+			getScope: func() sabre.Scope {
+				return sabre.NewScope(nil, true)
+			},
+			want: sabre.List{sabre.Symbol("quote"), sabre.Symbol("pi")},
+		},
+	}
+
+	for _, tt := range table {
+		t.Run(tt.name, func(t *testing.T) {
+			var scope sabre.Scope
+			if tt.getScope != nil {
+				scope = tt.getScope()
+			}
+
+			got, err := tt.fn(scope, tt.args)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestLambdaFn(t *testing.T) {
 	fn := sabre.LambdaFn([]sabre.Symbol{"arg1"}, []sabre.Value{sabre.Symbol("arg1")})
 

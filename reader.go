@@ -607,14 +607,6 @@ func defaultReadTable() map[rune]ReaderMacro {
 	}
 }
 
-func containerString(vals []Value, begin, end, sep string) string {
-	parts := make([]string, len(vals))
-	for i, expr := range vals {
-		parts[i] = fmt.Sprintf("%v", expr)
-	}
-	return begin + strings.Join(parts, sep) + end
-}
-
 func isSpace(r rune) bool {
 	return unicode.IsSpace(r) || r == ','
 }
