@@ -86,7 +86,7 @@ func TestCore(t *testing.T) {
 }
 
 func TestLambdaFn(t *testing.T) {
-	fn := sabre.LambdaFn([]sabre.Symbol{"arg1"}, []sabre.Value{sabre.Symbol("arg1")})
+	fn := sabre.LambdaFn(nil, []sabre.Symbol{"arg1"}, []sabre.Value{sabre.Symbol("arg1")})
 
 	arg1Val := sabre.Int64(10)
 

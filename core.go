@@ -69,7 +69,7 @@ func Def(scope Scope, args []Value) (Value, error) {
 }
 
 // Lambda defines an anonymous function and returns.
-func Lambda(_ Scope, args []Value) (Value, error) {
+func Lambda(scope Scope, args []Value) (Value, error) {
 	if err := verifyArgCount([]int{1, 2}, args); err != nil {
 		return nil, err
 	}
@@ -85,12 +85,12 @@ func Lambda(_ Scope, args []Value) (Value, error) {
 		return nil, err
 	}
 
-	return LambdaFn(lambdaArgs, lambdaBody), nil
+	return LambdaFn(scope, lambdaArgs, lambdaBody), nil
 }
 
 // LambdaFn creates a lambda function with given arguments and body.
-func LambdaFn(argNames []Symbol, body []Value) Fn {
-	return Fn(func(scope Scope, args []Value) (Value, error) {
+func LambdaFn(scope Scope, argNames []Symbol, body []Value) Fn {
+	return Fn(func(_ Scope, args []Value) (Value, error) {
 		argVals, err := evalValueList(scope, args)
 		if err != nil {
 			return nil, err
