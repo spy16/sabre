@@ -9,9 +9,14 @@ import (
 	"github.com/spy16/sabre"
 )
 
+var (
+	version = "N/A"
+	commit  = "N/A"
+)
+
 var executeFile = flag.String("f", "", "File to read and execute")
 var executeStr = flag.String("e", "", "Execute string")
-var startREPL = flag.Bool("repl", false, "Start REPL after executing file and string")
+var noREPL = flag.Bool("norepl", false, "Don't start REPL after executing file and string")
 
 func main() {
 	flag.Parse()
@@ -42,16 +47,17 @@ func main() {
 		}
 	}
 
-	if *startREPL || (*executeFile == "" && *executeStr == "") {
-		repl, err := newREPL(scope)
-		if err != nil {
-			fatalf("REPL: %v", err)
-		}
-
-		repl.Start(context.Background())
-	} else {
+	if *noREPL {
 		fmt.Println(result)
+		return
 	}
+
+	repl, err := newREPL(scope)
+	if err != nil {
+		fatalf("REPL: %v", err)
+	}
+
+	repl.Start(context.Background())
 }
 
 func fatalf(format string, args ...interface{}) {

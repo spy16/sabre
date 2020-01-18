@@ -19,7 +19,7 @@ func TestEval(t *testing.T) {
 		{
 			name: "Empty",
 			src:  "",
-			want: sabre.List(nil),
+			want: sabre.Nil{},
 		},
 		{
 			name: "SingleForm",
@@ -43,11 +43,11 @@ func TestEval(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := sabre.EvalStr(nil, tt.src)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("EvalStr() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Eval() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("EvalStr() got = %v, want %v", got, tt.want)
+				t.Errorf("Eval() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

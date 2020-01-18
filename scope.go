@@ -16,9 +16,7 @@ func NewScope(parent Scope, includeCore bool) *MapScope {
 	}
 
 	if includeCore {
-		_ = scope.Bind("fn", Fn(Lambda))
-		_ = scope.Bind("def", Fn(Def))
-		_ = scope.Bind("eval", Fn(evalFn))
+		_ = bindCore(scope)
 	}
 
 	return scope

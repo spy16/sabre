@@ -16,7 +16,7 @@ func ValueOf(v interface{}) Value {
 	}
 
 	if v == nil {
-		return List(nil)
+		return Nil{}
 	}
 
 	rv := reflect.ValueOf(v)

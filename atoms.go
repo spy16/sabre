@@ -4,6 +4,14 @@ import (
 	"fmt"
 )
 
+// Nil represents a nil value.
+type Nil struct{}
+
+// Eval returns the underlying value.
+func (n Nil) Eval(_ Scope) (Value, error) { return n, nil }
+
+func (n Nil) String() string { return "nil" }
+
 // Bool represents a boolean value.
 type Bool bool
 

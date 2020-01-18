@@ -264,7 +264,7 @@ func (rd *Reader) readOne() (Value, error) {
 		return Bool(false), nil
 
 	case "nil":
-		return List(nil), nil
+		return Nil{}, nil
 	}
 
 	return v, nil

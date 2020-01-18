@@ -47,7 +47,7 @@ func TestValueOf(t *testing.T) {
 		{
 			name: "Nil",
 			v:    nil,
-			want: List(nil),
+			want: Nil{},
 		},
 		{
 			name: "Func",

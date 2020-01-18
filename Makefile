@@ -1,3 +1,6 @@
+VERSION="`git describe --abbrev=0 --tags`"
+COMMIT="`git rev-list -1 --abbrev-commit HEAD`"
+
 all: clean fmt test build
 
 fmt:
@@ -6,7 +9,7 @@ fmt:
 
 install:
 	@echo "Installing sabre to GOBIN..."
-	@go install ./cmd/sabre/
+	@go install -ldflags="-X main.version=${VERSION} -X main.commit=${COMMIT}" ./cmd/sabre/
 
 clean:
 	@echo "Cleaning up..."
@@ -24,4 +27,4 @@ test-verbose:
 build:
 	@echo "Building..."
 	@mkdir -p ./bin
-	@go build -o ./bin/sabre ./cmd/sabre/
+	@go build -ldflags="-X main.version=${VERSION} -X main.commit=${COMMIT}" -o ./bin/sabre ./cmd/sabre/

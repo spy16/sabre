@@ -31,12 +31,12 @@ func TestModule_Eval(t *testing.T) {
 		{
 			name:  "NilModule",
 			value: sabre.Module(nil),
-			want:  sabre.List(nil),
+			want:  sabre.Nil{},
 		},
 		{
-			name:  "NilModule",
+			name:  "EmptyModule",
 			value: sabre.Module{},
-			want:  sabre.List(nil),
+			want:  sabre.Nil{},
 		},
 		{
 			name:  "SingleForm",

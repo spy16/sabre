@@ -31,18 +31,17 @@ line string"                                                ; a multi-line strin
 :find-Ψ                                                     ; a keyword with non non-ASCII
 
 ; symbols --------------------------------------------------------
-hello                                                       ; simple ASCII symbol
-calculate-λ                                                 ; symbol with non-ASCII
+do                                                          ; simple ASCII symbol
+λ                                                           ; symbol with non-ASCII
 
 ; quote/unquote --------------------------------------------------
 'hello                                                      ; quoted symbol
 '()                                                         ; quoted list
-~(x 1)                                                      ; unquoting
 
 ; lists ----------------------------------------------------------
 ()                                                          ; empty list
-(+ 1 2)                                                     ; function/macro/special form invocation
-(+, 1, 2)                                                   ; same as above, forms separated by ","
+(eval 10)                                                     ; function/macro/special form invocation
+(do, 1, 2)                                                   ; same as above, forms separated by ","
 
 ; vectors --------------------------------------------------------
 []                                                          ; empty vector

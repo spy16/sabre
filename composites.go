@@ -97,7 +97,7 @@ func (mod Module) Eval(scope Scope) (Value, error) {
 	}
 
 	if len(res) == 0 {
-		return List(nil), nil
+		return Nil{}, nil
 	}
 
 	return res[len(res)-1], nil

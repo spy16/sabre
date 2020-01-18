@@ -6,8 +6,8 @@ Sabre is highly customizable, embeddable LISP engine for Go.
 
 ## Features
 
-* Highly Customizable reader/parser through a read table (Inspired by Clojure) (See [Extending](#reader))
-* Built-in data types: bool, string, number, character, keyword, symbol, list, vector
+* Highly Customizable reader/parser through a read table (Inspired by Clojure) (See [Reader](#reader))
+* Built-in data types: nil, bool, string, number, character, keyword, symbol, list, vector, module
 * Multiple number formats supported: decimal, octal, hexadecimal, radix and scientific notations.
 * Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π` etc.)
 * Character Literals with support for:
@@ -16,7 +16,7 @@ Sabre is highly customizable, embeddable LISP engine for Go.
   3. unicode literals (e.g., `\u00A5` for `¥` etc.)
 * Simple evaluation logic with support for adding custom special-forms.
 * Simple interface `sabre.Value` (and optional `sabre.Invokable`) for adding custom
-  data types. (See [Extending](#evaluation))
+  data types. (See [Evaluation](#evaluation))
 
 ## Usage
 
@@ -58,49 +58,30 @@ See [Extending](#extending) for more information on customizing the reader or ev
 
 ### Reader
 
-Reader uses a macro table to allow adding support for new syntax. Reader macro is defined
-as:
+Sabre reader is inspired by Clojure reader and uses a _read table_. Reader supports
+following forms:
 
-```go
-type Macro func(rd *Reader, init rune) (Value, error)
-```
+* Numbers:
+  * Integers use `int64` Go representation and can be specified using decimal, binary
+    hexadecimal or radix notations. (e.g., 123, -123, 0b101011, 0xAF, 2r10100, 8r126 etc.)
+  * Floating point numbers use `float64` Go representation and can be specified using
+    decimal notation or scientific notation. (e.g.: 3.1412, -1.234, 1e-5, 2e3, 1.5e3 etc.)
+* Characters: Characters use `rune` or `uint8` Go representation and can be written in 3 ways:
+  * Simple: `\a`, `\λ`, `\β` etc.
+  * Special: `\newline`, `\tab` etc.
+  * Unicode: `\u1267`
+* Boolean: `true` or `false` are converted to `Bool` type.
+* Nil: `nil` is represented as a zero-allocation empty struct in Go.
+* Keywords: Keywords are like symbols but start with `:` and evaluate to themselves.
+* Symbols: Symbols can be used to name a value and can contain any Unicode symbol.
+* Lists: Lists are zero or more forms contained within parenthesis. (e.g., `(1 2 3)`, `(1 [])`).
+  Evaluating a list leads to an invocation.
+* Vectors: Vectors are zero or more forms contained within brackets. (e.g., `[]`, `[1 2 3]`)
 
-For example following snippet adds support for Unix-like absolute file path.
-
-```go
-src := `/home/bob/documents/hello`
-
-rd := sabre.NewReader(strings.NewReader(src))
-rd.SetMacro('/', readUnixPath)
-```
-
-And the reader macro implementation:
-
-```go
-func readUnixPath(rd *sabre.Reader, init rune) (sabre.Value, error) {
-    var path strings.Builder
-    path.WriteRune(init)
-
-    for {
-        r, err := rd.NextRune()
-        if err != nil {
-            if err == io.EOF {
-                break
-            }
-
-            return nil, err
-        }
-
-        if rd.IsTerminal(r) && r != '/' {
-            break
-        }
-
-        path.WriteRune(r)
-    }
-
-    return sabre.String(path.String()), nil
-}
-```
+Reader can be extended to add new syntactical features by adding _reader macros_
+to the _read table_. _Reader Macros_ are implementations of `sabre.ReaderMacro`
+function type. _Except numbers and symbols, everything else supported by the reader
+is implemented using reader macros_.
 
 ### Evaluation
 

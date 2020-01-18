@@ -11,9 +11,7 @@ import (
 	"github.com/spy16/sabre"
 )
 
-const version = "1.0.0"
-
-const help = `Welcome to Sabre!
+const help = `Sabre %s [Commit: %s]
 Visit https://github.com/spy16/sabre for more.`
 
 func newREPL(env sabre.Scope) (*REPL, error) {
@@ -27,7 +25,7 @@ func newREPL(env sabre.Scope) (*REPL, error) {
 		Env:      env,
 		ReadIn:   pr.readIn,
 		WriteOut: pr.writeOut,
-		Banner:   help,
+		Banner:   fmt.Sprintf(help, version, commit),
 	}, nil
 }
 
