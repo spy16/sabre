@@ -59,30 +59,62 @@ func (vf Vector) Eval(scope Scope) (Value, error) {
 // Invoke of a vector performs a index lookup. Only arity 1 is allowed
 // and should be an integer value to be used as index.
 func (vf Vector) Invoke(scope Scope, args ...Value) (Value, error) {
-	if len(args) != 1 {
-		return nil, verifyArgCount([]int{1}, args)
-	}
-
-	v, err := args[0].Eval(scope)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isInt(v) {
-		return nil, fmt.Errorf("key must be integer")
-	}
-
-	index := reflect.ValueOf(v).Int()
-
-	if int(index) >= len(vf) {
-		return nil, fmt.Errorf("index out of bounds")
-	}
-
-	return vf[index], nil
+	return invokeList(scope, vf, args)
 }
 
 func (vf Vector) String() string {
 	return containerString(vf, "[", "]", " ")
+}
+
+// Set represents a list of unique values. (Experimental)
+type Set []Value
+
+// Eval evaluates each value in the set form and returns the resultant
+// values as new set.
+func (set Set) Eval(scope Scope) (Value, error) {
+	vals, err := evalValueList(scope, set)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: remove this naive implementation
+	vs := map[string]Value{}
+	for _, v := range vals {
+		s := v.String()
+		vs[s] = v
+	}
+
+	var valueSet []Value
+	for _, v := range vs {
+		valueSet = append(valueSet, v)
+	}
+
+	return Set(vals), nil
+}
+
+// Invoke of a set performs an index lookup. Only arity 1 is allowed
+// and should be an integer value to be used as index.
+func (set Set) Invoke(scope Scope, args ...Value) (Value, error) {
+	return invokeList(scope, set, args)
+}
+
+func (set Set) String() string {
+	return containerString(set, "#{", "}", " ")
+}
+
+func (set Set) valid() bool {
+	// TODO: Remove this naive solution
+	s := map[string]struct{}{}
+
+	for _, v := range set {
+		str := v.String()
+		if _, found := s[str]; found {
+			return false
+		}
+		s[v.String()] = struct{}{}
+	}
+
+	return true
 }
 
 // Module represents a group of forms. Evaluating a module leads to evaluation
@@ -105,6 +137,29 @@ func (mod Module) Eval(scope Scope) (Value, error) {
 }
 
 func (mod Module) String() string { return containerString(mod, "", "\n", "\n") }
+
+func invokeList(scope Scope, list []Value, args []Value) (Value, error) {
+	if len(args) != 1 {
+		return nil, verifyArgCount([]int{1}, args)
+	}
+
+	v, err := args[0].Eval(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isInt(v) {
+		return nil, fmt.Errorf("key must be integer")
+	}
+
+	index := reflect.ValueOf(v).Int()
+
+	if int(index) >= len(list) {
+		return nil, fmt.Errorf("index out of bounds")
+	}
+
+	return list[index], nil
+}
 
 func evalValueList(scope Scope, vals []Value) ([]Value, error) {
 	var result []Value

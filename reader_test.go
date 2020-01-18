@@ -49,7 +49,7 @@ func TestNew(t *testing.T) {
 func TestReader_SetMacro(t *testing.T) {
 	t.Run("UnsetDefaultMacro", func(t *testing.T) {
 		rd := sabre.NewReader(strings.NewReader("~hello"))
-		rd.SetMacro('~', nil) // remove unquote operator
+		rd.SetMacro('~', nil, false) // remove unquote operator
 
 		var want sabre.Value
 		want = sabre.Symbol("~hello")
@@ -84,7 +84,7 @@ func TestReader_SetMacro(t *testing.T) {
 			}
 
 			return sabre.String(ru), nil
-		}) // override unquote operator
+		}, false) // override unquote operator
 
 		var want sabre.Value
 		want = sabre.String("hello")
@@ -109,13 +109,15 @@ func TestReader_All(t *testing.T) {
 	}{
 		{
 			name: "ValidLiteralSample",
-			src:  `"Hello\tWorld" 123 12.34 -0xF   +010    0b1010     \a :hello 'hello`,
+			src: `"Hello\tWorld" 123 12.34 -0xF   +010	true nil 0b1010     \a :hello 'hello`,
 			want: sabre.Module{
 				sabre.String("Hello\tWorld"),
 				sabre.Int64(123),
 				sabre.Float64(12.34),
 				sabre.Int64(-15),
 				sabre.Int64(8),
+				sabre.Bool(true),
+				sabre.Nil{},
 				sabre.Int64(10),
 				sabre.Character('a'),
 				sabre.Keyword("hello"),

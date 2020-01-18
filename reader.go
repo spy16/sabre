@@ -19,6 +19,8 @@ import (
 // should be discarded (e.g., Comments).
 var ErrSkip = errors.New("skip expr")
 
+const dispatchTrigger = '#'
+
 var (
 	errStringEOF = errors.New("EOF while reading string")
 	errCharEOF   = errors.New("EOF while reading character")
@@ -45,6 +47,12 @@ var (
 		"backspace": '\b',
 		"formfeed":  '\f',
 	}
+
+	predefSymbols = map[string]Value{
+		"nil":   Nil{},
+		"true":  Bool(true),
+		"false": Bool(false),
+	}
 )
 
 // NewReader returns a lisp reader instance which can read forms from rs.
@@ -53,9 +61,10 @@ var (
 // value and type information.
 func NewReader(rs io.Reader) *Reader {
 	return &Reader{
-		File:   inferFileName(rs),
-		rs:     bufio.NewReader(rs),
-		macros: defaultReadTable(),
+		File:     inferFileName(rs),
+		rs:       bufio.NewReader(rs),
+		macros:   defaultReadTable(),
+		dispatch: defaultDispatchTable(),
 	}
 }
 
@@ -67,13 +76,14 @@ type ReaderMacro func(rd *Reader, init rune) (Value, error)
 // expressions or forms.
 type Reader struct {
 	File string
-	Hook ReaderMacro
 
-	rs        io.RuneReader
-	buf       []rune
-	line, col int
-	lastCol   int
-	macros    map[rune]ReaderMacro
+	rs          io.RuneReader
+	buf         []rune
+	line, col   int
+	lastCol     int
+	macros      map[rune]ReaderMacro
+	dispatch    map[rune]ReaderMacro
+	dispatching bool
 }
 
 // All consumes characters from stream until EOF and returns a list of all the
@@ -121,20 +131,40 @@ func (rd *Reader) One() (Value, error) {
 // trigger runes defined in the read table and all space characters including
 // "," are considered terminal.
 func (rd *Reader) IsTerminal(r rune) bool {
+	if isSpace(r) {
+		return true
+	}
+
+	if rd.dispatching {
+		_, found := rd.dispatch[r]
+		if found {
+			return true
+		}
+	}
+
 	_, found := rd.macros[r]
-	return found || isSpace(r)
+	return found
 }
 
 // SetMacro sets the given reader macro as the handler for init rune in the
 // read table. Overwrites if a macro is already present. If the macro value
 // given is nil, entry for the init rune will be removed from the read table.
-func (rd *Reader) SetMacro(init rune, macro ReaderMacro) {
-	if macro == nil {
-		delete(rd.macros, init)
-		return
+// isDispatch decides if the macro is a dispatch macro and takes effect only
+// after a '#' sign.
+func (rd *Reader) SetMacro(init rune, macro ReaderMacro, isDispatch bool) {
+	if isDispatch {
+		if macro == nil {
+			delete(rd.dispatch, init)
+			return
+		}
+		rd.dispatch[init] = macro
+	} else {
+		if macro == nil {
+			delete(rd.macros, init)
+			return
+		}
+		rd.macros[init] = macro
 	}
-
-	rd.macros[init] = macro
 }
 
 // NextRune returns next rune from the stream and advances the stream.
@@ -244,10 +274,20 @@ func (rd *Reader) readOne() (Value, error) {
 		return macro(rd, r)
 	}
 
-	if rd.Hook != nil {
-		f, err := rd.Hook(rd, r)
-		if err != ErrSkip {
-			return f, err
+	if r == dispatchTrigger {
+		r2, err := rd.NextRune()
+		if err == nil {
+			dispatchMacro, found := rd.dispatch[r2]
+			if found {
+				rd.dispatching = true
+				defer func() {
+					rd.dispatching = false
+				}()
+
+				return dispatchMacro(rd, r2)
+			}
+
+			rd.Unread(r2)
 		}
 	}
 
@@ -256,15 +296,8 @@ func (rd *Reader) readOne() (Value, error) {
 		return nil, err
 	}
 
-	switch v.(Symbol) {
-	case "true":
-		return Bool(true), nil
-
-	case "false":
-		return Bool(false), nil
-
-	case "nil":
-		return Nil{}, nil
+	if predefVal, found := predefSymbols[v.(Symbol).String()]; found {
+		return predefVal, nil
 	}
 
 	return v, nil
@@ -423,6 +456,20 @@ func readVector(rd *Reader, _ rune) (Value, error) {
 	}
 
 	return Vector(forms), nil
+}
+
+func readSet(rd *Reader, _ rune) (Value, error) {
+	forms, err := readContainer(rd, '{', '}', "set")
+	if err != nil {
+		return nil, err
+	}
+
+	set := Set(forms)
+	if !set.valid() {
+		return nil, errors.New("duplicate value in set")
+	}
+
+	return set, nil
 }
 
 func readUnicodeChar(token string, base int) (Character, error) {
@@ -604,6 +651,13 @@ func defaultReadTable() map[rune]ReaderMacro {
 		')':  unmatchedDelimiter,
 		'[':  readVector,
 		']':  unmatchedDelimiter,
+	}
+}
+
+func defaultDispatchTable() map[rune]ReaderMacro {
+	return map[rune]ReaderMacro{
+		'{': readSet,
+		'}': unmatchedDelimiter,
 	}
 }
 

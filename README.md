@@ -7,7 +7,7 @@ Sabre is highly customizable, embeddable LISP engine for Go.
 ## Features
 
 * Highly Customizable reader/parser through a read table (Inspired by Clojure) (See [Reader](#reader))
-* Built-in data types: nil, bool, string, number, character, keyword, symbol, list, vector, module
+* Built-in data types: nil, bool, string, number, character, keyword, symbol, list, vector, set, module
 * Multiple number formats supported: decimal, octal, hexadecimal, radix and scientific notations.
 * Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π` etc.)
 * Character Literals with support for:
@@ -77,6 +77,7 @@ following forms:
 * Lists: Lists are zero or more forms contained within parenthesis. (e.g., `(1 2 3)`, `(1 [])`).
   Evaluating a list leads to an invocation.
 * Vectors: Vectors are zero or more forms contained within brackets. (e.g., `[]`, `[1 2 3]`)
+* Sets: Set is a container for zero or more unique forms. (e.g. `#{1 2 3}`)
 
 Reader can be extended to add new syntactical features by adding _reader macros_
 to the _read table_. _Reader Macros_ are implementations of `sabre.ReaderMacro`
