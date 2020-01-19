@@ -1,9 +1,11 @@
 package sabre
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 )
 
 func bindCore(scope Scope) error {
@@ -14,18 +16,20 @@ func bindCore(scope Scope) error {
 		"not":      Fn(Not),
 		"def":      Fn(Def),
 		"eval":     Fn(evalFn),
+		"error":    Fn(RaiseErr),
+		"boolean":  Fn(MakeBool),
+		"str":      Fn(MakeString),
+		"type":     Fn(TypeOf),
+		"set":      MakeContainer(Set(nil)),
+		"list":     MakeContainer(List(nil)),
+		"vector":   MakeContainer(Vector(nil)),
 		"nil?":     IsType(reflect.TypeOf(Nil{})),
 		"int?":     IsType(reflect.TypeOf(Int64(0))),
-		"set":      MakeContainer(Set(nil)),
 		"set?":     IsType(reflect.TypeOf(Set(nil))),
-		"boolean":  Fn(MakeBool),
 		"boolean?": IsType(reflect.TypeOf(Bool(false))),
-		"list":     MakeContainer(List(nil)),
 		"list?":    IsType(reflect.TypeOf(List(nil))),
-		"string":   Fn(MakeString),
 		"string?":  IsType(reflect.TypeOf(String(""))),
 		"float?":   IsType(reflect.TypeOf(Float64(0))),
-		"vector":   MakeContainer(Vector(nil)),
 		"vector?":  IsType(reflect.TypeOf(Vector(nil))),
 		"symbol?":  IsType(reflect.TypeOf(Symbol(""))),
 		"keyword?": IsType(reflect.TypeOf(Keyword(""))),
@@ -38,6 +42,31 @@ func bindCore(scope Scope) error {
 	}
 
 	return nil
+}
+
+// TypeOf returns the type information object for the given argument.
+func TypeOf(scope Scope, args []Value) (Value, error) {
+	argVals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := verifyArgCount([]int{1}, argVals); err != nil {
+		return nil, err
+	}
+
+	return Type{rt: reflect.TypeOf(argVals[0])}, nil
+}
+
+// RaiseErr signals an error. Stringified versions of args will be
+// concatenated and used as error message.
+func RaiseErr(scope Scope, args []Value) (Value, error) {
+	argVals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, errors.New(string(stringFromVals(argVals)))
 }
 
 // MakeBool converts given argument to a boolean. Any truthy value
@@ -62,16 +91,24 @@ func MakeString(scope Scope, args []Value) (Value, error) {
 		return nil, err
 	}
 
-	argc := len(argVals)
+	return stringFromVals(argVals), nil
+}
+
+func stringFromVals(vals []Value) String {
+	argc := len(vals)
 	switch argc {
 	case 0:
-		return String(""), nil
+		return String("")
 
 	case 1:
-		return String(argVals[0].String()), nil
+		return String(strings.Trim(vals[0].String(), "\""))
 
 	default:
-		return String(containerString(argVals, "", "", "")), nil
+		var sb strings.Builder
+		for _, v := range vals {
+			sb.WriteString(strings.Trim(v.String(), "\""))
+		}
+		return String(sb.String())
 	}
 }
 

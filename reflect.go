@@ -46,6 +46,26 @@ func ValueOf(v interface{}) Value {
 	}
 }
 
+// Type represents the type value of a given value. Type also implements
+// Value type.
+type Type struct {
+	rt reflect.Type
+}
+
+// Eval returns the type value itself.
+func (t Type) Eval(_ Scope) (Value, error) {
+	return t, nil
+}
+
+func (t Type) String() string {
+	return fmt.Sprintf("%v", t.rt)
+}
+
+// Invoke creates zero value of the given type.
+func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
+	return ValueOf(reflect.New(t.rt).Interface()), nil
+}
+
 type strictFn struct {
 	rv reflect.Value
 }

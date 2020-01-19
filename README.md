@@ -94,7 +94,8 @@ In additional, `sabre.Value` types can also implement `sabre.Invokable` interfac
 enable invocation. For example `Vector` uses this to enable Clojure style element
 access using `([1 2 3] 0)` (returns `1`)
 
-> Please note that Sabre is _NOT_ an implementation of a particular LISP dialect.
+> Please note that Sabre is _NOT_ an implementation of a particular LISP dialect (although
+> it derives ideas from Clojure)
 
 ## TODO
 
