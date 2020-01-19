@@ -57,7 +57,7 @@ func TestSymbol_Eval(t *testing.T) {
 		{
 			name: "Success",
 			getScope: func() sabre.Scope {
-				scope := sabre.NewScope(nil, false)
+				scope := sabre.NewScope(nil)
 				scope.Bind("hello", sabre.String("world"))
 
 				return scope

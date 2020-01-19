@@ -1,6 +1,7 @@
 package sabre_test
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -26,12 +27,15 @@ func TestList_Eval(t *testing.T) {
 		},
 		{
 			name:  "Invocation",
-			value: sabre.List{sabre.Symbol("eval"), sabre.Keyword("hello")},
+			value: sabre.List{sabre.Symbol("greet"), sabre.String("Bob")},
 			getScope: func() sabre.Scope {
-				scope := sabre.NewScope(nil, true)
+				scope := sabre.NewScope(nil)
+				scope.BindGo("greet", func(name sabre.String) string {
+					return fmt.Sprintf("Hello %s!", string(name))
+				})
 				return scope
 			},
-			want: sabre.Keyword("hello"),
+			want: sabre.String("Hello Bob!"),
 		},
 		{
 			name:    "InvalidQuoteForm",
@@ -47,7 +51,7 @@ func TestList_Eval(t *testing.T) {
 			name:  "EvalFailure",
 			value: sabre.List{sabre.Symbol("hello")},
 			getScope: func() sabre.Scope {
-				return sabre.NewScope(nil, true)
+				return sabre.NewScope(nil)
 			},
 			wantErr: true,
 		},
@@ -97,7 +101,7 @@ func TestVector_Eval(t *testing.T) {
 		{
 			name: "EvalFailure",
 			getScope: func() sabre.Scope {
-				return sabre.NewScope(nil, true)
+				return sabre.NewScope(nil)
 			},
 			value:   sabre.Vector{sabre.Symbol("hello")},
 			wantErr: true,
@@ -208,7 +212,7 @@ func TestVector_Invoke(t *testing.T) {
 		{
 			name: "EvalFailure",
 			getScope: func() sabre.Scope {
-				return sabre.NewScope(nil, true)
+				return sabre.NewScope(nil)
 			},
 			args:    []sabre.Value{sabre.Symbol("hello")},
 			wantErr: true,

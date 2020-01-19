@@ -8,15 +8,11 @@ import (
 // NewScope returns an instance of MapScope with no bindings. If includeCore
 // is true, core functions like def, fn, eval etc. will be bound in the new
 // scope.
-func NewScope(parent Scope, includeCore bool) *MapScope {
+func NewScope(parent Scope) *MapScope {
 	scope := &MapScope{
 		parent:   parent,
 		mu:       new(sync.RWMutex),
 		bindings: map[string]Value{},
-	}
-
-	if includeCore {
-		_ = bindCore(scope)
 	}
 
 	return scope

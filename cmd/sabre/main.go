@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/core"
 )
 
 var (
@@ -21,7 +22,8 @@ var noREPL = flag.Bool("norepl", false, "Don't start REPL after executing file a
 func main() {
 	flag.Parse()
 
-	scope := sabre.NewScope(nil, true)
+	scope := sabre.NewScope(nil)
+	core.BindAll(scope)
 	scope.Bind("version", sabre.String(version))
 
 	var result interface{}

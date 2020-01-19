@@ -1,10 +1,11 @@
-package sabre_test
+package core_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/core"
 )
 
 func TestCore(t *testing.T) {
@@ -12,7 +13,7 @@ func TestCore(t *testing.T) {
 
 	table := []struct {
 		name     string
-		fn       sabre.Fn
+		fn       sabre.Invokable
 		args     []sabre.Value
 		getScope func() sabre.Scope
 		want     sabre.Value
@@ -20,46 +21,46 @@ func TestCore(t *testing.T) {
 	}{
 		{
 			name: "Do",
-			fn:   sabre.Do,
+			fn:   core.SpecialFn(core.Do),
 			args: []sabre.Value{},
 			want: sabre.Nil{},
 		},
 		{
 			name:    "Not_InsufficientArgs",
-			fn:      sabre.Not,
+			fn:      core.Fn(core.Not),
 			args:    []sabre.Value{},
 			wantErr: true,
 		},
 		{
 			name: "Not_Nil",
-			fn:   sabre.Not,
+			fn:   core.Fn(core.Not),
 			args: []sabre.Value{sabre.Nil{}},
 			want: sabre.Bool(true),
 		},
 		{
 			name: "Not_Integer",
-			fn:   sabre.Not,
+			fn:   core.Fn(core.Not),
 			args: []sabre.Value{sabre.Int64(10)},
 			want: sabre.Bool(false),
 		},
 		{
 			name: "Not_False",
-			fn:   sabre.Not,
+			fn:   core.Fn(core.Not),
 			args: []sabre.Value{sabre.Bool(false)},
 			want: sabre.Bool(true),
 		},
 		{
 			name: "Not_True",
-			fn:   sabre.Not,
+			fn:   core.Fn(core.Not),
 			args: []sabre.Value{sabre.Bool(true)},
 			want: sabre.Bool(false),
 		},
 		{
 			name: "Def",
-			fn:   sabre.Def,
+			fn:   core.SpecialFn(core.Def),
 			args: []sabre.Value{sabre.Symbol("pi"), sabre.Float64(3.1412)},
 			getScope: func() sabre.Scope {
-				return sabre.NewScope(nil, true)
+				return sabre.NewScope(nil)
 			},
 			want: sabre.List{sabre.Symbol("quote"), sabre.Symbol("pi")},
 		},
@@ -72,7 +73,7 @@ func TestCore(t *testing.T) {
 				scope = tt.getScope()
 			}
 
-			got, err := tt.fn(scope, tt.args)
+			got, err := tt.fn.Invoke(scope, tt.args...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -86,7 +87,7 @@ func TestCore(t *testing.T) {
 }
 
 func TestLambdaFn(t *testing.T) {
-	fn := sabre.LambdaFn(nil, []sabre.Symbol{"arg1"}, []sabre.Value{sabre.Symbol("arg1")})
+	fn := core.LambdaFn(nil, []sabre.Symbol{"arg1"}, []sabre.Value{sabre.Symbol("arg1")})
 
 	arg1Val := sabre.Int64(10)
 
@@ -138,7 +139,7 @@ func TestLambda(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := sabre.Lambda(nil, tt.args)
+			got, err := core.Lambda(nil, tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Lambda() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -59,7 +59,25 @@ func (vf Vector) Eval(scope Scope) (Value, error) {
 // Invoke of a vector performs a index lookup. Only arity 1 is allowed
 // and should be an integer value to be used as index.
 func (vf Vector) Invoke(scope Scope, args ...Value) (Value, error) {
-	return invokeList(scope, vf, args)
+	vals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(vals) != 1 {
+		return nil, fmt.Errorf("call requires exactly 1 argument, got %d", len(vals))
+	}
+
+	index, isInt := vals[0].(Int64)
+	if !isInt {
+		return nil, fmt.Errorf("key must be integer")
+	}
+
+	if int(index) >= len(vf) {
+		return nil, fmt.Errorf("index out of bounds")
+	}
+
+	return vf[index], nil
 }
 
 func (vf Vector) String() string {
@@ -90,12 +108,6 @@ func (set Set) Eval(scope Scope) (Value, error) {
 	}
 
 	return Set(vals), nil
-}
-
-// Invoke of a set performs an index lookup. Only arity 1 is allowed
-// and should be an integer value to be used as index.
-func (set Set) Invoke(scope Scope, args ...Value) (Value, error) {
-	return invokeList(scope, set, args)
 }
 
 func (set Set) String() string {
@@ -138,29 +150,6 @@ func (mod Module) Eval(scope Scope) (Value, error) {
 
 func (mod Module) String() string { return containerString(mod, "", "\n", "\n") }
 
-func invokeList(scope Scope, list []Value, args []Value) (Value, error) {
-	if len(args) != 1 {
-		return nil, verifyArgCount([]int{1}, args)
-	}
-
-	v, err := args[0].Eval(scope)
-	if err != nil {
-		return nil, err
-	}
-
-	if !isInt(v) {
-		return nil, fmt.Errorf("key must be integer")
-	}
-
-	index := reflect.ValueOf(v).Int()
-
-	if int(index) >= len(list) {
-		return nil, fmt.Errorf("index out of bounds")
-	}
-
-	return list[index], nil
-}
-
 func evalValueList(scope Scope, vals []Value) ([]Value, error) {
 	var result []Value
 
@@ -186,27 +175,11 @@ func isQuote(v Value) bool {
 }
 
 func quoteValue(args []Value) (Value, error) {
-	if err := verifyArgCount([]int{1}, args); err != nil {
-		return nil, err
+	if len(args) != 1 {
+		return nil, fmt.Errorf("call requires exactly 1 argument, got %d", len(args))
 	}
 
 	return args[0], nil
-}
-
-func isInt(v interface{}) bool {
-	return isKind(reflect.ValueOf(v),
-		reflect.Int, reflect.Int8, reflect.Int16,
-		reflect.Int32, reflect.Int64,
-	)
-}
-
-func isKind(rval reflect.Value, kinds ...reflect.Kind) bool {
-	for _, kind := range kinds {
-		if rval.Kind() == kind {
-			return true
-		}
-	}
-	return false
 }
 
 func containerString(vals []Value, begin, end, sep string) string {

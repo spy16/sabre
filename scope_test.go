@@ -21,7 +21,7 @@ func TestMapScope_Get(t *testing.T) {
 			name:   "WithBinding",
 			symbol: "hello",
 			getScope: func() *sabre.MapScope {
-				scope := sabre.NewScope(nil, false)
+				scope := sabre.NewScope(nil)
 				_ = scope.Bind("hello", sabre.String("Hello World!"))
 				return scope
 			},
@@ -31,9 +31,9 @@ func TestMapScope_Get(t *testing.T) {
 			name:   "WithBindingInParent",
 			symbol: "pi",
 			getScope: func() *sabre.MapScope {
-				parent := sabre.NewScope(nil, false)
+				parent := sabre.NewScope(nil)
 				_ = parent.Bind("pi", sabre.Float64(3.1412))
-				return sabre.NewScope(parent, false)
+				return sabre.NewScope(parent)
 			},
 			want: sabre.Float64(3.1412),
 		},
@@ -41,7 +41,7 @@ func TestMapScope_Get(t *testing.T) {
 			name:   "WithNoBinding",
 			symbol: "hello",
 			getScope: func() *sabre.MapScope {
-				return sabre.NewScope(nil, false)
+				return sabre.NewScope(nil)
 			},
 			want:    nil,
 			wantErr: true,
