@@ -8,12 +8,27 @@ import (
 
 func bindCore(scope Scope) error {
 	core := map[string]Value{
-		"λ":    Fn(Lambda),
-		"fn":   Fn(Lambda),
-		"do":   Fn(Do),
-		"not":  Fn(Not),
-		"def":  Fn(Def),
-		"eval": Fn(evalFn),
+		"λ":        Fn(Lambda),
+		"fn":       Fn(Lambda),
+		"do":       Fn(Do),
+		"not":      Fn(Not),
+		"def":      Fn(Def),
+		"eval":     Fn(evalFn),
+		"nil?":     IsType(reflect.TypeOf(Nil{})),
+		"int?":     IsType(reflect.TypeOf(Int64(0))),
+		"set":      MakeContainer(Set(nil)),
+		"set?":     IsType(reflect.TypeOf(Set(nil))),
+		"boolean":  Fn(MakeBool),
+		"boolean?": IsType(reflect.TypeOf(Bool(false))),
+		"list":     MakeContainer(List(nil)),
+		"list?":    IsType(reflect.TypeOf(List(nil))),
+		"string":   Fn(MakeString),
+		"string?":  IsType(reflect.TypeOf(String(""))),
+		"float?":   IsType(reflect.TypeOf(Float64(0))),
+		"vector":   MakeContainer(Vector(nil)),
+		"vector?":  IsType(reflect.TypeOf(Vector(nil))),
+		"symbol?":  IsType(reflect.TypeOf(Symbol(""))),
+		"keyword?": IsType(reflect.TypeOf(Keyword(""))),
 	}
 
 	for sym, val := range core {
@@ -23,6 +38,82 @@ func bindCore(scope Scope) error {
 	}
 
 	return nil
+}
+
+// MakeBool converts given argument to a boolean. Any truthy value
+// is converted to true and else false.
+func MakeBool(scope Scope, args []Value) (Value, error) {
+	argVals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := verifyArgCount([]int{1}, argVals); err != nil {
+		return nil, err
+	}
+
+	return Bool(isTruthy(argVals[0])), nil
+}
+
+// MakeString returns stringified version of all args.
+func MakeString(scope Scope, args []Value) (Value, error) {
+	argVals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	argc := len(argVals)
+	switch argc {
+	case 0:
+		return String(""), nil
+
+	case 1:
+		return String(argVals[0].String()), nil
+
+	default:
+		return String(containerString(argVals, "", "", "")), nil
+	}
+}
+
+// MakeContainer can make a composite type like list, set and vector from
+// given args.
+func MakeContainer(targetType Value) Fn {
+	return func(scope Scope, args []Value) (Value, error) {
+		argVals, err := evalValueList(scope, args)
+		if err != nil {
+			return nil, err
+		}
+
+		switch targetType.(type) {
+		case List:
+			return List(argVals), nil
+
+		case Vector:
+			return Vector(argVals), nil
+
+		case Set:
+			return Set(argVals), nil
+		}
+
+		return nil, fmt.Errorf("cannot make container of type '%s'", reflect.TypeOf(targetType))
+	}
+}
+
+// IsType returns a Fn that checks if the value is of given type.
+func IsType(rt reflect.Type) Fn {
+	return func(scope Scope, args []Value) (Value, error) {
+		if err := verifyArgCount([]int{1}, args); err != nil {
+			return nil, err
+		}
+
+		v, err := args[0].Eval(scope)
+		if err != nil {
+			return nil, err
+		}
+
+		target := reflect.TypeOf(v)
+		return Bool(target == rt), nil
+	}
 }
 
 // Do evaluates all the arguments and returns the result of last evaluation.
