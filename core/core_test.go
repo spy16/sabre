@@ -62,7 +62,7 @@ func TestCore(t *testing.T) {
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
-			want: sabre.List{sabre.Symbol("quote"), sabre.Symbol("pi")},
+			want: sabre.Symbol("pi"),
 		},
 	}
 

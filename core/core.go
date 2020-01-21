@@ -11,29 +11,31 @@ import (
 // BindAll binds all core functions into the given scope.
 func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
-		"λ":        SpecialFn(Lambda),
-		"fn":       SpecialFn(Lambda),
-		"do":       SpecialFn(Do),
-		"def":      SpecialFn(Def),
-		"eval":     SpecialFn(Eval),
-		"not":      Fn(Not),
-		"error":    Fn(RaiseErr),
-		"boolean":  Fn(MakeBool),
-		"str":      Fn(MakeString),
-		"type":     Fn(TypeOf),
-		"set":      MakeContainer(sabre.Set(nil)),
-		"list":     MakeContainer(sabre.List(nil)),
-		"vector":   MakeContainer(sabre.Vector(nil)),
-		"nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
-		"int?":     IsType(reflect.TypeOf(sabre.Int64(0))),
-		"set?":     IsType(reflect.TypeOf(sabre.Set(nil))),
-		"boolean?": IsType(reflect.TypeOf(sabre.Bool(false))),
-		"list?":    IsType(reflect.TypeOf(sabre.List(nil))),
-		"string?":  IsType(reflect.TypeOf(sabre.String(""))),
-		"float?":   IsType(reflect.TypeOf(sabre.Float64(0))),
-		"vector?":  IsType(reflect.TypeOf(sabre.Vector(nil))),
-		"symbol?":  IsType(reflect.TypeOf(sabre.Symbol(""))),
-		"keyword?": IsType(reflect.TypeOf(sabre.Keyword(""))),
+		"λ":            SpecialFn(Lambda),
+		"fn":           SpecialFn(Lambda),
+		"do":           SpecialFn(Do),
+		"def":          SpecialFn(Def),
+		"eval":         SpecialFn(Eval),
+		"quote":        SpecialFn(SimpleQuote),
+		"syntax-quote": SpecialFn(SyntaxQuote),
+		"not":          Fn(Not),
+		"error":        Fn(RaiseErr),
+		"boolean":      Fn(MakeBool),
+		"str":          Fn(MakeString),
+		"type":         Fn(TypeOf),
+		"set":          MakeContainer(sabre.Set(nil)),
+		"list":         MakeContainer(sabre.List(nil)),
+		"vector":       MakeContainer(sabre.Vector(nil)),
+		"nil?":         IsType(reflect.TypeOf(sabre.Nil{})),
+		"int?":         IsType(reflect.TypeOf(sabre.Int64(0))),
+		"set?":         IsType(reflect.TypeOf(sabre.Set(nil))),
+		"boolean?":     IsType(reflect.TypeOf(sabre.Bool(false))),
+		"list?":        IsType(reflect.TypeOf(sabre.List(nil))),
+		"string?":      IsType(reflect.TypeOf(sabre.String(""))),
+		"float?":       IsType(reflect.TypeOf(sabre.Float64(0))),
+		"vector?":      IsType(reflect.TypeOf(sabre.Vector(nil))),
+		"symbol?":      IsType(reflect.TypeOf(sabre.Symbol(""))),
+		"keyword?":     IsType(reflect.TypeOf(sabre.Keyword(""))),
 	}
 
 	for sym, val := range core {
@@ -123,7 +125,7 @@ func Def(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 		return nil, err
 	}
 
-	return sabre.List{sabre.Symbol("quote"), sym}, nil
+	return sym, nil
 }
 
 // Not returns the negated version of the argument value.
@@ -144,4 +146,83 @@ func Do(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 // concatenated and used as error message.
 func RaiseErr(vals []sabre.Value) (sabre.Value, error) {
 	return nil, errors.New(string(stringFromVals(vals)))
+}
+
+// SimpleQuote prevents a form from being evaluated.
+func SimpleQuote(scope sabre.Scope, forms []sabre.Value) (sabre.Value, error) {
+	if err := verifyArgCount([]int{1}, forms); err != nil {
+		return nil, err
+	}
+
+	return forms[0], nil
+}
+
+// SyntaxQuote recursively applies the quoting to the form.
+func SyntaxQuote(scope sabre.Scope, forms []sabre.Value) (sabre.Value, error) {
+	if err := verifyArgCount([]int{1}, forms); err != nil {
+		return nil, err
+	}
+
+	quoteScope := sabre.NewScope(scope)
+	quoteScope.Bind("unquote", SpecialFn(unquote))
+
+	return recursiveQuote(quoteScope, forms[0])
+}
+
+func unquote(scope sabre.Scope, forms []sabre.Value) (sabre.Value, error) {
+	if err := verifyArgCount([]int{1}, forms); err != nil {
+		return nil, err
+	}
+
+	return forms[0].Eval(scope)
+}
+
+func recursiveQuote(scope sabre.Scope, f sabre.Value) (sabre.Value, error) {
+	switch v := f.(type) {
+	case sabre.List:
+		if isUnquote(v) {
+			return f.Eval(scope)
+		}
+
+		quoted, err := quoteList(scope, v)
+		return sabre.List(quoted), err
+
+	case sabre.Set:
+		quoted, err := quoteList(scope, v)
+		return sabre.Set(quoted), err
+
+	case sabre.Vector:
+		quoted, err := quoteList(scope, v)
+		return sabre.Vector(quoted), err
+
+	default:
+		return f, nil
+	}
+}
+
+func isUnquote(list []sabre.Value) bool {
+	if len(list) == 0 {
+		return false
+	}
+
+	sym, isSymbol := list[0].(sabre.Symbol)
+	if !isSymbol {
+		return false
+	}
+
+	return sym == "unquote"
+}
+
+func quoteList(scope sabre.Scope, forms []sabre.Value) ([]sabre.Value, error) {
+	var quoted []sabre.Value
+	for _, form := range forms {
+		q, err := recursiveQuote(scope, form)
+		if err != nil {
+			return nil, err
+		}
+
+		quoted = append(quoted, q)
+	}
+
+	return quoted, nil
 }

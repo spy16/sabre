@@ -74,7 +74,22 @@ func (repl *REPL) readAndExecute() bool {
 		return false
 	}
 
-	repl.WriteOut(sabre.EvalStr(repl.Env, expr))
+	rd := sabre.NewReader(strings.NewReader(expr))
+
+	for {
+		f, err := rd.One()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+			repl.WriteOut(nil, err)
+			return false
+		}
+
+		repl.WriteOut(f.Eval(repl.Env))
+	}
+
 	return false
 }
 

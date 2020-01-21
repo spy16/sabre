@@ -21,11 +21,6 @@ func TestList_Eval(t *testing.T) {
 			want:  sabre.List(nil),
 		},
 		{
-			name:  "QuoteList",
-			value: sabre.List{sabre.Symbol("quote"), sabre.Symbol("hello")},
-			want:  sabre.Symbol("hello"),
-		},
-		{
 			name:  "Invocation",
 			value: sabre.List{sabre.Symbol("greet"), sabre.String("Bob")},
 			getScope: func() sabre.Scope {
@@ -36,11 +31,6 @@ func TestList_Eval(t *testing.T) {
 				return scope
 			},
 			want: sabre.String("Hello Bob!"),
-		},
-		{
-			name:    "InvalidQuoteForm",
-			value:   sabre.List{sabre.Symbol("quote")},
-			wantErr: true,
 		},
 		{
 			name:    "NonInvokable",
@@ -129,11 +119,11 @@ func TestList_String(t *testing.T) {
 		},
 		{
 			value: sabre.List{sabre.Symbol("quote"), sabre.Symbol("hello")},
-			want:  "'hello",
+			want:  "(quote hello)",
 		},
 		{
 			value: sabre.List{sabre.Symbol("quote"), sabre.List{sabre.Symbol("hello")}},
-			want:  "'(hello)",
+			want:  "(quote (hello))",
 		},
 	})
 }

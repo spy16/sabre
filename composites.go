@@ -16,10 +16,6 @@ func (lf List) Eval(scope Scope) (Value, error) {
 		return List(nil), nil
 	}
 
-	if isQuote(lf[0]) {
-		return quoteValue(lf[1:])
-	}
-
 	target, err := lf[0].Eval(scope)
 	if err != nil {
 		return nil, err
@@ -34,10 +30,6 @@ func (lf List) Eval(scope Scope) (Value, error) {
 }
 
 func (lf List) String() string {
-	if len(lf) == 2 && isQuote(lf[0]) {
-		return fmt.Sprintf("'%s", lf[1])
-	}
-
 	return containerString(lf, "(", ")", " ")
 }
 
@@ -163,23 +155,6 @@ func evalValueList(scope Scope, vals []Value) ([]Value, error) {
 	}
 
 	return result, nil
-}
-
-func isQuote(v Value) bool {
-	sym, isSymbol := v.(Symbol)
-	if !isSymbol {
-		return false
-	}
-
-	return sym == "quote"
-}
-
-func quoteValue(args []Value) (Value, error) {
-	if len(args) != 1 {
-		return nil, fmt.Errorf("call requires exactly 1 argument, got %d", len(args))
-	}
-
-	return args[0], nil
 }
 
 func containerString(vals []Value, begin, end, sep string) string {

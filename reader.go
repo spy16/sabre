@@ -647,6 +647,7 @@ func defaultReadTable() map[rune]ReaderMacro {
 		'\\': readCharacter,
 		'\'': quoteFormReader("quote"),
 		'~':  quoteFormReader("unquote"),
+		'`':  quoteFormReader("syntax-quote"),
 		'(':  readList,
 		')':  unmatchedDelimiter,
 		'[':  readVector,
