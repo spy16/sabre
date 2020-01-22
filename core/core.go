@@ -11,13 +11,13 @@ import (
 // BindAll binds all core functions into the given scope.
 func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
-		"λ":            SpecialFn(Lambda),
-		"fn":           SpecialFn(Lambda),
-		"do":           SpecialFn(Do),
-		"def":          SpecialFn(Def),
-		"eval":         SpecialFn(Eval),
-		"quote":        SpecialFn(SimpleQuote),
-		"syntax-quote": SpecialFn(SyntaxQuote),
+		"λ":            sabre.GoFunc(Lambda),
+		"fn":           sabre.GoFunc(Lambda),
+		"do":           sabre.GoFunc(Do),
+		"def":          sabre.GoFunc(Def),
+		"eval":         sabre.GoFunc(Eval),
+		"quote":        sabre.GoFunc(SimpleQuote),
+		"syntax-quote": sabre.GoFunc(SyntaxQuote),
 		"not":          Fn(Not),
 		"error":        Fn(RaiseErr),
 		"boolean":      Fn(MakeBool),
@@ -82,8 +82,8 @@ func Lambda(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 }
 
 // LambdaFn creates a lambda function with given arguments and body.
-func LambdaFn(scope sabre.Scope, argNames []sabre.Symbol, body []sabre.Value) SpecialFn {
-	return SpecialFn(func(_ sabre.Scope, args []sabre.Value) (sabre.Value, error) {
+func LambdaFn(scope sabre.Scope, argNames []sabre.Symbol, body []sabre.Value) sabre.GoFunc {
+	return sabre.GoFunc(func(_ sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 		argVals, err := evalValueList(scope, args)
 		if err != nil {
 			return nil, err
@@ -164,7 +164,7 @@ func SyntaxQuote(scope sabre.Scope, forms []sabre.Value) (sabre.Value, error) {
 	}
 
 	quoteScope := sabre.NewScope(scope)
-	quoteScope.Bind("unquote", SpecialFn(unquote))
+	quoteScope.Bind("unquote", sabre.GoFunc(unquote))
 
 	return recursiveQuote(quoteScope, forms[0])
 }

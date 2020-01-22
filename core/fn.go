@@ -29,20 +29,3 @@ func (fn Fn) Invoke(scope sabre.Scope, args ...sabre.Value) (sabre.Value, error)
 
 	return fn(vals)
 }
-
-// SpecialFn implements Invokable using a function value.
-type SpecialFn func(scope sabre.Scope, args []sabre.Value) (sabre.Value, error)
-
-// Eval simply returns the special fn.
-func (fn SpecialFn) Eval(_ sabre.Scope) (sabre.Value, error) {
-	return fn, nil
-}
-
-func (fn SpecialFn) String() string {
-	return fmt.Sprintf("%s", reflect.ValueOf(fn).Type())
-}
-
-// Invoke simply dispatches the call to the wrapped function.
-func (fn SpecialFn) Invoke(scope sabre.Scope, args ...sabre.Value) (sabre.Value, error) {
-	return fn(scope, args)
-}

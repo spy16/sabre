@@ -21,7 +21,7 @@ func TestCore(t *testing.T) {
 	}{
 		{
 			name: "Do",
-			fn:   core.SpecialFn(core.Do),
+			fn:   sabre.GoFunc(core.Do),
 			args: []sabre.Value{},
 			want: sabre.Nil{},
 		},
@@ -57,7 +57,7 @@ func TestCore(t *testing.T) {
 		},
 		{
 			name: "Def",
-			fn:   core.SpecialFn(core.Def),
+			fn:   sabre.GoFunc(core.Def),
 			args: []sabre.Value{sabre.Symbol("pi"), sabre.Float64(3.1412)},
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
