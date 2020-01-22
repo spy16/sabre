@@ -50,11 +50,6 @@ func TestValueOf(t *testing.T) {
 			want: Nil{},
 		},
 		{
-			name: "Func",
-			v:    simpleFn,
-			want: strictFn{rv: simpleFnRV},
-		},
-		{
 			name: "Any",
 			v:    anyVal,
 			want: anyValue{rv: anyValRV},
@@ -164,9 +159,7 @@ func Test_strictFn_Invoke(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
-			fn := strictFn{
-				rv: reflect.ValueOf(tt.v),
-			}
+			fn := reflectFn(reflect.ValueOf(tt.v))
 
 			got, err := fn.Invoke(nil, tt.args...)
 			if (err != nil) != tt.wantErr {

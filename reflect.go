@@ -23,7 +23,7 @@ func ValueOf(v interface{}) Value {
 
 	switch rv.Kind() {
 	case reflect.Func:
-		return strictFn{rv: rv}
+		return reflectFn(rv)
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		return Int64(rv.Int())
@@ -46,49 +46,44 @@ func ValueOf(v interface{}) Value {
 	}
 }
 
-type strictFn struct {
-	rv reflect.Value
-}
-
-func (fn strictFn) Eval(_ Scope) (Value, error) { return fn, nil }
-func (fn strictFn) String() string              { return fmt.Sprintf("StrictFn{%v}", fn.rv) }
-
-func (fn strictFn) Invoke(scope Scope, args ...Value) (_ Value, err error) {
-	defer func() {
-		if v := recover(); v != nil {
-			if e, ok := v.(error); ok {
-				err = e
-			} else {
-				err = fmt.Errorf("panic: %v", v)
+func reflectFn(rv reflect.Value) GoFunc {
+	return func(scope Scope, args []Value) (_ Value, err error) {
+		defer func() {
+			if v := recover(); v != nil {
+				if e, ok := v.(error); ok {
+					err = e
+				} else {
+					err = fmt.Errorf("panic: %v", v)
+				}
 			}
+		}()
+
+		rt := rv.Type()
+		argVals := reflectValues(args)
+
+		if err := checkArgCount(rt, len(argVals)); err != nil {
+			return nil, err
 		}
-	}()
 
-	rt := fn.rv.Type()
-	argVals := reflectValues(args)
+		if err := checkArgTypes(rt, argVals); err != nil {
+			return nil, err
+		}
 
-	if err := checkArgCount(rt, len(argVals)); err != nil {
-		return nil, err
+		retVals := rv.Call(argVals)
+
+		if rt.NumOut() == 0 {
+			return nil, nil
+		} else if rt.NumOut() == 1 {
+			return ValueOf(retVals[0].Interface()), nil
+		}
+
+		var wrappedRetVals List
+		for _, retVal := range retVals {
+			wrappedRetVals = append(wrappedRetVals, ValueOf(retVal.Interface()))
+		}
+
+		return wrappedRetVals, nil
 	}
-
-	if err := checkArgTypes(rt, argVals); err != nil {
-		return nil, err
-	}
-
-	retVals := fn.rv.Call(argVals)
-
-	if rt.NumOut() == 0 {
-		return nil, nil
-	} else if rt.NumOut() == 1 {
-		return ValueOf(retVals[0].Interface()), nil
-	}
-
-	var wrappedRetVals List
-	for _, retVal := range retVals {
-		wrappedRetVals = append(wrappedRetVals, ValueOf(retVal.Interface()))
-	}
-
-	return wrappedRetVals, nil
 }
 
 type anyValue struct{ rv reflect.Value }
