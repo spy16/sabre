@@ -62,7 +62,7 @@ func TestSymbol_Eval(t *testing.T) {
 
 				return scope
 			},
-			value: sabre.Symbol("hello"),
+			value: sabre.Symbol{Value: "hello"},
 			want:  sabre.String("world"),
 		},
 	})
@@ -139,7 +139,7 @@ func TestKeyword_String(t *testing.T) {
 func TestSymbol_String(t *testing.T) {
 	executeStringTestCase(t, []stringTestCase{
 		{
-			value: sabre.Symbol("hello"),
+			value: sabre.Symbol{Value: "hello"},
 			want:  "hello",
 		},
 	})

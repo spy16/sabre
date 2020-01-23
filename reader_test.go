@@ -52,7 +52,7 @@ func TestReader_SetMacro(t *testing.T) {
 		rd.SetMacro('~', nil, false) // remove unquote operator
 
 		var want sabre.Value
-		want = sabre.Symbol("~hello")
+		want = sabre.Symbol{Value: "~hello"}
 
 		got, err := rd.One()
 		if err != nil {
@@ -122,8 +122,8 @@ func TestReader_All(t *testing.T) {
 				sabre.Character('a'),
 				sabre.Keyword("hello"),
 				sabre.List{
-					sabre.Symbol("quote"),
-					sabre.Symbol("hello"),
+					sabre.Symbol{Value: "quote"},
+					sabre.Symbol{Value: "hello"},
 				},
 			},
 		},
@@ -204,9 +204,9 @@ func TestReader_One(t *testing.T) {
 			name: "UnQuote",
 			src:  "~(x 3)",
 			want: sabre.List{
-				sabre.Symbol("unquote"),
+				sabre.Symbol{Value: "unquote"},
 				sabre.List{
-					sabre.Symbol("x"),
+					sabre.Symbol{Value: "x"},
 					sabre.Int64(3),
 				},
 			},
@@ -495,17 +495,17 @@ func TestReader_One_Symbol(t *testing.T) {
 		{
 			name: "SimpleASCII",
 			src:  `hello`,
-			want: sabre.Symbol("hello"),
+			want: sabre.Symbol{Value: "hello"},
 		},
 		{
 			name: "Unicode",
 			src:  `find-∂`,
-			want: sabre.Symbol("find-∂"),
+			want: sabre.Symbol{Value: "find-∂"},
 		},
 		{
 			name: "SingleChar",
 			src:  `+`,
-			want: sabre.Symbol("+"),
+			want: sabre.Symbol{"+"},
 		},
 	})
 }
@@ -521,14 +521,14 @@ func TestReader_One_List(t *testing.T) {
 			name: "ListWithOneEntry",
 			src:  `(help)`,
 			want: sabre.List{
-				sabre.Symbol("help"),
+				sabre.Symbol{Value: "help"},
 			},
 		},
 		{
 			name: "ListWithMultipleEntry",
 			src:  `(+ 0xF 3.1413)`,
 			want: sabre.List{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			},
@@ -537,7 +537,7 @@ func TestReader_One_List(t *testing.T) {
 			name: "ListWithCommaSeparator",
 			src:  `(+,0xF,3.1413)`,
 			want: sabre.List{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			},
@@ -549,7 +549,7 @@ func TestReader_One_List(t *testing.T) {
                       3.1413
 					)`,
 			want: sabre.List{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			},
@@ -561,7 +561,7 @@ func TestReader_One_List(t *testing.T) {
                       3.1413 ; value of math constant pi
                   )`,
 			want: sabre.List{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			},
@@ -585,14 +585,14 @@ func TestReader_One_Vector(t *testing.T) {
 			name: "WithOneEntry",
 			src:  `[help]`,
 			want: sabre.Vector([]sabre.Value{
-				sabre.Symbol("help"),
+				sabre.Symbol{Value: "help"},
 			}),
 		},
 		{
 			name: "WithMultipleEntry",
 			src:  `[+ 0xF 3.1413]`,
 			want: sabre.Vector([]sabre.Value{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),
@@ -601,7 +601,7 @@ func TestReader_One_Vector(t *testing.T) {
 			name: "WithCommaSeparator",
 			src:  `[+,0xF,3.1413]`,
 			want: sabre.Vector([]sabre.Value{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),
@@ -613,7 +613,7 @@ func TestReader_One_Vector(t *testing.T) {
                       3.1413
 					]`,
 			want: sabre.Vector([]sabre.Value{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),
@@ -625,7 +625,7 @@ func TestReader_One_Vector(t *testing.T) {
                       3.1413 ; value of math constant pi
                   ]`,
 			want: sabre.Vector([]sabre.Value{
-				sabre.Symbol("+"),
+				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),

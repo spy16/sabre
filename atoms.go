@@ -67,9 +67,11 @@ func (kw Keyword) Eval(_ Scope) (Value, error) { return kw, nil }
 func (kw Keyword) String() string { return fmt.Sprintf(":%s", string(kw)) }
 
 // Symbol represents a name given to a value in memory.
-type Symbol string
+type Symbol struct {
+	Value string
+}
 
 // Eval returns the underlying value.
-func (sym Symbol) Eval(scope Scope) (Value, error) { return scope.Resolve(string(sym)) }
+func (sym Symbol) Eval(scope Scope) (Value, error) { return scope.Resolve(sym.Value) }
 
-func (sym Symbol) String() string { return string(sym) }
+func (sym Symbol) String() string { return sym.Value }

@@ -58,11 +58,11 @@ func TestCore(t *testing.T) {
 		{
 			name: "Def",
 			fn:   sabre.GoFunc(core.Def),
-			args: []sabre.Value{sabre.Symbol("pi"), sabre.Float64(3.1412)},
+			args: []sabre.Value{sabre.Symbol{Value: "pi"}, sabre.Float64(3.1412)},
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
-			want: sabre.Symbol("pi"),
+			want: sabre.Symbol{Value: "pi"},
 		},
 	}
 
@@ -87,7 +87,10 @@ func TestCore(t *testing.T) {
 }
 
 func TestLambdaFn(t *testing.T) {
-	fn := core.LambdaFn(nil, []sabre.Symbol{"arg1"}, []sabre.Value{sabre.Symbol("arg1")})
+	fn := core.LambdaFn(nil,
+		[]sabre.Symbol{sabre.Symbol{Value: "arg1"}},
+		[]sabre.Value{sabre.Symbol{Value: "arg1"}},
+	)
 
 	arg1Val := sabre.Int64(10)
 
@@ -130,7 +133,7 @@ func TestLambda(t *testing.T) {
 		{
 			name: "Successful",
 			args: []sabre.Value{
-				sabre.Vector{sabre.Symbol("a"), sabre.Symbol("b")},
+				sabre.Vector{sabre.Symbol{Value: "a"}, sabre.Symbol{Value: "b"}},
 				sabre.Int64(10),
 			},
 			wantErr: false,

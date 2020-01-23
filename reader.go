@@ -400,7 +400,9 @@ func readSymbol(rd *Reader, init rune) (Value, error) {
 		return nil, err
 	}
 
-	return Symbol(s), nil
+	return Symbol{
+		Value: s,
+	}, nil
 }
 
 func readKeyword(rd *Reader, init rune) (Value, error) {
@@ -513,7 +515,9 @@ func quoteFormReader(expandFunc string) ReaderMacro {
 		}
 
 		return List{
-			Symbol(expandFunc),
+			Symbol{
+				Value: expandFunc,
+			},
 			expr,
 		}, nil
 	}

@@ -22,7 +22,7 @@ func TestList_Eval(t *testing.T) {
 		},
 		{
 			name:  "Invocation",
-			value: sabre.List{sabre.Symbol("greet"), sabre.String("Bob")},
+			value: sabre.List{sabre.Symbol{Value: "greet"}, sabre.String("Bob")},
 			getScope: func() sabre.Scope {
 				scope := sabre.NewScope(nil)
 				scope.BindGo("greet", func(name sabre.String) string {
@@ -39,7 +39,7 @@ func TestList_Eval(t *testing.T) {
 		},
 		{
 			name:  "EvalFailure",
-			value: sabre.List{sabre.Symbol("hello")},
+			value: sabre.List{sabre.Symbol{Value: "hello"}},
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
@@ -93,7 +93,7 @@ func TestVector_Eval(t *testing.T) {
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
-			value:   sabre.Vector{sabre.Symbol("hello")},
+			value:   sabre.Vector{sabre.Symbol{Value: "hello"}},
 			wantErr: true,
 		},
 	})
@@ -118,11 +118,11 @@ func TestList_String(t *testing.T) {
 			want:  "(:hello ())",
 		},
 		{
-			value: sabre.List{sabre.Symbol("quote"), sabre.Symbol("hello")},
+			value: sabre.List{sabre.Symbol{Value: "quote"}, sabre.Symbol{Value: "hello"}},
 			want:  "(quote hello)",
 		},
 		{
-			value: sabre.List{sabre.Symbol("quote"), sabre.List{sabre.Symbol("hello")}},
+			value: sabre.List{sabre.Symbol{Value: "quote"}, sabre.List{sabre.Symbol{Value: "hello"}}},
 			want:  "(quote (hello))",
 		},
 	})
@@ -156,11 +156,11 @@ func TestModule_String(t *testing.T) {
 			want:  "",
 		},
 		{
-			value: sabre.Module{sabre.Symbol("hello")},
+			value: sabre.Module{sabre.Symbol{Value: "hello"}},
 			want:  "hello",
 		},
 		{
-			value: sabre.Module{sabre.Symbol("hello"), sabre.Keyword("world")},
+			value: sabre.Module{sabre.Symbol{Value: "hello"}, sabre.Keyword("world")},
 			want:  "hello\n:world",
 		},
 	})
@@ -204,7 +204,7 @@ func TestVector_Invoke(t *testing.T) {
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
-			args:    []sabre.Value{sabre.Symbol("hello")},
+			args:    []sabre.Value{sabre.Symbol{Value: "hello"}},
 			wantErr: true,
 		},
 	}

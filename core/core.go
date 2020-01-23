@@ -34,8 +34,8 @@ func BindAll(scope sabre.Scope) error {
 		"string?":      IsType(reflect.TypeOf(sabre.String(""))),
 		"float?":       IsType(reflect.TypeOf(sabre.Float64(0))),
 		"vector?":      IsType(reflect.TypeOf(sabre.Vector(nil))),
-		"symbol?":      IsType(reflect.TypeOf(sabre.Symbol(""))),
 		"keyword?":     IsType(reflect.TypeOf(sabre.Keyword(""))),
+		"symbol?":      IsType(reflect.TypeOf(sabre.Symbol{})),
 	}
 
 	for sym, val := range core {
@@ -210,7 +210,7 @@ func isUnquote(list []sabre.Value) bool {
 		return false
 	}
 
-	return sym == "unquote"
+	return sym.Value == "unquote"
 }
 
 func quoteList(scope sabre.Scope, forms []sabre.Value) ([]sabre.Value, error) {
