@@ -448,7 +448,7 @@ func readList(rd *Reader, _ rune) (Value, error) {
 		return nil, err
 	}
 
-	return List(forms), nil
+	return List{Items: forms}, nil
 }
 
 func readVector(rd *Reader, _ rune) (Value, error) {
@@ -515,10 +515,10 @@ func quoteFormReader(expandFunc string) ReaderMacro {
 		}
 
 		return List{
-			Symbol{
-				Value: expandFunc,
+			Items: []Value{
+				Symbol{Value: expandFunc},
+				expr,
 			},
-			expr,
 		}, nil
 	}
 }

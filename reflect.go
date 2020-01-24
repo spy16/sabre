@@ -77,12 +77,12 @@ func reflectFn(rv reflect.Value) GoFunc {
 			return ValueOf(retVals[0].Interface()), nil
 		}
 
-		var wrappedRetVals List
+		var wrappedRetVals []Value
 		for _, retVal := range retVals {
 			wrappedRetVals = append(wrappedRetVals, ValueOf(retVal.Interface()))
 		}
 
-		return wrappedRetVals, nil
+		return List{Items: wrappedRetVals}, nil
 	}
 }
 

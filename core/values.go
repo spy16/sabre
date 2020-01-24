@@ -49,7 +49,7 @@ func MakeContainer(targetType sabre.Value) Fn {
 	return func(vals []sabre.Value) (sabre.Value, error) {
 		switch targetType.(type) {
 		case sabre.List:
-			return sabre.List(vals), nil
+			return sabre.List{Items: vals}, nil
 
 		case sabre.Vector:
 			return sabre.Vector(vals), nil

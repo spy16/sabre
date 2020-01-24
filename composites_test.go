@@ -11,18 +11,15 @@ import (
 func TestList_Eval(t *testing.T) {
 	executeEvalTests(t, []evalTestCase{
 		{
-			name:  "NilList",
-			value: sabre.List(nil),
-			want:  sabre.List(nil),
-		},
-		{
 			name:  "EmptyList",
 			value: sabre.List{},
-			want:  sabre.List(nil),
+			want:  sabre.List{},
 		},
 		{
-			name:  "Invocation",
-			value: sabre.List{sabre.Symbol{Value: "greet"}, sabre.String("Bob")},
+			name: "Invocation",
+			value: sabre.List{
+				Items: []sabre.Value{sabre.Symbol{Value: "greet"}, sabre.String("Bob")},
+			},
 			getScope: func() sabre.Scope {
 				scope := sabre.NewScope(nil)
 				scope.BindGo("greet", func(name sabre.String) string {
@@ -33,13 +30,17 @@ func TestList_Eval(t *testing.T) {
 			want: sabre.String("Hello Bob!"),
 		},
 		{
-			name:    "NonInvokable",
-			value:   sabre.List{sabre.Int64(10), sabre.Keyword("hello")},
+			name: "NonInvokable",
+			value: sabre.List{
+				Items: []sabre.Value{sabre.Int64(10), sabre.Keyword("hello")},
+			},
 			wantErr: true,
 		},
 		{
-			name:  "EvalFailure",
-			value: sabre.List{sabre.Symbol{Value: "hello"}},
+			name: "EvalFailure",
+			value: sabre.List{
+				Items: []sabre.Value{sabre.Symbol{Value: "hello"}},
+			},
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
@@ -102,28 +103,34 @@ func TestVector_Eval(t *testing.T) {
 func TestList_String(t *testing.T) {
 	executeStringTestCase(t, []stringTestCase{
 		{
-			value: sabre.List(nil),
-			want:  "()",
-		},
-		{
 			value: sabre.List{},
 			want:  "()",
 		},
 		{
-			value: sabre.List{sabre.Keyword("hello")},
-			want:  "(:hello)",
+			value: sabre.List{
+				Items: []sabre.Value{sabre.Keyword("hello")},
+			},
+			want: "(:hello)",
 		},
 		{
-			value: sabre.List{sabre.Keyword("hello"), sabre.List{}},
-			want:  "(:hello ())",
+			value: sabre.List{
+				Items: []sabre.Value{sabre.Keyword("hello"), sabre.List{}},
+			},
+			want: "(:hello ())",
 		},
 		{
-			value: sabre.List{sabre.Symbol{Value: "quote"}, sabre.Symbol{Value: "hello"}},
-			want:  "(quote hello)",
+			value: sabre.List{
+				Items: []sabre.Value{sabre.Symbol{Value: "quote"}, sabre.Symbol{Value: "hello"}},
+			},
+			want: "(quote hello)",
 		},
 		{
-			value: sabre.List{sabre.Symbol{Value: "quote"}, sabre.List{sabre.Symbol{Value: "hello"}}},
-			want:  "(quote (hello))",
+			value: sabre.List{
+				Items: []sabre.Value{
+					sabre.Symbol{Value: "quote"},
+					sabre.List{Items: []sabre.Value{sabre.Symbol{Value: "hello"}}}},
+			},
+			want: "(quote (hello))",
 		},
 	})
 }

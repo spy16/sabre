@@ -31,7 +31,7 @@ func TestEval(t *testing.T) {
 		{
 			name: "MultiForm",
 			src:  `123 [] ()`,
-			want: sabre.List(nil),
+			want: sabre.List{},
 		},
 		{
 			name: "WithFunctionCalls",

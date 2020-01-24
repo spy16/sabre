@@ -122,8 +122,10 @@ func TestReader_All(t *testing.T) {
 				sabre.Character('a'),
 				sabre.Keyword("hello"),
 				sabre.List{
-					sabre.Symbol{Value: "quote"},
-					sabre.Symbol{Value: "hello"},
+					Items: []sabre.Value{
+						sabre.Symbol{Value: "quote"},
+						sabre.Symbol{Value: "hello"},
+					},
 				},
 			},
 		},
@@ -204,10 +206,14 @@ func TestReader_One(t *testing.T) {
 			name: "UnQuote",
 			src:  "~(x 3)",
 			want: sabre.List{
-				sabre.Symbol{Value: "unquote"},
-				sabre.List{
-					sabre.Symbol{Value: "x"},
-					sabre.Int64(3),
+				Items: []sabre.Value{
+					sabre.Symbol{Value: "unquote"},
+					sabre.List{
+						Items: []sabre.Value{
+							sabre.Symbol{Value: "x"},
+							sabre.Int64(3),
+						},
+					},
 				},
 			},
 		},
@@ -515,31 +521,37 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "EmptyList",
 			src:  `()`,
-			want: sabre.List(nil),
+			want: sabre.List{nil},
 		},
 		{
 			name: "ListWithOneEntry",
 			src:  `(help)`,
 			want: sabre.List{
-				sabre.Symbol{Value: "help"},
+				Items: []sabre.Value{
+					sabre.Symbol{Value: "help"},
+				},
 			},
 		},
 		{
 			name: "ListWithMultipleEntry",
 			src:  `(+ 0xF 3.1413)`,
 			want: sabre.List{
-				sabre.Symbol{Value: "+"},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
+				Items: []sabre.Value{
+					sabre.Symbol{Value: "+"},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
+				},
 			},
 		},
 		{
 			name: "ListWithCommaSeparator",
 			src:  `(+,0xF,3.1413)`,
 			want: sabre.List{
-				sabre.Symbol{Value: "+"},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
+				Items: []sabre.Value{
+					sabre.Symbol{Value: "+"},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
+				},
 			},
 		},
 		{
@@ -549,9 +561,11 @@ func TestReader_One_List(t *testing.T) {
                       3.1413
 					)`,
 			want: sabre.List{
-				sabre.Symbol{Value: "+"},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
+				Items: []sabre.Value{
+					sabre.Symbol{Value: "+"},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
+				},
 			},
 		},
 		{
@@ -561,9 +575,11 @@ func TestReader_One_List(t *testing.T) {
                       3.1413 ; value of math constant pi
                   )`,
 			want: sabre.List{
-				sabre.Symbol{Value: "+"},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
+				Items: []sabre.Value{
+					sabre.Symbol{Value: "+"},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
+				},
 			},
 		},
 		{

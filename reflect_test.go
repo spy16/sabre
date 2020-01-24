@@ -102,7 +102,7 @@ func Test_strictFn_Invoke(t *testing.T) {
 			name: "SimpleMultiReturn",
 			v:    func(arg Int64) (int64, string) { return 10, "hello" },
 			args: []Value{Int64(10)},
-			want: List{Int64(10), String("hello")},
+			want: List{Items: []Value{Int64(10), String("hello")}},
 		},
 		{
 			name: "PureVariadicNoCallArgs",

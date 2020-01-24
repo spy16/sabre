@@ -24,13 +24,13 @@ func BindAll(scope sabre.Scope) error {
 		"str":          Fn(MakeString),
 		"type":         Fn(TypeOf),
 		"set":          MakeContainer(sabre.Set(nil)),
-		"list":         MakeContainer(sabre.List(nil)),
+		"list":         MakeContainer(sabre.List{}),
 		"vector":       MakeContainer(sabre.Vector(nil)),
 		"nil?":         IsType(reflect.TypeOf(sabre.Nil{})),
 		"int?":         IsType(reflect.TypeOf(sabre.Int64(0))),
 		"set?":         IsType(reflect.TypeOf(sabre.Set(nil))),
 		"boolean?":     IsType(reflect.TypeOf(sabre.Bool(false))),
-		"list?":        IsType(reflect.TypeOf(sabre.List(nil))),
+		"list?":        IsType(reflect.TypeOf(sabre.List{})),
 		"string?":      IsType(reflect.TypeOf(sabre.String(""))),
 		"float?":       IsType(reflect.TypeOf(sabre.Float64(0))),
 		"vector?":      IsType(reflect.TypeOf(sabre.Vector(nil))),
@@ -180,12 +180,12 @@ func unquote(scope sabre.Scope, forms []sabre.Value) (sabre.Value, error) {
 func recursiveQuote(scope sabre.Scope, f sabre.Value) (sabre.Value, error) {
 	switch v := f.(type) {
 	case sabre.List:
-		if isUnquote(v) {
+		if isUnquote(v.Items) {
 			return f.Eval(scope)
 		}
 
-		quoted, err := quoteList(scope, v)
-		return sabre.List(quoted), err
+		quoted, err := quoteList(scope, v.Items)
+		return sabre.List{Items: quoted}, err
 
 	case sabre.Set:
 		quoted, err := quoteList(scope, v)
