@@ -85,40 +85,30 @@ func (vf Vector) String() string {
 }
 
 // Set represents a list of unique values. (Experimental)
-type Set []Value
+type Set struct {
+	Items []Value
+}
 
 // Eval evaluates each value in the set form and returns the resultant
 // values as new set.
 func (set Set) Eval(scope Scope) (Value, error) {
-	vals, err := evalValueList(scope, set)
+	vals, err := evalValueList(scope, set.Items)
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO: remove this naive implementation
-	vs := map[string]Value{}
-	for _, v := range vals {
-		s := v.String()
-		vs[s] = v
-	}
-
-	var valueSet []Value
-	for _, v := range vs {
-		valueSet = append(valueSet, v)
-	}
-
-	return Set(vals), nil
+	return Set{Items: uniq(vals)}, nil
 }
 
 func (set Set) String() string {
-	return containerString(set, "#{", "}", " ")
+	return containerString(set.Items, "#{", "}", " ")
 }
 
 func (set Set) valid() bool {
 	// TODO: Remove this naive solution
 	s := map[string]struct{}{}
 
-	for _, v := range set {
+	for _, v := range set.Items {
 		str := v.String()
 		if _, found := s[str]; found {
 			return false
@@ -171,4 +161,20 @@ func containerString(vals []Value, begin, end, sep string) string {
 		parts[i] = fmt.Sprintf("%v", expr)
 	}
 	return begin + strings.Join(parts, sep) + end
+}
+
+func uniq(items []Value) []Value {
+	// TODO: remove this naive implementation
+	vs := map[string]Value{}
+	for _, v := range items {
+		s := v.String()
+		vs[s] = v
+	}
+
+	var set []Value
+	for _, v := range vs {
+		set = append(set, v)
+	}
+
+	return set
 }

@@ -58,7 +58,7 @@ var (
 // NewReader returns a lisp reader instance which can read forms from rs.
 // Reader behavior can be customized by using SetMacro to override or remove
 // from the default read table. File name  will be inferred from the  reader
-// value and type information.
+// value and type information or can be set manually on the Reader.
 func NewReader(rs io.Reader) *Reader {
 	return &Reader{
 		File:     inferFileName(rs),
@@ -466,7 +466,7 @@ func readSet(rd *Reader, _ rune) (Value, error) {
 		return nil, err
 	}
 
-	set := Set(forms)
+	set := Set{Items: forms}
 	if !set.valid() {
 		return nil, errors.New("duplicate value in set")
 	}

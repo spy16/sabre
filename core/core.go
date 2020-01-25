@@ -23,12 +23,12 @@ func BindAll(scope sabre.Scope) error {
 		"boolean":      Fn(MakeBool),
 		"str":          Fn(MakeString),
 		"type":         Fn(TypeOf),
-		"set":          MakeContainer(sabre.Set(nil)),
+		"set":          MakeContainer(sabre.Set{}),
 		"list":         MakeContainer(sabre.List{}),
 		"vector":       MakeContainer(sabre.Vector{}),
 		"nil?":         IsType(reflect.TypeOf(sabre.Nil{})),
 		"int?":         IsType(reflect.TypeOf(sabre.Int64(0))),
-		"set?":         IsType(reflect.TypeOf(sabre.Set(nil))),
+		"set?":         IsType(reflect.TypeOf(sabre.Set{})),
 		"boolean?":     IsType(reflect.TypeOf(sabre.Bool(false))),
 		"list?":        IsType(reflect.TypeOf(sabre.List{})),
 		"string?":      IsType(reflect.TypeOf(sabre.String(""))),
@@ -188,8 +188,8 @@ func recursiveQuote(scope sabre.Scope, f sabre.Value) (sabre.Value, error) {
 		return sabre.List{Items: quoted}, err
 
 	case sabre.Set:
-		quoted, err := quoteList(scope, v)
-		return sabre.Set(quoted), err
+		quoted, err := quoteList(scope, v.Items)
+		return sabre.Set{Items: quoted}, err
 
 	case sabre.Vector:
 		quoted, err := quoteList(scope, v.Items)
