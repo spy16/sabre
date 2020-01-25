@@ -1,7 +1,6 @@
 package core
 
 import (
-	"errors"
 	"reflect"
 
 	"github.com/spy16/sabre"
@@ -12,7 +11,6 @@ func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
 		"eval":     sabre.GoFunc(Eval),
 		"not":      Fn(Not),
-		"error":    Fn(RaiseErr),
 		"boolean":  Fn(MakeBool),
 		"str":      Fn(MakeString),
 		"type":     Fn(TypeOf),
@@ -61,10 +59,4 @@ func Not(args []sabre.Value) (sabre.Value, error) {
 	}
 
 	return sabre.Bool(!isTruthy(args[0])), nil
-}
-
-// RaiseErr signals an error. Stringified versions of args will be
-// concatenated and used as error message.
-func RaiseErr(vals []sabre.Value) (sabre.Value, error) {
-	return nil, errors.New(string(stringFromVals(vals)))
 }

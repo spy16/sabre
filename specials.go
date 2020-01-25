@@ -1,9 +1,11 @@
 package sabre
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"sort"
+	"strings"
 )
 
 // New returns an instance of MapScope with all the special forms setup.
@@ -13,6 +15,8 @@ func New() *MapScope {
 		"fn":           GoFunc(Lambda),
 		"do":           GoFunc(Do),
 		"def":          GoFunc(Def),
+		"let":          GoFunc(Let),
+		"throw":        GoFunc(RaiseErr),
 		"if":           GoFunc(If),
 		"quote":        GoFunc(SimpleQuote),
 		"syntax-quote": GoFunc(SyntaxQuote),
@@ -23,6 +27,42 @@ func New() *MapScope {
 		_ = scope.Bind(name, val)
 	}
 	return scope
+}
+
+// Let implements the (let [binding*] expr*) form. expr are evaluated with
+// given local bindings.
+func Let(scope Scope, args []Value) (Value, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("call requires at-least bindings argument")
+	}
+
+	vec, isVector := args[0].(Vector)
+	if !isVector {
+		return nil, fmt.Errorf("first argument to let must be bindings vector, not %d",
+			reflect.TypeOf(args[0]))
+	}
+
+	if len(vec.Items)%2 != 0 {
+		return nil, fmt.Errorf("bindings must contain event forms")
+	}
+
+	letScope := NewScope(scope)
+	for i := 0; i < len(vec.Items); i += 2 {
+		sym, isSymbol := vec.Items[i].(Symbol)
+		if !isSymbol {
+			return nil, fmt.Errorf("item at %d must be symbol, not %s",
+				i, reflect.TypeOf(vec.Items[i]))
+		}
+
+		v, err := vec.Items[i+1].Eval(scope)
+		if err != nil {
+			return nil, err
+		}
+
+		_ = letScope.Bind(sym.String(), v)
+	}
+
+	return Do(letScope, args[1:])
 }
 
 // If implments if-conditional flow using (if test then else?) form.
@@ -58,7 +98,8 @@ func Def(scope Scope, args []Value) (Value, error) {
 
 	sym, isSymbol := args[0].(Symbol)
 	if !isSymbol {
-		return nil, fmt.Errorf("first argument must be symbol, not '%v'", reflect.TypeOf(args[0]))
+		return nil, fmt.Errorf("first argument must be symbol, not '%v'",
+			reflect.TypeOf(args[0]))
 	}
 
 	v, err := args[1].Eval(scope)
@@ -122,6 +163,17 @@ func LambdaFn(scope Scope, argNames []Symbol, body []Value) GoFunc {
 
 		return Module(body).Eval(fnScope)
 	})
+}
+
+// RaiseErr signals an error. Stringified versions of args will be
+// concatenated and used as error message.
+func RaiseErr(scope Scope, args []Value) (Value, error) {
+	vals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, errors.New(string(stringFromVals(vals)))
 }
 
 // SimpleQuote prevents a form from being evaluated.
@@ -242,6 +294,24 @@ func toSymbolList(vals []Value) ([]Symbol, error) {
 	}
 
 	return argNames, nil
+}
+
+func stringFromVals(vals []Value) String {
+	argc := len(vals)
+	switch argc {
+	case 0:
+		return String("")
+
+	case 1:
+		return String(strings.Trim(vals[0].String(), "\""))
+
+	default:
+		var sb strings.Builder
+		for _, v := range vals {
+			sb.WriteString(strings.Trim(v.String(), "\""))
+		}
+		return String(sb.String())
+	}
 }
 
 func verifyArgCount(arities []int, args []Value) error {
