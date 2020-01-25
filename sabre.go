@@ -24,6 +24,7 @@ func EvalStr(scope Scope, src string) (Value, error) {
 
 // Scope implementation is responsible for managing value bindings.
 type Scope interface {
+	Parent() Scope
 	Bind(symbol string, v Value) error
 	Resolve(symbol string) (Value, error)
 }

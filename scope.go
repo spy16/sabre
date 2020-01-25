@@ -25,10 +25,9 @@ type MapScope struct {
 	bindings map[string]Value
 }
 
-// BindGo is similar to Bind but handles covnertion of Go value 'v' to
-// sabre Val type.
-func (scope *MapScope) BindGo(symbol string, v interface{}) error {
-	return scope.Bind(symbol, ValueOf(v))
+// Parent returns the parent scope of this scope.
+func (scope *MapScope) Parent() Scope {
+	return scope.parent
 }
 
 // Bind adds the given value to the scope and binds the symbol to it.
@@ -56,4 +55,10 @@ func (scope *MapScope) Resolve(symbol string) (Value, error) {
 	}
 
 	return v, nil
+}
+
+// BindGo is similar to Bind but handles covnertion of Go value 'v' to
+// sabre Val type.
+func (scope *MapScope) BindGo(symbol string, v interface{}) error {
+	return scope.Bind(symbol, ValueOf(v))
 }

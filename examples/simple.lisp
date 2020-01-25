@@ -6,3 +6,12 @@
 
 ; index access for a vector
 ([1 2 3] 0)
+
+
+(def defn (fn [name args body]
+    (do
+        (if (not (symbol? name))
+            (error "name must be symbol, not " (type name)))
+        (if (not (vector? args))
+            (error "args must be a vector, not " (type args)))
+        (eval `(def ~name (fn ~args ~body))))))

@@ -49,7 +49,8 @@ func If(scope Scope, args []Value) (Value, error) {
 	return args[1].Eval(scope)
 }
 
-// Def adds a binding to the scope. Should have the form (def symbol value).
+// Def adds a binding to the root scope. Def must have the form
+//  (def symbol value).
 func Def(scope Scope, args []Value) (Value, error) {
 	if err := verifyArgCount([]int{2}, args); err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func Def(scope Scope, args []Value) (Value, error) {
 		return nil, err
 	}
 
-	if err := scope.Bind(sym.String(), v); err != nil {
+	if err := rootScope(scope).Bind(sym.String(), v); err != nil {
 		return nil, err
 	}
 
@@ -142,6 +143,19 @@ func SyntaxQuote(scope Scope, forms []Value) (Value, error) {
 	quoteScope.Bind("unquote", GoFunc(unquote))
 
 	return recursiveQuote(quoteScope, forms[0])
+}
+
+func rootScope(scope Scope) Scope {
+	if scope == nil {
+		return nil
+	}
+
+	p := scope
+	for temp := scope; temp != nil; temp = temp.Parent() {
+		p = temp
+	}
+
+	return p
 }
 
 func isTruthy(v Value) bool {
