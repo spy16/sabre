@@ -43,9 +43,9 @@ func MakeString(vals []sabre.Value) (sabre.Value, error) {
 	return stringFromVals(vals), nil
 }
 
-// MakeContainer can make a composite type like list, set and vector from
+// makeContainer can make a composite type like list, set and vector from
 // given args.
-func MakeContainer(targetType sabre.Value) Fn {
+func makeContainer(targetType sabre.Value) Fn {
 	return func(vals []sabre.Value) (sabre.Value, error) {
 		switch targetType.(type) {
 		case sabre.List:

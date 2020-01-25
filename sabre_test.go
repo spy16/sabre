@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/spy16/sabre"
-	"github.com/spy16/sabre/core"
 )
 
 func TestEval(t *testing.T) {
@@ -36,11 +35,10 @@ func TestEval(t *testing.T) {
 		{
 			name: "WithFunctionCalls",
 			getScope: func() sabre.Scope {
-				scope := sabre.NewScope(nil)
-				core.BindAll(scope)
+				scope := sabre.New()
 				return scope
 			},
-			src:  `(eval 10)`,
+			src:  `((fn [arg] arg) 10)`,
 			want: sabre.Int64(10),
 		},
 		{
@@ -52,8 +50,7 @@ func TestEval(t *testing.T) {
 		{
 			name: "Program",
 			getScope: func() sabre.Scope {
-				scope := sabre.NewScope(nil)
-				_ = core.BindAll(scope)
+				scope := sabre.New()
 				return scope
 			},
 			src:  sampleProgram,

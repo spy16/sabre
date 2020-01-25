@@ -20,12 +20,6 @@ func TestCore(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "Do",
-			fn:   sabre.GoFunc(core.Do),
-			args: []sabre.Value{},
-			want: sabre.Nil{},
-		},
-		{
 			name:    "Not_InsufficientArgs",
 			fn:      core.Fn(core.Not),
 			args:    []sabre.Value{},
@@ -55,15 +49,6 @@ func TestCore(t *testing.T) {
 			args: []sabre.Value{sabre.Bool(true)},
 			want: sabre.Bool(false),
 		},
-		{
-			name: "Def",
-			fn:   sabre.GoFunc(core.Def),
-			args: []sabre.Value{sabre.Symbol{Value: "pi"}, sabre.Float64(3.1412)},
-			getScope: func() sabre.Scope {
-				return sabre.NewScope(nil)
-			},
-			want: sabre.Symbol{Value: "pi"},
-		},
 	}
 
 	for _, tt := range table {
@@ -87,7 +72,7 @@ func TestCore(t *testing.T) {
 }
 
 func TestLambdaFn(t *testing.T) {
-	fn := core.LambdaFn(nil,
+	fn := sabre.LambdaFn(nil,
 		[]sabre.Symbol{sabre.Symbol{Value: "arg1"}},
 		[]sabre.Value{sabre.Symbol{Value: "arg1"}},
 	)
@@ -101,58 +86,5 @@ func TestLambdaFn(t *testing.T) {
 
 	if !reflect.DeepEqual(got, arg1Val) {
 		t.Errorf("Invoke() want=%#v, got=%#v", arg1Val, got)
-	}
-}
-
-func TestLambda(t *testing.T) {
-	t.Parallel()
-
-	table := []struct {
-		name    string
-		args    []sabre.Value
-		wantErr bool
-	}{
-		{
-			name:    "InsufficientArgs",
-			args:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "InvalidArgList",
-			args:    []sabre.Value{sabre.Int64(0), nil},
-			wantErr: true,
-		},
-		{
-			name: "NotSymbolVector",
-			args: []sabre.Value{
-				sabre.Vector{Items: []sabre.Value{sabre.Int64(1)}},
-				sabre.Int64(10),
-			},
-			wantErr: true,
-		},
-		{
-			name: "Successful",
-			args: []sabre.Value{
-				sabre.Vector{
-					Items: []sabre.Value{sabre.Symbol{Value: "a"}, sabre.Symbol{Value: "b"}}},
-				sabre.Int64(10),
-			},
-			wantErr: false,
-		},
-	}
-
-	for _, tt := range table {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := core.Lambda(nil, tt.args)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Lambda() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-
-			if !tt.wantErr && got == nil {
-				t.Errorf("Lambda() expecting non-nil, got nil")
-				return
-			}
-		})
 	}
 }
