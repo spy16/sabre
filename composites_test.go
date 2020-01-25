@@ -80,21 +80,16 @@ func TestModule_Eval(t *testing.T) {
 func TestVector_Eval(t *testing.T) {
 	executeEvalTests(t, []evalTestCase{
 		{
-			name:  "NilVector",
-			value: sabre.Vector(nil),
-			want:  sabre.Vector(nil),
-		},
-		{
 			name:  "EmptyVector",
 			value: sabre.Vector{},
-			want:  sabre.Vector(nil),
+			want:  sabre.Vector{},
 		},
 		{
 			name: "EvalFailure",
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
-			value:   sabre.Vector{sabre.Symbol{Value: "hello"}},
+			value:   sabre.Vector{Items: []sabre.Value{sabre.Symbol{Value: "hello"}}},
 			wantErr: true,
 		},
 	})
@@ -138,19 +133,15 @@ func TestList_String(t *testing.T) {
 func TestVector_String(t *testing.T) {
 	executeStringTestCase(t, []stringTestCase{
 		{
-			value: sabre.Vector(nil),
-			want:  "[]",
-		},
-		{
 			value: sabre.Vector{},
 			want:  "[]",
 		},
 		{
-			value: sabre.Vector{sabre.Keyword("hello")},
+			value: sabre.Vector{Items: []sabre.Value{sabre.Keyword("hello")}},
 			want:  "[:hello]",
 		},
 		{
-			value: sabre.Vector{sabre.Keyword("hello"), sabre.List{}},
+			value: sabre.Vector{Items: []sabre.Value{sabre.Keyword("hello"), sabre.List{}}},
 			want:  "[:hello ()]",
 		},
 	})
@@ -176,7 +167,7 @@ func TestModule_String(t *testing.T) {
 func TestVector_Invoke(t *testing.T) {
 	t.Parallel()
 
-	vector := sabre.Vector{sabre.Keyword("hello")}
+	vector := sabre.Vector{Items: []sabre.Value{sabre.Keyword("hello")}}
 
 	table := []struct {
 		name     string

@@ -25,7 +25,7 @@ func BindAll(scope sabre.Scope) error {
 		"type":         Fn(TypeOf),
 		"set":          MakeContainer(sabre.Set(nil)),
 		"list":         MakeContainer(sabre.List{}),
-		"vector":       MakeContainer(sabre.Vector(nil)),
+		"vector":       MakeContainer(sabre.Vector{}),
 		"nil?":         IsType(reflect.TypeOf(sabre.Nil{})),
 		"int?":         IsType(reflect.TypeOf(sabre.Int64(0))),
 		"set?":         IsType(reflect.TypeOf(sabre.Set(nil))),
@@ -33,7 +33,7 @@ func BindAll(scope sabre.Scope) error {
 		"list?":        IsType(reflect.TypeOf(sabre.List{})),
 		"string?":      IsType(reflect.TypeOf(sabre.String(""))),
 		"float?":       IsType(reflect.TypeOf(sabre.Float64(0))),
-		"vector?":      IsType(reflect.TypeOf(sabre.Vector(nil))),
+		"vector?":      IsType(reflect.TypeOf(sabre.Vector{})),
 		"keyword?":     IsType(reflect.TypeOf(sabre.Keyword(""))),
 		"symbol?":      IsType(reflect.TypeOf(sabre.Symbol{})),
 	}
@@ -73,7 +73,7 @@ func Lambda(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 	}
 
 	lambdaBody := args[1:]
-	lambdaArgs, err := toSymbolList(lArgs)
+	lambdaArgs, err := toSymbolList(lArgs.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -192,8 +192,8 @@ func recursiveQuote(scope sabre.Scope, f sabre.Value) (sabre.Value, error) {
 		return sabre.Set(quoted), err
 
 	case sabre.Vector:
-		quoted, err := quoteList(scope, v)
-		return sabre.Vector(quoted), err
+		quoted, err := quoteList(scope, v.Items)
+		return sabre.Vector{Items: quoted}, err
 
 	default:
 		return f, nil

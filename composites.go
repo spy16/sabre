@@ -41,17 +41,19 @@ func (lf List) size() int {
 
 // Vector represents a list of values. Unlike List type, evaluation of
 // vector does not lead to function invoke.
-type Vector []Value
+type Vector struct {
+	Items []Value
+}
 
 // Eval evaluates each value in the vector form and returns the resultant
 // values as new vector.
 func (vf Vector) Eval(scope Scope) (Value, error) {
-	vals, err := evalValueList(scope, vf)
+	vals, err := evalValueList(scope, vf.Items)
 	if err != nil {
 		return nil, err
 	}
 
-	return Vector(vals), nil
+	return Vector{Items: vals}, nil
 }
 
 // Invoke of a vector performs a index lookup. Only arity 1 is allowed
@@ -71,15 +73,15 @@ func (vf Vector) Invoke(scope Scope, args ...Value) (Value, error) {
 		return nil, fmt.Errorf("key must be integer")
 	}
 
-	if int(index) >= len(vf) {
+	if int(index) >= len(vf.Items) {
 		return nil, fmt.Errorf("index out of bounds")
 	}
 
-	return vf[index], nil
+	return vf.Items[index], nil
 }
 
 func (vf Vector) String() string {
-	return containerString(vf, "[", "]", " ")
+	return containerString(vf.Items, "[", "]", " ")
 }
 
 // Set represents a list of unique values. (Experimental)

@@ -591,23 +591,27 @@ func TestReader_One_List(t *testing.T) {
 }
 
 func TestReader_One_Vector(t *testing.T) {
+	vector := func(items []sabre.Value) sabre.Vector {
+		return sabre.Vector{Items: items}
+	}
+
 	executeAllReaderTests(t, []readerTestCase{
 		{
 			name: "Empty",
 			src:  `[]`,
-			want: sabre.Vector(nil),
+			want: vector(nil),
 		},
 		{
 			name: "WithOneEntry",
 			src:  `[help]`,
-			want: sabre.Vector([]sabre.Value{
+			want: vector([]sabre.Value{
 				sabre.Symbol{Value: "help"},
 			}),
 		},
 		{
 			name: "WithMultipleEntry",
 			src:  `[+ 0xF 3.1413]`,
-			want: sabre.Vector([]sabre.Value{
+			want: vector([]sabre.Value{
 				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
@@ -616,7 +620,7 @@ func TestReader_One_Vector(t *testing.T) {
 		{
 			name: "WithCommaSeparator",
 			src:  `[+,0xF,3.1413]`,
-			want: sabre.Vector([]sabre.Value{
+			want: vector([]sabre.Value{
 				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
@@ -628,7 +632,7 @@ func TestReader_One_Vector(t *testing.T) {
                       0xF
                       3.1413
 					]`,
-			want: sabre.Vector([]sabre.Value{
+			want: vector([]sabre.Value{
 				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
@@ -640,7 +644,7 @@ func TestReader_One_Vector(t *testing.T) {
                       0xF    ; hex representation of 15
                       3.1413 ; value of math constant pi
                   ]`,
-			want: sabre.Vector([]sabre.Value{
+			want: vector([]sabre.Value{
 				sabre.Symbol{Value: "+"},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
