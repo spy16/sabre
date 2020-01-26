@@ -54,7 +54,7 @@ func Let(scope Scope, args []Value) (Value, error) {
 				i, reflect.TypeOf(vec.Items[i]))
 		}
 
-		v, err := vec.Items[i+1].Eval(scope)
+		v, err := vec.Items[i+1].Eval(letScope)
 		if err != nil {
 			return nil, err
 		}
@@ -121,25 +121,69 @@ func Do(scope Scope, args []Value) (Value, error) {
 }
 
 // Lambda defines an anonymous function and returns. Must have the form
-// (fn [arg*] expr*)
+// (fn name? [arg*] expr*) or (fn name? ([arg]* expr*)+)
 func Lambda(scope Scope, args []Value) (Value, error) {
-	if err := verifyArgCount([]int{1, 2}, args); err != nil {
-		return nil, err
+	if len(args) < 1 {
+		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(args))
 	}
 
-	lArgs, isVector := args[0].(Vector)
+	def := MultiFn{}
+	nextIndex := 0
+
+	name, isName := args[nextIndex].(Symbol)
+	if isName {
+		def.Name = name.String()
+		nextIndex++
+	}
+
+	_, isList := args[nextIndex].(List)
+	if isList {
+		for _, arg := range args[nextIndex:] {
+			spec, isList := arg.(List)
+			if !isList {
+				return nil, fmt.Errorf("expected arg to be list, not %s",
+					reflect.TypeOf(arg))
+			}
+
+			fn, err := makeFn(spec.Items)
+			if err != nil {
+				return nil, err
+			}
+
+			def.Methods = append(def.Methods, *fn)
+		}
+	} else {
+		fn, err := makeFn(args[nextIndex:])
+		if err != nil {
+			return nil, err
+		}
+		def.Methods = append(def.Methods, *fn)
+	}
+
+	return def, nil
+}
+
+func makeFn(spec []Value) (*Fn, error) {
+	if len(spec) < 1 {
+		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(spec))
+	}
+
+	args, isVector := spec[0].(Vector)
 	if !isVector {
-		return nil, fmt.Errorf("first argument must be a vector of symbols")
+		return nil, fmt.Errorf("argument spec must be a vector of symbols")
 	}
 
-	lambdaBody := args[1:]
+	body := spec[1:]
 
-	lambdaArgs, err := toSymbolList(lArgs.Items)
+	argNames, err := toArgNameList(args.Items)
 	if err != nil {
 		return nil, err
 	}
 
-	return LambdaFn(scope, lambdaArgs, lambdaBody), nil
+	return &Fn{
+		Args: argNames,
+		Body: Module(body),
+	}, nil
 }
 
 // LambdaFn creates a lambda function with given arguments and body.
@@ -281,8 +325,8 @@ func quoteList(scope Scope, forms []Value) ([]Value, error) {
 	return quoted, nil
 }
 
-func toSymbolList(vals []Value) ([]Symbol, error) {
-	var argNames []Symbol
+func toArgNameList(vals []Value) ([]string, error) {
+	var argNames []string
 
 	for _, arg := range vals {
 		sym, isSymbol := arg.(Symbol)
@@ -290,7 +334,7 @@ func toSymbolList(vals []Value) ([]Symbol, error) {
 			return nil, fmt.Errorf("first argument must be a vector of symbols")
 		}
 
-		argNames = append(argNames, sym)
+		argNames = append(argNames, sym.String())
 	}
 
 	return argNames, nil

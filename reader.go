@@ -15,13 +15,13 @@ import (
 	"unicode"
 )
 
-// ErrSkip can be returned by reader macro to indicate a no-op form which
-// should be discarded (e.g., Comments).
-var ErrSkip = errors.New("skip expr")
-
 const dispatchTrigger = '#'
 
 var (
+	// ErrSkip can be returned by reader macro to indicate a no-op form which
+	// should be discarded (e.g., Comments).
+	ErrSkip = errors.New("skip expr")
+
 	errStringEOF = errors.New("EOF while reading string")
 	errCharEOF   = errors.New("EOF while reading character")
 )

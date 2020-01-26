@@ -7,6 +7,12 @@
 ; index access for a vector
 ([1 2 3] 0)
 
+(def hello (fn
+    ([] "Hello")
+    ([name] (let ['user-name name
+                  msg (str "Hello " user-name "!")]
+                msg))
+))
 
 (def defn (fn [name args body]
     (do
