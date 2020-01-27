@@ -8,20 +8,20 @@ import (
 	"strings"
 )
 
+var specials = map[string]Value{
+	"λ":            GoFunc(Lambda),
+	"fn":           GoFunc(Lambda),
+	"do":           GoFunc(Do),
+	"def":          GoFunc(Def),
+	"let":          GoFunc(Let),
+	"throw":        GoFunc(RaiseErr),
+	"if":           GoFunc(If),
+	"quote":        GoFunc(SimpleQuote),
+	"syntax-quote": GoFunc(SyntaxQuote),
+}
+
 // New returns an instance of MapScope with all the special forms setup.
 func New() *MapScope {
-	specials := map[string]Value{
-		"λ":            GoFunc(Lambda),
-		"fn":           GoFunc(Lambda),
-		"do":           GoFunc(Do),
-		"def":          GoFunc(Def),
-		"let":          GoFunc(Let),
-		"throw":        GoFunc(RaiseErr),
-		"if":           GoFunc(If),
-		"quote":        GoFunc(SimpleQuote),
-		"syntax-quote": GoFunc(SyntaxQuote),
-	}
-
 	scope := NewScope(nil)
 	for name, val := range specials {
 		_ = scope.Bind(name, val)
