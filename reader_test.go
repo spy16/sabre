@@ -592,7 +592,7 @@ func TestReader_One_List(t *testing.T) {
 
 func TestReader_One_Vector(t *testing.T) {
 	vector := func(items []sabre.Value) sabre.Vector {
-		return sabre.Vector{Items: items}
+		return sabre.Vector{Values: items}
 	}
 
 	executeAllReaderTests(t, []readerTestCase{

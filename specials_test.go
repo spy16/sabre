@@ -27,7 +27,7 @@ func TestLambda(t *testing.T) {
 		{
 			name: "NotSymbolVector",
 			args: []sabre.Value{
-				sabre.Vector{Items: []sabre.Value{sabre.Int64(1)}},
+				sabre.Vector{Values: []sabre.Value{sabre.Int64(1)}},
 				sabre.Int64(10),
 			},
 			wantErr: true,
@@ -36,7 +36,7 @@ func TestLambda(t *testing.T) {
 			name: "Successful",
 			args: []sabre.Value{
 				sabre.Vector{
-					Items: []sabre.Value{sabre.Symbol{Value: "a"}, sabre.Symbol{Value: "b"}}},
+					Values: []sabre.Value{sabre.Symbol{Value: "a"}, sabre.Symbol{Value: "b"}}},
 				sabre.Int64(10),
 			},
 			wantErr: false,

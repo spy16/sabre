@@ -52,7 +52,7 @@ func makeContainer(targetType sabre.Value) Fn {
 			return sabre.List{Values: vals}, nil
 
 		case sabre.Vector:
-			return sabre.Vector{Items: vals}, nil
+			return sabre.Vector{Values: vals}, nil
 
 		case sabre.Set:
 			return sabre.Set{Items: vals}, nil

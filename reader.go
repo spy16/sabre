@@ -457,7 +457,7 @@ func readVector(rd *Reader, _ rune) (Value, error) {
 		return nil, err
 	}
 
-	return Vector{Items: forms}, nil
+	return Vector{Values: forms}, nil
 }
 
 func readSet(rd *Reader, _ rune) (Value, error) {

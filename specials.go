@@ -42,19 +42,19 @@ func Let(scope Scope, args []Value) (Value, error) {
 			reflect.TypeOf(args[0]))
 	}
 
-	if len(vec.Items)%2 != 0 {
+	if len(vec.Values)%2 != 0 {
 		return nil, fmt.Errorf("bindings must contain event forms")
 	}
 
 	letScope := NewScope(scope)
-	for i := 0; i < len(vec.Items); i += 2 {
-		sym, isSymbol := vec.Items[i].(Symbol)
+	for i := 0; i < len(vec.Values); i += 2 {
+		sym, isSymbol := vec.Values[i].(Symbol)
 		if !isSymbol {
 			return nil, fmt.Errorf("item at %d must be symbol, not %s",
-				i, reflect.TypeOf(vec.Items[i]))
+				i, reflect.TypeOf(vec.Values[i]))
 		}
 
-		v, err := vec.Items[i+1].Eval(letScope)
+		v, err := vec.Values[i+1].Eval(letScope)
 		if err != nil {
 			return nil, err
 		}
@@ -175,7 +175,7 @@ func makeFn(spec []Value) (*Fn, error) {
 
 	body := spec[1:]
 
-	argNames, err := toArgNameList(args.Items)
+	argNames, err := toArgNameList(args.Values)
 	if err != nil {
 		return nil, err
 	}
@@ -290,8 +290,8 @@ func recursiveQuote(scope Scope, f Value) (Value, error) {
 		return Set{Items: quoted}, err
 
 	case Vector:
-		quoted, err := quoteList(scope, v.Items)
-		return Vector{Items: quoted}, err
+		quoted, err := quoteList(scope, v.Values)
+		return Vector{Values: quoted}, err
 
 	default:
 		return f, nil

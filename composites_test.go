@@ -89,7 +89,7 @@ func TestVector_Eval(t *testing.T) {
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
 			},
-			value:   sabre.Vector{Items: []sabre.Value{sabre.Symbol{Value: "hello"}}},
+			value:   sabre.Vector{Values: []sabre.Value{sabre.Symbol{Value: "hello"}}},
 			wantErr: true,
 		},
 	})
@@ -137,11 +137,11 @@ func TestVector_String(t *testing.T) {
 			want:  "[]",
 		},
 		{
-			value: sabre.Vector{Items: []sabre.Value{sabre.Keyword("hello")}},
+			value: sabre.Vector{Values: []sabre.Value{sabre.Keyword("hello")}},
 			want:  "[:hello]",
 		},
 		{
-			value: sabre.Vector{Items: []sabre.Value{sabre.Keyword("hello"), sabre.List{}}},
+			value: sabre.Vector{Values: []sabre.Value{sabre.Keyword("hello"), sabre.List{}}},
 			want:  "[:hello ()]",
 		},
 	})
@@ -167,7 +167,7 @@ func TestModule_String(t *testing.T) {
 func TestVector_Invoke(t *testing.T) {
 	t.Parallel()
 
-	vector := sabre.Vector{Items: []sabre.Value{sabre.Keyword("hello")}}
+	vector := sabre.Vector{Values: []sabre.Value{sabre.Keyword("hello")}}
 
 	table := []struct {
 		name     string
