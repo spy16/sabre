@@ -18,7 +18,7 @@ func TestList_Eval(t *testing.T) {
 		{
 			name: "Invocation",
 			value: sabre.List{
-				Items: []sabre.Value{sabre.Symbol{Value: "greet"}, sabre.String("Bob")},
+				Values: []sabre.Value{sabre.Symbol{Value: "greet"}, sabre.String("Bob")},
 			},
 			getScope: func() sabre.Scope {
 				scope := sabre.NewScope(nil)
@@ -32,14 +32,14 @@ func TestList_Eval(t *testing.T) {
 		{
 			name: "NonInvokable",
 			value: sabre.List{
-				Items: []sabre.Value{sabre.Int64(10), sabre.Keyword("hello")},
+				Values: []sabre.Value{sabre.Int64(10), sabre.Keyword("hello")},
 			},
 			wantErr: true,
 		},
 		{
 			name: "EvalFailure",
 			value: sabre.List{
-				Items: []sabre.Value{sabre.Symbol{Value: "hello"}},
+				Values: []sabre.Value{sabre.Symbol{Value: "hello"}},
 			},
 			getScope: func() sabre.Scope {
 				return sabre.NewScope(nil)
@@ -103,27 +103,27 @@ func TestList_String(t *testing.T) {
 		},
 		{
 			value: sabre.List{
-				Items: []sabre.Value{sabre.Keyword("hello")},
+				Values: []sabre.Value{sabre.Keyword("hello")},
 			},
 			want: "(:hello)",
 		},
 		{
 			value: sabre.List{
-				Items: []sabre.Value{sabre.Keyword("hello"), sabre.List{}},
+				Values: []sabre.Value{sabre.Keyword("hello"), sabre.List{}},
 			},
 			want: "(:hello ())",
 		},
 		{
 			value: sabre.List{
-				Items: []sabre.Value{sabre.Symbol{Value: "quote"}, sabre.Symbol{Value: "hello"}},
+				Values: []sabre.Value{sabre.Symbol{Value: "quote"}, sabre.Symbol{Value: "hello"}},
 			},
 			want: "(quote hello)",
 		},
 		{
 			value: sabre.List{
-				Items: []sabre.Value{
+				Values: []sabre.Value{
 					sabre.Symbol{Value: "quote"},
-					sabre.List{Items: []sabre.Value{sabre.Symbol{Value: "hello"}}}},
+					sabre.List{Values: []sabre.Value{sabre.Symbol{Value: "hello"}}}},
 			},
 			want: "(quote (hello))",
 		},

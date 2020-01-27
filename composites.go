@@ -9,16 +9,16 @@ import (
 // List represents an list of forms/vals. Evaluating a list leads to a
 // function invocation.
 type List struct {
-	Items []Value
+	Values
 }
 
 // Eval performs an invocation.
 func (lf List) Eval(scope Scope) (Value, error) {
-	if lf.size() == 0 {
+	if lf.Size() == 0 {
 		return List{}, nil
 	}
 
-	target, err := lf.Items[0].Eval(scope)
+	target, err := lf.Values[0].Eval(scope)
 	if err != nil {
 		return nil, err
 	}
@@ -28,15 +28,11 @@ func (lf List) Eval(scope Scope) (Value, error) {
 		return nil, fmt.Errorf("cannot invoke value of type '%s'", reflect.TypeOf(target))
 	}
 
-	return fn.Invoke(scope, lf.Items[1:]...)
+	return fn.Invoke(scope, lf.Values[1:]...)
 }
 
 func (lf List) String() string {
-	return containerString(lf.Items, "(", ")", " ")
-}
-
-func (lf List) size() int {
-	return len(lf.Items)
+	return containerString(lf.Values, "(", ")", " ")
 }
 
 // Vector represents a list of values. Unlike List type, evaluation of

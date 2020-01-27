@@ -145,7 +145,7 @@ func Lambda(scope Scope, args []Value) (Value, error) {
 					reflect.TypeOf(arg))
 			}
 
-			fn, err := makeFn(spec.Items)
+			fn, err := makeFn(spec.Values)
 			if err != nil {
 				return nil, err
 			}
@@ -278,12 +278,12 @@ func unquote(scope Scope, forms []Value) (Value, error) {
 func recursiveQuote(scope Scope, f Value) (Value, error) {
 	switch v := f.(type) {
 	case List:
-		if isUnquote(v.Items) {
+		if isUnquote(v.Values) {
 			return f.Eval(scope)
 		}
 
-		quoted, err := quoteList(scope, v.Items)
-		return List{Items: quoted}, err
+		quoted, err := quoteList(scope, v.Values)
+		return List{Values: quoted}, err
 
 	case Set:
 		quoted, err := quoteList(scope, v.Items)
