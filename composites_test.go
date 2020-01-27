@@ -8,6 +8,12 @@ import (
 	"github.com/spy16/sabre"
 )
 
+var (
+	_ sabre.Seq = sabre.List{}
+	_ sabre.Seq = sabre.Vector{}
+	_ sabre.Seq = sabre.Set{}
+)
+
 func TestList_Eval(t *testing.T) {
 	executeEvalTests(t, []evalTestCase{
 		{

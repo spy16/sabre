@@ -1,10 +1,13 @@
 package sabre_test
 
-import "testing"
+import (
+	"reflect"
+	"testing"
 
-import "github.com/spy16/sabre"
+	"github.com/spy16/sabre"
+)
 
-import "reflect"
+var _ sabre.Seq = sabre.Values(nil)
 
 func TestValues_First(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {

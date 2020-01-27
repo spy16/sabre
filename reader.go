@@ -466,7 +466,7 @@ func readSet(rd *Reader, _ rune) (Value, error) {
 		return nil, err
 	}
 
-	set := Set{Items: forms}
+	set := Set{Values: forms}
 	if !set.valid() {
 		return nil, errors.New("duplicate value in set")
 	}

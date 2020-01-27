@@ -82,29 +82,29 @@ func (vf Vector) String() string {
 
 // Set represents a list of unique values. (Experimental)
 type Set struct {
-	Items []Value
+	Values
 }
 
 // Eval evaluates each value in the set form and returns the resultant
 // values as new set.
 func (set Set) Eval(scope Scope) (Value, error) {
-	vals, err := evalValueList(scope, set.Items)
+	vals, err := evalValueList(scope, set.Values)
 	if err != nil {
 		return nil, err
 	}
 
-	return Set{Items: uniq(vals)}, nil
+	return Set{Values: uniq(vals)}, nil
 }
 
 func (set Set) String() string {
-	return containerString(set.Items, "#{", "}", " ")
+	return containerString(set.Values, "#{", "}", " ")
 }
 
 func (set Set) valid() bool {
 	// TODO: Remove this naive solution
 	s := map[string]struct{}{}
 
-	for _, v := range set.Items {
+	for _, v := range set.Values {
 		str := v.String()
 		if _, found := s[str]; found {
 			return false

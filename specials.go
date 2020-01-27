@@ -286,8 +286,8 @@ func recursiveQuote(scope Scope, f Value) (Value, error) {
 		return List{Values: quoted}, err
 
 	case Set:
-		quoted, err := quoteList(scope, v.Items)
-		return Set{Items: quoted}, err
+		quoted, err := quoteList(scope, v.Values)
+		return Set{Values: quoted}, err
 
 	case Vector:
 		quoted, err := quoteList(scope, v.Values)

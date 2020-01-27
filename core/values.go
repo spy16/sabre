@@ -55,7 +55,7 @@ func makeContainer(targetType sabre.Value) Fn {
 			return sabre.Vector{Values: vals}, nil
 
 		case sabre.Set:
-			return sabre.Set{Items: vals}, nil
+			return sabre.Set{Values: vals}, nil
 		}
 
 		return nil, fmt.Errorf("cannot make container of type '%s'", reflect.TypeOf(targetType))
