@@ -255,8 +255,7 @@ func rootScope(scope Scope) Scope {
 }
 
 func isTruthy(v Value) bool {
-	var sabreNil = Nil{}
-	if v == sabreNil {
+	if v == nilValue {
 		return false
 	}
 

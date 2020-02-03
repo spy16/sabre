@@ -4,6 +4,8 @@ import (
 	"fmt"
 )
 
+var nilValue = Nil{}
+
 // Nil represents a nil value.
 type Nil struct{}
 
