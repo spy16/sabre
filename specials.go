@@ -8,24 +8,65 @@ import (
 	"strings"
 )
 
-type specialForm func(scope Scope, args []Value) (specialExpr, error)
-
-type specialExpr func(scope Scope) (Value, error)
-
 var specialForms = map[string]specialForm{}
 
 func init() {
 	specialForms = map[string]specialForm{
 		"λ":            lambdaForm,
 		"fn*":          lambdaForm,
-		"let*":         letForm,
-		"if*":          ifForm,
+		"if":           ifForm,
 		"do":           doForm,
 		"def":          defForm,
+		"let*":         letForm,
 		"throw":        throwErr,
 		"quote":        simpleQuote,
 		"syntax-quote": syntaxQuote,
 	}
+}
+
+// lambdaForm defines an anonymous function and returns. Must have the form
+// (fn name? [arg*] expr*) or (fn name? ([arg]* expr*)+)
+func lambdaForm(scope Scope, args []Value) (specialExpr, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(args))
+	}
+
+	def := MultiFn{}
+	nextIndex := 0
+
+	name, isName := args[nextIndex].(Symbol)
+	if isName {
+		def.Name = name.String()
+		nextIndex++
+	}
+
+	_, isList := args[nextIndex].(*List)
+	if isList {
+		for _, arg := range args[nextIndex:] {
+			spec, isList := arg.(*List)
+			if !isList {
+				return nil, fmt.Errorf("expected arg to be list, not %s",
+					reflect.TypeOf(arg))
+			}
+
+			fn, err := makeFn(scope, spec.Values)
+			if err != nil {
+				return nil, err
+			}
+
+			def.Methods = append(def.Methods, *fn)
+		}
+	} else {
+		fn, err := makeFn(scope, args[nextIndex:])
+		if err != nil {
+			return nil, err
+		}
+		def.Methods = append(def.Methods, *fn)
+	}
+
+	return func(_ Scope) (Value, error) {
+		return def, nil
+	}, nil
 }
 
 // ifForm implments if-conditional flow using (if test then else?) form.
@@ -58,29 +99,95 @@ func ifForm(scope Scope, args []Value) (specialExpr, error) {
 	}, nil
 }
 
-func makeFn(scope Scope, spec []Value) (*Fn, error) {
-	if len(spec) < 1 {
-		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(spec))
+// doForm implements the (do <expr>*) special form.
+func doForm(scope Scope, args []Value) (specialExpr, error) {
+	mod := Module(args)
+	if err := analyze(scope, mod); err != nil {
+		return nil, err
 	}
 
-	args, isVector := spec[0].(Vector)
+	return func(scope Scope) (Value, error) {
+		return mod.Eval(scope)
+	}, nil
+}
+
+// defForm implements (def symbol value).
+func defForm(scope Scope, args []Value) (specialExpr, error) {
+	if err := verifyArgCount([]int{2}, args); err != nil {
+		return nil, err
+	}
+
+	sym, isSymbol := args[0].(Symbol)
+	if !isSymbol {
+		return nil, fmt.Errorf("first argument must be symbol, not '%v'",
+			reflect.TypeOf(args[0]))
+	}
+
+	if err := analyze(scope, args[1]); err != nil {
+		return nil, err
+	}
+
+	return func(scope Scope) (Value, error) {
+		v, err := args[1].Eval(scope)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := rootScope(scope).Bind(sym.String(), v); err != nil {
+			return nil, err
+		}
+
+		return sym, nil
+	}, nil
+}
+
+// letForm implements the (let [binding*] expr*) form. expr are evaluated
+// with given local bindings.
+func letForm(scope Scope, args []Value) (specialExpr, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("call requires at-least bindings argument")
+	}
+
+	vec, isVector := args[0].(Vector)
 	if !isVector {
-		return nil, fmt.Errorf("argument spec must be a vector of symbols")
+		return nil, fmt.Errorf(
+			"first argument to let must be bindings vector, not %v",
+			reflect.TypeOf(args[0]),
+		)
 	}
 
-	body := Module(spec[1:])
-	if err := analyze(scope, body); err != nil {
-		return nil, err
+	if len(vec.Values)%2 != 0 {
+		return nil, fmt.Errorf("bindings must contain event forms")
 	}
 
-	argNames, err := toArgNameList(args.Values)
-	if err != nil {
-		return nil, err
+	var bindings []binding
+	for i := 0; i < len(vec.Values); i += 2 {
+		sym, isSymbol := vec.Values[i].(Symbol)
+		if !isSymbol {
+			return nil, fmt.Errorf(
+				"item at %d must be symbol, not %s",
+				i, vec.Values[i],
+			)
+		}
+
+		bindings = append(bindings, binding{
+			Name: sym.Value,
+			Expr: vec.Values[i+1],
+		})
 	}
 
-	return &Fn{
-		Args: argNames,
-		Body: body,
+	return func(scope Scope) (Value, error) {
+		letScope := NewScope(scope)
+		for _, b := range bindings {
+			v, err := b.Expr.Eval(letScope)
+			if err != nil {
+				return nil, err
+			}
+
+			_ = letScope.Bind(b.Name, v)
+		}
+
+		return Module(args[1:]).Eval(letScope)
 	}, nil
 }
 
@@ -126,6 +233,40 @@ func syntaxQuote(scope Scope, forms []Value) (specialExpr, error) {
 	}, nil
 }
 
+func unquote(scope Scope, forms []Value) (Value, error) {
+	if err := verifyArgCount([]int{1}, forms); err != nil {
+		return nil, err
+	}
+
+	return forms[0].Eval(scope)
+}
+
+func makeFn(scope Scope, spec []Value) (*Fn, error) {
+	if len(spec) < 1 {
+		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(spec))
+	}
+
+	args, isVector := spec[0].(Vector)
+	if !isVector {
+		return nil, fmt.Errorf("argument spec must be a vector of symbols")
+	}
+
+	body := Module(spec[1:])
+	if err := analyze(scope, body); err != nil {
+		return nil, err
+	}
+
+	argNames, err := toArgNameList(args.Values)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Fn{
+		Args: argNames,
+		Body: body,
+	}, nil
+}
+
 func rootScope(scope Scope) Scope {
 	if scope == nil {
 		return nil
@@ -149,14 +290,6 @@ func isTruthy(v Value) bool {
 	}
 
 	return true
-}
-
-func unquote(scope Scope, forms []Value) (Value, error) {
-	if err := verifyArgCount([]int{1}, forms); err != nil {
-		return nil, err
-	}
-
-	return forms[0].Eval(scope)
 }
 
 func recursiveQuote(scope Scope, f Value) (Value, error) {
@@ -301,142 +434,9 @@ func analyzeSeq(scope Scope, seq Seq) error {
 	return nil
 }
 
-// letForm implements the (let [binding*] expr*) form. expr are evaluated
-// with given local bindings.
-func letForm(scope Scope, args []Value) (specialExpr, error) {
-	if len(args) < 1 {
-		return nil, fmt.Errorf("call requires at-least bindings argument")
-	}
+type specialForm func(scope Scope, args []Value) (specialExpr, error)
 
-	vec, isVector := args[0].(Vector)
-	if !isVector {
-		return nil, fmt.Errorf(
-			"first argument to let must be bindings vector, not %v",
-			reflect.TypeOf(args[0]),
-		)
-	}
-
-	if len(vec.Values)%2 != 0 {
-		return nil, fmt.Errorf("bindings must contain event forms")
-	}
-
-	var bindings []binding
-	for i := 0; i < len(vec.Values); i += 2 {
-		sym, isSymbol := vec.Values[i].(Symbol)
-		if !isSymbol {
-			return nil, fmt.Errorf(
-				"item at %d must be symbol, not %s",
-				i, vec.Values[i],
-			)
-		}
-
-		bindings = append(bindings, binding{
-			Name: sym.Value,
-			Expr: vec.Values[i+1],
-		})
-	}
-
-	return func(scope Scope) (Value, error) {
-		letScope := NewScope(scope)
-		for _, b := range bindings {
-			v, err := b.Expr.Eval(letScope)
-			if err != nil {
-				return nil, err
-			}
-
-			_ = letScope.Bind(b.Name, v)
-		}
-
-		return Module(args[1:]).Eval(letScope)
-	}, nil
-}
-
-// lambdaForm defines an anonymous function and returns. Must have the form
-// (fn name? [arg*] expr*) or (fn name? ([arg]* expr*)+)
-func lambdaForm(scope Scope, args []Value) (specialExpr, error) {
-	if len(args) < 1 {
-		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(args))
-	}
-
-	def := MultiFn{}
-	nextIndex := 0
-
-	name, isName := args[nextIndex].(Symbol)
-	if isName {
-		def.Name = name.String()
-		nextIndex++
-	}
-
-	_, isList := args[nextIndex].(*List)
-	if isList {
-		for _, arg := range args[nextIndex:] {
-			spec, isList := arg.(*List)
-			if !isList {
-				return nil, fmt.Errorf("expected arg to be list, not %s",
-					reflect.TypeOf(arg))
-			}
-
-			fn, err := makeFn(scope, spec.Values)
-			if err != nil {
-				return nil, err
-			}
-
-			def.Methods = append(def.Methods, *fn)
-		}
-	} else {
-		fn, err := makeFn(scope, args[nextIndex:])
-		if err != nil {
-			return nil, err
-		}
-		def.Methods = append(def.Methods, *fn)
-	}
-
-	return func(_ Scope) (Value, error) {
-		return def, nil
-	}, nil
-}
-
-// defForm implements (def symbol value).
-func defForm(scope Scope, args []Value) (specialExpr, error) {
-	if err := verifyArgCount([]int{2}, args); err != nil {
-		return nil, err
-	}
-
-	sym, isSymbol := args[0].(Symbol)
-	if !isSymbol {
-		return nil, fmt.Errorf("first argument must be symbol, not '%v'",
-			reflect.TypeOf(args[0]))
-	}
-
-	if err := analyze(scope, args[1]); err != nil {
-		return nil, err
-	}
-
-	return func(scope Scope) (Value, error) {
-		v, err := args[1].Eval(scope)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := rootScope(scope).Bind(sym.String(), v); err != nil {
-			return nil, err
-		}
-
-		return sym, nil
-	}, nil
-}
-
-// doForm implements the (do <expr>*) special form.
-func doForm(scope Scope, args []Value) (specialExpr, error) {
-	mod := Module(args)
-	if err := analyze(scope, mod); err != nil {
-		return nil, err
-	}
-
-	return func(scope Scope) (Value, error) {
-		return mod.Eval(scope)
-	}, nil
-}
+type specialExpr func(scope Scope) (Value, error)
 
 type binding struct {
 	Name string

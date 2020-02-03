@@ -11,6 +11,8 @@ import (
 type List struct {
 	Values
 
+	// special is set in case if the list represents invocation of
+	// a special form such as def, fn* etc.
 	special func(scope Scope) (Value, error)
 }
 

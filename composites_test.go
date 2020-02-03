@@ -80,6 +80,14 @@ func TestModule_Eval(t *testing.T) {
 			},
 			want: sabre.String("hello"),
 		},
+		{
+			name:     "Failure",
+			getScope: func() sabre.Scope { return sabre.NewScope(nil) },
+			value: sabre.Module{
+				sabre.Symbol{Value: "hello"},
+			},
+			wantErr: true,
+		},
 	})
 }
 
@@ -96,6 +104,43 @@ func TestVector_Eval(t *testing.T) {
 				return sabre.NewScope(nil)
 			},
 			value:   sabre.Vector{Values: []sabre.Value{sabre.Symbol{Value: "hello"}}},
+			wantErr: true,
+		},
+	})
+}
+
+func TestSet_Eval(t *testing.T) {
+	executeEvalTests(t, []evalTestCase{
+		{
+			name:  "Empty",
+			value: sabre.Set{},
+			want:  sabre.Set{},
+		},
+		{
+			name: "ValidWithoutDuplicates",
+			getScope: func() sabre.Scope {
+				return sabre.NewScope(nil)
+			},
+			value: sabre.Set{Values: []sabre.Value{sabre.String("hello")}},
+			want:  sabre.Set{Values: []sabre.Value{sabre.String("hello")}},
+		},
+		{
+			name: "ValidWithtDuplicates",
+			getScope: func() sabre.Scope {
+				return sabre.NewScope(nil)
+			},
+			value: sabre.Set{Values: []sabre.Value{
+				sabre.String("hello"),
+				sabre.String("hello"),
+			}},
+			want: sabre.Set{Values: []sabre.Value{sabre.String("hello")}},
+		},
+		{
+			name: "Failure",
+			getScope: func() sabre.Scope {
+				return sabre.NewScope(nil)
+			},
+			value:   sabre.Set{Values: []sabre.Value{sabre.Symbol{Value: "hello"}}},
 			wantErr: true,
 		},
 	})

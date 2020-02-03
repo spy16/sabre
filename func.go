@@ -15,7 +15,7 @@ func (multiFn MultiFn) Eval(_ Scope) (Value, error) {
 }
 
 func (multiFn MultiFn) String() string {
-	return fmt.Sprintf("MultiFn{}")
+	return fmt.Sprintf("MultiFn{name=%s}", multiFn.Name)
 }
 
 // Invoke dispatches the call to a method based on number of arguments.
@@ -79,9 +79,11 @@ func (fn Fn) Invoke(scope Scope, args []Value) (Value, error) {
 			argVal = args[idx]
 		}
 
-		if err := fnScope.Bind(fn.Args[idx], argVal); err != nil {
-			return nil, err
-		}
+		_ = fnScope.Bind(fn.Args[idx], argVal)
+	}
+
+	if fn.Body == nil {
+		return Nil{}, nil
 	}
 
 	return fn.Body.Eval(fnScope)

@@ -31,8 +31,8 @@ line string"                                                ; a multi-line strin
 :find-Ψ                                                     ; a keyword with non non-ASCII
 
 ; symbols --------------------------------------------------------
-do                                                          ; simple ASCII symbol
-λ                                                           ; symbol with non-ASCII
+; do                                                        ; simple ASCII symbol
+; λ                                                         ; symbol with non-ASCII
 
 ; quote/unquote --------------------------------------------------
 'hello                                                      ; quoted symbol
@@ -40,10 +40,15 @@ do                                                          ; simple ASCII symbo
 
 ; lists ----------------------------------------------------------
 ()                                                          ; empty list
-(eval 10)                                                     ; function/macro/special form invocation
-(do, 1, 2)                                                   ; same as above, forms separated by ","
+(eval 10)                                                   ; function/macro/special form invocation
+(do, 1, 2)                                                  ; same as above, forms separated by ","
 
 ; vectors --------------------------------------------------------
 []                                                          ; empty vector
 [1 2 3 4]                                                   ; vector entries separated by space
 [1, 2, 3, 4]                                                ; vector entries can be separated by "," as well
+
+; sets -----------------------------------------------------------
+#{}                                                         ; empty set
+#{1 2 []}                                                   ; a set
+; #{1 1 2}                                                  ; invalid set

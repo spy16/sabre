@@ -109,7 +109,9 @@ func TestReader_All(t *testing.T) {
 	}{
 		{
 			name: "ValidLiteralSample",
-			src: `"Hello\tWorld" 123 12.34 -0xF   +010	true nil 0b1010     \a :hello 'hello`,
+			src: `"Hello\tWorld" 123 12.34 -0xF   +010
+					true nil 0b1010     \a :hello 'hello
+					#{}`,
 			want: sabre.Module{
 				sabre.String("Hello\tWorld"),
 				sabre.Int64(123),
@@ -127,6 +129,7 @@ func TestReader_All(t *testing.T) {
 						sabre.Symbol{Value: "hello"},
 					},
 				},
+				sabre.Set{},
 			},
 		},
 		{
@@ -655,6 +658,30 @@ func TestReader_One_Vector(t *testing.T) {
 		{
 			name:    "UnexpectedEOF",
 			src:     "[+ 1 2 ",
+			wantErr: true,
+		},
+	})
+}
+
+func TestReader_One_Set(t *testing.T) {
+	set := func(items ...sabre.Value) sabre.Set {
+		return sabre.Set{Values: items}
+	}
+
+	executeAllReaderTests(t, []readerTestCase{
+		{
+			name: "Empty",
+			src:  "#{}",
+			want: set(),
+		},
+		{
+			name: "Valid",
+			src:  "#{1 2 []}",
+			want: set(sabre.Int64(1), sabre.Int64(2), sabre.Vector{}),
+		},
+		{
+			name:    "HasDuplicate",
+			src:     "#{1 2 2}",
 			wantErr: true,
 		},
 	})
