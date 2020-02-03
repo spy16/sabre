@@ -44,7 +44,7 @@ func TestMultiFn_Invoke(t *testing.T) {
 			multiFn: sabre.MultiFn{
 				Name: "arityOne",
 				Methods: []sabre.Fn{
-					sabre.Fn{
+					{
 						Args: []string{"arg1"},
 					},
 				},
@@ -57,7 +57,7 @@ func TestMultiFn_Invoke(t *testing.T) {
 			multiFn: sabre.MultiFn{
 				Name: "arityMany",
 				Methods: []sabre.Fn{
-					sabre.Fn{
+					{
 						Args:     []string{"args"},
 						Variadic: true,
 					},
@@ -72,7 +72,7 @@ func TestMultiFn_Invoke(t *testing.T) {
 			multiFn: sabre.MultiFn{
 				Name: "arityOne",
 				Methods: []sabre.Fn{
-					sabre.Fn{
+					{
 						Args: []string{"arg1"},
 					},
 				},
@@ -91,7 +91,7 @@ func TestMultiFn_Invoke(t *testing.T) {
 				Name:    "arityOne",
 				IsMacro: true,
 				Methods: []sabre.Fn{
-					sabre.Fn{
+					{
 						Args: []string{"arg1"},
 						Body: sabre.Int64(10),
 					},
