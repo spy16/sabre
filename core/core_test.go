@@ -70,21 +70,3 @@ func TestCore(t *testing.T) {
 		})
 	}
 }
-
-func TestLambdaFn(t *testing.T) {
-	fn := sabre.LambdaFn(nil,
-		[]sabre.Symbol{sabre.Symbol{Value: "arg1"}},
-		[]sabre.Value{sabre.Symbol{Value: "arg1"}},
-	)
-
-	arg1Val := sabre.Int64(10)
-
-	got, err := fn.Invoke(nil, arg1Val)
-	if err != nil {
-		t.Errorf("Invoke() unexpected error: %v", err)
-	}
-
-	if !reflect.DeepEqual(got, arg1Val) {
-		t.Errorf("Invoke() want=%#v, got=%#v", arg1Val, got)
-	}
-}

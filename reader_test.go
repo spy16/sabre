@@ -121,7 +121,7 @@ func TestReader_All(t *testing.T) {
 				sabre.Int64(10),
 				sabre.Character('a'),
 				sabre.Keyword("hello"),
-				sabre.List{
+				&sabre.List{
 					Values: []sabre.Value{
 						sabre.Symbol{Value: "quote"},
 						sabre.Symbol{Value: "hello"},
@@ -205,10 +205,10 @@ func TestReader_One(t *testing.T) {
 		{
 			name: "UnQuote",
 			src:  "~(x 3)",
-			want: sabre.List{
+			want: &sabre.List{
 				Values: []sabre.Value{
 					sabre.Symbol{Value: "unquote"},
-					sabre.List{
+					&sabre.List{
 						Values: []sabre.Value{
 							sabre.Symbol{Value: "x"},
 							sabre.Int64(3),
@@ -521,12 +521,14 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "EmptyList",
 			src:  `()`,
-			want: sabre.List{nil},
+			want: &sabre.List{
+				Values: nil,
+			},
 		},
 		{
 			name: "ListWithOneEntry",
 			src:  `(help)`,
-			want: sabre.List{
+			want: &sabre.List{
 				Values: []sabre.Value{
 					sabre.Symbol{Value: "help"},
 				},
@@ -535,7 +537,7 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "ListWithMultipleEntry",
 			src:  `(+ 0xF 3.1413)`,
-			want: sabre.List{
+			want: &sabre.List{
 				Values: []sabre.Value{
 					sabre.Symbol{Value: "+"},
 					sabre.Int64(15),
@@ -546,7 +548,7 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "ListWithCommaSeparator",
 			src:  `(+,0xF,3.1413)`,
-			want: sabre.List{
+			want: &sabre.List{
 				Values: []sabre.Value{
 					sabre.Symbol{Value: "+"},
 					sabre.Int64(15),
@@ -560,7 +562,7 @@ func TestReader_One_List(t *testing.T) {
                       0xF
                       3.1413
 					)`,
-			want: sabre.List{
+			want: &sabre.List{
 				Values: []sabre.Value{
 					sabre.Symbol{Value: "+"},
 					sabre.Int64(15),
@@ -574,7 +576,7 @@ func TestReader_One_List(t *testing.T) {
                       0xF    ; hex representation of 15
                       3.1413 ; value of math constant pi
                   )`,
-			want: sabre.List{
+			want: &sabre.List{
 				Values: []sabre.Value{
 					sabre.Symbol{Value: "+"},
 					sabre.Int64(15),

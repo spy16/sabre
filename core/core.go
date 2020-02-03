@@ -15,7 +15,7 @@ func BindAll(scope sabre.Scope) error {
 		"str":      Fn(MakeString),
 		"type":     Fn(TypeOf),
 		"set":      makeContainer(sabre.Set{}),
-		"list":     makeContainer(sabre.List{}),
+		"list":     makeContainer(&sabre.List{}),
 		"vector":   makeContainer(sabre.Vector{}),
 		"nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
 		"int?":     IsType(reflect.TypeOf(sabre.Int64(0))),

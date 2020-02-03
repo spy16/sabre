@@ -1,17 +1,15 @@
-package sabre_test
+package sabre
 
 import (
 	"testing"
-
-	"github.com/spy16/sabre"
 )
 
-func TestLambda(t *testing.T) {
+func Test_lambdaForm(t *testing.T) {
 	t.Parallel()
 
 	table := []struct {
 		name    string
-		args    []sabre.Value
+		args    []Value
 		wantErr bool
 	}{
 		{
@@ -21,23 +19,23 @@ func TestLambda(t *testing.T) {
 		},
 		{
 			name:    "InvalidArgList",
-			args:    []sabre.Value{sabre.Int64(0), nil},
+			args:    []Value{Int64(0), nil},
 			wantErr: true,
 		},
 		{
 			name: "NotSymbolVector",
-			args: []sabre.Value{
-				sabre.Vector{Values: []sabre.Value{sabre.Int64(1)}},
-				sabre.Int64(10),
+			args: []Value{
+				Vector{Values: []Value{Int64(1)}},
+				Int64(10),
 			},
 			wantErr: true,
 		},
 		{
 			name: "Successful",
-			args: []sabre.Value{
-				sabre.Vector{
-					Values: []sabre.Value{sabre.Symbol{Value: "a"}, sabre.Symbol{Value: "b"}}},
-				sabre.Int64(10),
+			args: []Value{
+				Vector{
+					Values: []Value{Symbol{Value: "a"}, Symbol{Value: "b"}}},
+				Int64(10),
 			},
 			wantErr: false,
 		},
@@ -45,7 +43,7 @@ func TestLambda(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := sabre.Lambda(nil, tt.args)
+			got, err := lambdaForm(nil, tt.args)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Lambda() error = %v, wantErr %v", err, tt.wantErr)
 				return

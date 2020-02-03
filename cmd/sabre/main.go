@@ -22,7 +22,7 @@ var noREPL = flag.Bool("norepl", false, "Don't start REPL after executing file a
 func main() {
 	flag.Parse()
 
-	scope := sabre.New()
+	scope := sabre.NewScope(nil)
 	core.BindAll(scope)
 	scope.Bind("version", sabre.String(version))
 
@@ -36,14 +36,14 @@ func main() {
 		}
 		defer fh.Close()
 
-		result, err = sabre.Eval(scope, fh)
+		result, err = sabre.ReadEval(scope, fh)
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}
 	}
 
 	if *executeStr != "" {
-		result, err = sabre.EvalStr(scope, *executeStr)
+		result, err = sabre.ReadEvalStr(scope, *executeStr)
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}

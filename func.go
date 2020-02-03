@@ -72,7 +72,7 @@ func (fn Fn) Invoke(scope Scope, args []Value) (Value, error) {
 	for idx := range fn.Args {
 		var argVal Value
 		if idx == len(fn.Args)-1 && fn.Variadic {
-			argVal = List{
+			argVal = &List{
 				Values: args[idx:],
 			}
 		} else {

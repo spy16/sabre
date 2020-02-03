@@ -48,8 +48,8 @@ func MakeString(vals []sabre.Value) (sabre.Value, error) {
 func makeContainer(targetType sabre.Value) Fn {
 	return func(vals []sabre.Value) (sabre.Value, error) {
 		switch targetType.(type) {
-		case sabre.List:
-			return sabre.List{Values: vals}, nil
+		case *sabre.List:
+			return &sabre.List{Values: vals}, nil
 
 		case sabre.Vector:
 			return sabre.Vector{Values: vals}, nil

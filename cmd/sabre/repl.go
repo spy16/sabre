@@ -87,7 +87,7 @@ func (repl *REPL) readAndExecute() bool {
 			return false
 		}
 
-		repl.WriteOut(f.Eval(repl.Env))
+		repl.WriteOut(sabre.Eval(repl.Env, f))
 	}
 
 	return false

@@ -18,12 +18,12 @@ func TestList_Eval(t *testing.T) {
 	executeEvalTests(t, []evalTestCase{
 		{
 			name:  "EmptyList",
-			value: sabre.List{},
-			want:  sabre.List{},
+			value: &sabre.List{},
+			want:  &sabre.List{},
 		},
 		{
 			name: "Invocation",
-			value: sabre.List{
+			value: &sabre.List{
 				Values: []sabre.Value{sabre.Symbol{Value: "greet"}, sabre.String("Bob")},
 			},
 			getScope: func() sabre.Scope {
@@ -37,14 +37,14 @@ func TestList_Eval(t *testing.T) {
 		},
 		{
 			name: "NonInvokable",
-			value: sabre.List{
+			value: &sabre.List{
 				Values: []sabre.Value{sabre.Int64(10), sabre.Keyword("hello")},
 			},
 			wantErr: true,
 		},
 		{
 			name: "EvalFailure",
-			value: sabre.List{
+			value: &sabre.List{
 				Values: []sabre.Value{sabre.Symbol{Value: "hello"}},
 			},
 			getScope: func() sabre.Scope {
@@ -104,32 +104,32 @@ func TestVector_Eval(t *testing.T) {
 func TestList_String(t *testing.T) {
 	executeStringTestCase(t, []stringTestCase{
 		{
-			value: sabre.List{},
+			value: &sabre.List{},
 			want:  "()",
 		},
 		{
-			value: sabre.List{
+			value: &sabre.List{
 				Values: []sabre.Value{sabre.Keyword("hello")},
 			},
 			want: "(:hello)",
 		},
 		{
-			value: sabre.List{
-				Values: []sabre.Value{sabre.Keyword("hello"), sabre.List{}},
+			value: &sabre.List{
+				Values: []sabre.Value{sabre.Keyword("hello"), &sabre.List{}},
 			},
 			want: "(:hello ())",
 		},
 		{
-			value: sabre.List{
+			value: &sabre.List{
 				Values: []sabre.Value{sabre.Symbol{Value: "quote"}, sabre.Symbol{Value: "hello"}},
 			},
 			want: "(quote hello)",
 		},
 		{
-			value: sabre.List{
+			value: &sabre.List{
 				Values: []sabre.Value{
 					sabre.Symbol{Value: "quote"},
-					sabre.List{Values: []sabre.Value{sabre.Symbol{Value: "hello"}}}},
+					&sabre.List{Values: []sabre.Value{sabre.Symbol{Value: "hello"}}}},
 			},
 			want: "(quote (hello))",
 		},
@@ -147,7 +147,7 @@ func TestVector_String(t *testing.T) {
 			want:  "[:hello]",
 		},
 		{
-			value: sabre.Vector{Values: []sabre.Value{sabre.Keyword("hello"), sabre.List{}}},
+			value: sabre.Vector{Values: []sabre.Value{sabre.Keyword("hello"), &sabre.List{}}},
 			want:  "[:hello ()]",
 		},
 	})

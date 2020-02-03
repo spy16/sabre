@@ -10,12 +10,18 @@ import (
 // function invocation.
 type List struct {
 	Values
+
+	special func(scope Scope) (Value, error)
 }
 
 // Eval performs an invocation.
-func (lf List) Eval(scope Scope) (Value, error) {
+func (lf *List) Eval(scope Scope) (Value, error) {
 	if lf.Size() == 0 {
-		return List{}, nil
+		return &List{}, nil
+	}
+
+	if lf.special != nil {
+		return lf.special(scope)
 	}
 
 	target, err := lf.Values[0].Eval(scope)
@@ -33,6 +39,30 @@ func (lf List) Eval(scope Scope) (Value, error) {
 
 func (lf List) String() string {
 	return containerString(lf.Values, "(", ")", " ")
+}
+
+func (lf *List) parseSpecial(scope Scope) error {
+	if lf.Size() == 0 {
+		return nil
+	}
+
+	sym, isSymbol := lf.Values[0].(Symbol)
+	if !isSymbol {
+		return nil
+	}
+
+	special, isSpecial := specialForms[sym.Value]
+	if !isSpecial {
+		return nil
+	}
+
+	expr, err := special(scope, lf.Values[1:])
+	if err != nil {
+		return err
+	}
+
+	lf.special = expr
+	return nil
 }
 
 // Vector represents a list of values. Unlike List type, evaluation of

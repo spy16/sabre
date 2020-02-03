@@ -30,16 +30,19 @@ func TestEval(t *testing.T) {
 		{
 			name: "MultiForm",
 			src:  `123 [] ()`,
-			want: sabre.List{},
+			want: &sabre.List{},
 		},
 		{
 			name: "WithFunctionCalls",
 			getScope: func() sabre.Scope {
-				scope := sabre.New()
+				scope := sabre.NewScope(nil)
+				_ = scope.BindGo("ten?", func(i sabre.Int64) bool {
+					return i == 10
+				})
 				return scope
 			},
-			src:  `((fn [arg] arg) 10)`,
-			want: sabre.Int64(10),
+			src:  `(ten? 10)`,
+			want: sabre.Bool(true),
 		},
 		{
 			name:    "ReadError",
@@ -50,7 +53,7 @@ func TestEval(t *testing.T) {
 		{
 			name: "Program",
 			getScope: func() sabre.Scope {
-				scope := sabre.New()
+				scope := sabre.NewScope(nil)
 				return scope
 			},
 			src:  sampleProgram,
@@ -65,7 +68,7 @@ func TestEval(t *testing.T) {
 				scope = tt.getScope()
 			}
 
-			got, err := sabre.EvalStr(scope, tt.src)
+			got, err := sabre.ReadEvalStr(scope, tt.src)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Eval() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -82,7 +85,7 @@ const sampleProgram = `
 
 (def pi 3.1412)
 
-(def echo (fn [arg] arg))
+(def echo (fn* [arg] arg))
 
 (echo pi)
 `
