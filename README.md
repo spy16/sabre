@@ -14,7 +14,7 @@ Sabre is highly customizable, embeddable LISP engine for Go.
   1. simple literals  (e.g., `\a` for `a`)
   2. special literals (e.g., `\newline`, `\tab` etc.)
   3. unicode literals (e.g., `\u00A5` for `¥` etc.)
-* Simple evaluation logic with support for adding custom special-forms.
+* Clojure style built-in special forms: `λ` or `fn*`, `def`, `if`, `do`, `throw`, `let*`
 * Simple interface `sabre.Value` (and optional `sabre.Invokable`) for adding custom
   data types. (See [Evaluation](#evaluation))
 
@@ -32,7 +32,7 @@ import "github.com/spy16/sabre"
 func main() {
     scope := sabre.NewScope(nil)
 
-    result, err := sabre.EvalStr(scope, "(+ 1 2)")
+    result, err := sabre.ReadEvalStr(scope, "(+ 1 2)")
     if err != nil {
         log.Fatalf("failed to eval: %v", err)
     }
@@ -52,7 +52,8 @@ See [Extending](#extending) for more information on customizing the reader or ev
    3. `sabre -f "examples/full.lisp"` for executing file
 
 > If you specify both `-f` and `-e` flags, file will be executed first and then the
-> string will be executed in the same scope.
+> string will be executed in the same scope and you will be dropped into REPL. If
+> REPL not needed, use `-norepl` option.
 
 ## Extending
 
@@ -87,10 +88,9 @@ is implemented using reader macros_.
 ### Evaluation
 
 Eval logic for standard data types is fixed. But custom `sabre.Value` types can be
-implemented to customize evaluation logic. Custom macros/special forms can be added
-by wrapping a custom Go function with `SpecianFn` type.
+implemented to customize evaluation logic.
 
-In additional, `sabre.Value` types can also implement `sabre.Invokable` interface to
+In addition, `sabre.Value` types can also implement `sabre.Invokable` interface to
 enable invocation. For example `Vector` uses this to enable Clojure style element
 access using `([1 2 3] 0)` (returns `1`)
 
@@ -100,7 +100,8 @@ access using `([1 2 3] 0)` (returns `1`)
 ## TODO
 
 * [x] Executor
-* [ ] Standard Functions, Special Forms and Macros
-* [ ] REPL
+* [x] Special Forms
+* [X] REPL
+* [ ] Standard Functions and Macros
 * [ ] Optimizations
 * [ ] Code Generation?
