@@ -31,7 +31,7 @@ type Values []Value
 // Returns Nil{} otherwise.
 func (vals Values) First() Value {
 	if len(vals) == 0 {
-		return Nil{}
+		return nil
 	}
 
 	return vals[0]

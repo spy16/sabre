@@ -48,14 +48,9 @@ func (lf *List) parseSpecial(scope Scope) error {
 		return nil
 	}
 
-	sym, isSymbol := lf.Values[0].(Symbol)
-	if !isSymbol {
-		return nil
-	}
-
-	special, isSpecial := specialForms[sym.Value]
-	if !isSpecial {
-		return nil
+	special := getSpecial(lf.Values[0])
+	if special == nil {
+		return analyzeSeq(scope, lf)
 	}
 
 	expr, err := special(scope, lf.Values[1:])
@@ -65,6 +60,15 @@ func (lf *List) parseSpecial(scope Scope) error {
 
 	lf.special = expr
 	return nil
+}
+
+func getSpecial(v Value) specialForm {
+	sym, isSymbol := v.(Symbol)
+	if !isSymbol {
+		return nil
+	}
+
+	return specialForms[sym.Value]
 }
 
 // Vector represents a list of values. Unlike List type, evaluation of

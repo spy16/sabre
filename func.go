@@ -1,6 +1,9 @@
 package sabre
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 // MultiFn represents a multi-arity function or macro definition.
 type MultiFn struct {
@@ -53,6 +56,10 @@ func (multiFn MultiFn) selectMethod(args []Value) (Fn, error) {
 		len(args), multiFn.Name)
 }
 
+func (multiFn MultiFn) validate() error {
+	return nil
+}
+
 // Fn represents a function or macro definition.
 type Fn struct {
 	Args     []string
@@ -97,6 +104,68 @@ func (fn Fn) matchArity(args []Value) bool {
 	}
 
 	return argc == len(fn.Args)
+}
+
+func (fn *Fn) parseArgSpec(spec Value) error {
+	vec, isVector := spec.(Vector)
+	if !isVector {
+		return fmt.Errorf("argument spec must be a vector of symbols")
+	}
+
+	argNames, err := toArgNames(vec.Values)
+	if err != nil {
+		return err
+	}
+
+	fn.Variadic, err = checkVariadic(argNames)
+	if err != nil {
+		return err
+	}
+
+	if fn.Variadic {
+		argc := len(argNames)
+		fn.Args = append(argNames[:argc-2], argNames[argc-1])
+	} else {
+		fn.Args = argNames
+	}
+
+	return nil
+}
+
+func checkVariadic(args []string) (bool, error) {
+	for i, arg := range args {
+		if arg != "&" {
+			continue
+		}
+
+		if i > len(args)-2 {
+			return false, fmt.Errorf("expecting one more symbol after '&'")
+		} else if i < len(args)-2 {
+			return false, fmt.Errorf("expecting only one symbol after '&'")
+		}
+
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func toArgNames(vals []Value) ([]string, error) {
+	var names []string
+
+	for i, v := range vals {
+		sym, isSymbol := v.(Symbol)
+		if !isSymbol {
+			return nil, fmt.Errorf(
+				"expecting symbol at '%d', not '%s'",
+				i, reflect.TypeOf(v),
+			)
+		}
+
+		names = append(names, sym.Value)
+	}
+
+	return names, nil
 }
 
 // GoFunc implements Invokable using a Go function value.

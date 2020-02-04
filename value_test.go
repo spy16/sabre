@@ -13,7 +13,7 @@ func TestValues_First(t *testing.T) {
 	t.Run("Empty", func(t *testing.T) {
 		vals := sabre.Values{}
 
-		want := sabre.Nil{}
+		want := sabre.Value(nil)
 		got := vals.First()
 
 		if !reflect.DeepEqual(got, want) {
@@ -23,8 +23,7 @@ func TestValues_First(t *testing.T) {
 
 	t.Run("Nil", func(t *testing.T) {
 		vals := sabre.Values(nil)
-
-		want := sabre.Nil{}
+		want := sabre.Value(nil)
 		got := vals.First()
 
 		if !reflect.DeepEqual(got, want) {

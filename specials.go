@@ -64,12 +64,16 @@ func lambdaForm(scope Scope, args []Value) (specialExpr, error) {
 		def.Methods = append(def.Methods, *fn)
 	}
 
+	if err := def.validate(); err != nil {
+		return nil, err
+	}
+
 	return func(_ Scope) (Value, error) {
 		return def, nil
 	}, nil
 }
 
-// ifForm implments if-conditional flow using (if test then else?) form.
+// ifForm implements if-conditional flow using (if test then else?) form.
 func ifForm(scope Scope, args []Value) (specialExpr, error) {
 	if err := verifyArgCount([]int{2, 3}, args); err != nil {
 		return nil, err
@@ -246,25 +250,17 @@ func makeFn(scope Scope, spec []Value) (*Fn, error) {
 		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(spec))
 	}
 
-	args, isVector := spec[0].(Vector)
-	if !isVector {
-		return nil, fmt.Errorf("argument spec must be a vector of symbols")
-	}
-
 	body := Module(spec[1:])
 	if err := analyze(scope, body); err != nil {
 		return nil, err
 	}
 
-	argNames, err := toArgNameList(args.Values)
-	if err != nil {
+	fn := &Fn{Body: body}
+	if err := fn.parseArgSpec(spec[0]); err != nil {
 		return nil, err
 	}
 
-	return &Fn{
-		Args: argNames,
-		Body: body,
-	}, nil
+	return fn, nil
 }
 
 func rootScope(scope Scope) Scope {
@@ -340,21 +336,6 @@ func quoteList(scope Scope, forms []Value) ([]Value, error) {
 	}
 
 	return quoted, nil
-}
-
-func toArgNameList(vals []Value) ([]string, error) {
-	var argNames []string
-
-	for _, arg := range vals {
-		sym, isSymbol := arg.(Symbol)
-		if !isSymbol {
-			return nil, fmt.Errorf("first argument must be a vector of symbols")
-		}
-
-		argNames = append(argNames, sym.String())
-	}
-
-	return argNames, nil
 }
 
 func stringFromVals(vals []Value) String {
