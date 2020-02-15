@@ -58,18 +58,31 @@ func reflectFn(rv reflect.Value) GoFunc {
 			}
 		}()
 
+		args, err = evalValueList(scope, args)
+		if err != nil {
+			return nil, err
+		}
+
 		rt := rv.Type()
 		argVals := reflectValues(args)
+
+		if minArgs(rt) > 0 {
+			scopeRV := reflect.ValueOf(scope)
+			if scopeRV.Type().AssignableTo(rt.In(0)) {
+				argVals = append([]reflect.Value{scopeRV}, argVals...)
+			}
+		}
 
 		if err := checkArgCount(rt, len(argVals)); err != nil {
 			return nil, err
 		}
 
-		if err := checkArgTypes(rt, argVals); err != nil {
+		converted, err := convertArgTypes(rt, argVals)
+		if err != nil {
 			return nil, err
 		}
 
-		retVals := rv.Call(argVals)
+		retVals := rv.Call(converted)
 
 		if rt.NumOut() == 0 {
 			return nil, nil
@@ -88,29 +101,60 @@ func reflectFn(rv reflect.Value) GoFunc {
 
 type anyValue struct{ rv reflect.Value }
 
-func (any anyValue) Eval(_ Scope) (Value, error) { return any, nil }
-func (any anyValue) String() string              { return fmt.Sprintf("Any{%v}", any.rv) }
+func (any anyValue) Eval(_ Scope) (Value, error) {
+	return any, nil
+}
 
-func checkArgTypes(rt reflect.Type, args []reflect.Value) error {
+func (any anyValue) String() string {
+	return fmt.Sprintf("Any{%v}", any.rv)
+}
+
+func convertArgTypes(rt reflect.Type, args []reflect.Value) ([]reflect.Value, error) {
 	required := minArgs(rt)
+	var converted []reflect.Value
 
 	i := 0
 	for ; i < required; i++ {
-		if rt.In(i) != args[i].Type() {
-			return fmt.Errorf("invalid argument type: expected=%s, actual=%s", rt.In(i), args[i].Type())
+		c, err := convertArgType(rt.In(i), args[i])
+		if err != nil {
+			return nil, err
 		}
+		converted = append(converted, c)
 	}
 
 	if rt.IsVariadic() {
 		expected := rt.In(i).Elem()
 		for ; i < len(args); i++ {
-			if expected != args[i].Type() {
-				return fmt.Errorf("invalid argument type: expected=%s, actual=%s", expected, args[i].Type())
+			c, err := convertArgType(expected, args[i])
+			if err != nil {
+				return nil, err
 			}
+			converted = append(converted, c)
 		}
 	}
 
-	return nil
+	return converted, nil
+}
+
+func convertArgType(expected reflect.Type, value reflect.Value) (reflect.Value, error) {
+	actual := value.Type()
+	switch {
+	case actual == expected || actual.AssignableTo(expected):
+		return value, nil
+
+	case (expected.Kind() == reflect.Interface) &&
+		actual.Implements(expected):
+		return value, nil
+
+	case actual.ConvertibleTo(expected):
+		return value.Convert(expected), nil
+
+	}
+
+	return value, fmt.Errorf(
+		"invalid argument type: expected=%s, actual=%s",
+		expected, actual,
+	)
 }
 
 func reflectValues(args []Value) []reflect.Value {
@@ -134,14 +178,20 @@ func minArgs(rt reflect.Type) int {
 func checkArgCount(rt reflect.Type, argCount int) error {
 	if !rt.IsVariadic() {
 		if argCount != minArgs(rt) {
-			return fmt.Errorf("call requires exactly %d argument(s), got %d", rt.NumIn(), argCount)
+			return fmt.Errorf(
+				"call requires exactly %d argument(s), got %d",
+				rt.NumIn(), argCount,
+			)
 		}
 		return nil
 	}
 
 	required := minArgs(rt)
 	if argCount < required {
-		return fmt.Errorf("call requires at-least %d argument(s), got %d", required, argCount)
+		return fmt.Errorf(
+			"call requires at-least %d argument(s), got %d",
+			required, argCount,
+		)
 	}
 
 	return nil

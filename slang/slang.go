@@ -24,8 +24,12 @@ func New() *Slang {
 
 	_ = sl.SwitchNS(sabre.Symbol{Value: defaultNS})
 	_ = sl.BindGo("ns", sl.SwitchNS)
-	_ = BindAll(sl)
 
+	if err := BindAll(sl); err != nil {
+		panic(err)
+	}
+
+	sl.checkNS = true
 	return sl
 }
 
@@ -33,6 +37,7 @@ func New() *Slang {
 type Slang struct {
 	mu        *sync.RWMutex
 	currentNS string
+	checkNS   bool
 	bindings  map[nsSymbol]sabre.Value
 }
 
@@ -63,7 +68,7 @@ func (slang *Slang) Bind(symbol string, v sabre.Value) error {
 		return err
 	}
 
-	if nsSym.NS != slang.currentNS {
+	if slang.checkNS && nsSym.NS != slang.currentNS {
 		return fmt.Errorf("cannot to bind outside current namespace")
 	}
 
@@ -128,13 +133,17 @@ func (slang *Slang) CurrentNS() string {
 }
 
 func (slang *Slang) splitSymbol(symbol string) (*nsSymbol, error) {
-	parts := strings.Split(symbol, string(nsSeparator))
+	sep := string(nsSeparator)
+	parts := strings.SplitN(symbol, sep, 2)
+
 	if len(parts) < 2 {
 		return &nsSymbol{
 			NS:   slang.currentNS,
 			Name: symbol,
 		}, nil
-	} else if len(parts) > 2 {
+	}
+
+	if strings.Contains(parts[1], sep) && parts[1] != sep {
 		return nil, fmt.Errorf("invalid qualified symbol: '%s'", symbol)
 	}
 
@@ -152,11 +161,7 @@ type nsSymbol struct {
 // BindAll binds all core functions into the given scope.
 func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
-		"core/eval":     sabre.GoFunc(Eval),
-		"core/not":      Fn(Not),
-		"core/boolean":  Fn(MakeBool),
-		"core/str":      Fn(MakeString),
-		"core/type":     Fn(TypeOf),
+		// Core functions
 		"core/set":      makeContainer(sabre.Set{}),
 		"core/list":     makeContainer(&sabre.List{}),
 		"core/vector":   makeContainer(sabre.Vector{}),
@@ -170,6 +175,16 @@ func BindAll(scope sabre.Scope) error {
 		"core/vector?":  IsType(reflect.TypeOf(sabre.Vector{})),
 		"core/keyword?": IsType(reflect.TypeOf(sabre.Keyword(""))),
 		"core/symbol?":  IsType(reflect.TypeOf(sabre.Symbol{})),
+		"core/eval":     sabre.ValueOf(Eval),
+		"core/type":     sabre.ValueOf(TypeOf),
+		"core/boolean":  sabre.ValueOf(MakeBool),
+		"core/not":      sabre.ValueOf(Not),
+		"core/str":      sabre.ValueOf(MakeString),
+		"core/+":        sabre.ValueOf(Add),
+		"core/-":        sabre.ValueOf(Sub),
+		"core/*":        sabre.ValueOf(Multiply),
+		"core//":        sabre.ValueOf(Divide),
+		"core/=":        sabre.ValueOf(Equals),
 	}
 
 	for sym, val := range core {

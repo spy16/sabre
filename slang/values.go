@@ -3,17 +3,14 @@ package slang
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/spy16/sabre"
 )
 
 // TypeOf returns the type information object for the given argument.
-func TypeOf(vals []sabre.Value) (sabre.Value, error) {
-	if err := verifyArgCount([]int{1}, vals); err != nil {
-		return nil, err
-	}
-
-	return Type{rt: reflect.TypeOf(vals[0])}, nil
+func TypeOf(val sabre.Value) sabre.Value {
+	return Type{rt: reflect.TypeOf(val)}
 }
 
 // IsType returns a Fn that checks if the value is of given type.
@@ -30,17 +27,27 @@ func IsType(rt reflect.Type) Fn {
 
 // MakeBool converts given argument to a boolean. Any truthy value
 // is converted to true and else false.
-func MakeBool(vals []sabre.Value) (sabre.Value, error) {
-	if err := verifyArgCount([]int{1}, vals); err != nil {
-		return nil, err
-	}
-
-	return sabre.Bool(isTruthy(vals[0])), nil
+func MakeBool(val sabre.Value) sabre.Bool {
+	return sabre.Bool(isTruthy(val))
 }
 
 // MakeString returns stringified version of all args.
-func MakeString(vals []sabre.Value) (sabre.Value, error) {
-	return stringFromVals(vals), nil
+func MakeString(vals ...sabre.Value) sabre.Value {
+	argc := len(vals)
+	switch argc {
+	case 0:
+		return sabre.String("")
+
+	case 1:
+		return sabre.String(strings.Trim(vals[0].String(), "\""))
+
+	default:
+		var sb strings.Builder
+		for _, v := range vals {
+			sb.WriteString(strings.Trim(v.String(), "\""))
+		}
+		return sabre.String(sb.String())
+	}
 }
 
 // makeContainer can make a composite type like list, set and vector from

@@ -1,28 +1,23 @@
 package slang
 
 import (
+	"reflect"
+
 	"github.com/spy16/sabre"
 )
 
 // Eval evaluates the first argument and returns the result.
-func Eval(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
-	vals, err := evalValueList(scope, args)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := verifyArgCount([]int{1}, args); err != nil {
-		return nil, err
-	}
-
-	return vals[0].Eval(scope)
+func Eval(scope sabre.Scope, arg sabre.Value) (sabre.Value, error) {
+	return arg.Eval(scope)
 }
 
 // Not returns the negated version of the argument value.
-func Not(args []sabre.Value) (sabre.Value, error) {
-	if err := verifyArgCount([]int{1}, args); err != nil {
-		return nil, err
-	}
+func Not(val sabre.Value) sabre.Value {
+	return sabre.Bool(!isTruthy(val))
+}
 
-	return sabre.Bool(!isTruthy(args[0])), nil
+// Equals compares 2 values using reflect.DeepEqual and returns
+// the result.
+func Equals(v1, v2 sabre.Value) bool {
+	return reflect.DeepEqual(v1, v2)
 }
