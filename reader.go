@@ -460,12 +460,17 @@ func readList(rd *Reader, _ rune) (Value, error) {
 }
 
 func readVector(rd *Reader, _ rune) (Value, error) {
+	pi := rd.Position()
+
 	forms, err := readContainer(rd, '[', ']', "vector")
 	if err != nil {
 		return nil, err
 	}
 
-	return Vector{Values: forms}, nil
+	return Vector{
+		Values:       forms,
+		PositionInfo: pi,
+	}, nil
 }
 
 func readSet(rd *Reader, _ rune) (Value, error) {

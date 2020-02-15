@@ -76,6 +76,7 @@ func getSpecial(v Value) specialForm {
 // vector does not lead to function invoke.
 type Vector struct {
 	Values
+	PositionInfo
 }
 
 // Eval evaluates each value in the vector form and returns the resultant

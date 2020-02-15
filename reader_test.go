@@ -200,7 +200,7 @@ func TestReader_All(t *testing.T) {
 }
 
 func TestReader_One(t *testing.T) {
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name:    "Empty",
 			src:     "",
@@ -248,7 +248,7 @@ func TestReader_One(t *testing.T) {
 }
 
 func TestReader_One_Number(t *testing.T) {
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "NumberWithLeadingSpaces",
 			src:  "    +1234",
@@ -404,7 +404,7 @@ func TestReader_One_Number(t *testing.T) {
 }
 
 func TestReader_One_String(t *testing.T) {
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "SimpleString",
 			src:  `"hello"`,
@@ -439,7 +439,7 @@ func TestReader_One_String(t *testing.T) {
 }
 
 func TestReader_One_Keyword(t *testing.T) {
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "SimpleASCII",
 			src:  `:test`,
@@ -469,7 +469,7 @@ func TestReader_One_Keyword(t *testing.T) {
 }
 
 func TestReader_One_Character(t *testing.T) {
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "ASCIILetter",
 			src:  `\a`,
@@ -524,7 +524,7 @@ func TestReader_One_Character(t *testing.T) {
 }
 
 func TestReader_One_Symbol(t *testing.T) {
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "SimpleASCII",
 			src:  `hello`,
@@ -565,7 +565,7 @@ func TestReader_One_Symbol(t *testing.T) {
 }
 
 func TestReader_One_List(t *testing.T) {
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "EmptyList",
 			src:  `()`,
@@ -706,61 +706,85 @@ func TestReader_One_List(t *testing.T) {
 }
 
 func TestReader_One_Vector(t *testing.T) {
-	vector := func(items []sabre.Value) sabre.Vector {
-		return sabre.Vector{Values: items}
-	}
-
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "Empty",
 			src:  `[]`,
-			want: vector(nil),
+			want: sabre.Vector{
+				Values: nil,
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name: "WithOneEntry",
 			src:  `[help]`,
-			want: vector([]sabre.Value{
-				sabre.Symbol{
-					Value: "help",
-					PositionInfo: sabre.PositionInfo{
-						File:   "<string>",
-						Line:   1,
-						Column: 2,
+			want: sabre.Vector{
+				Values: []sabre.Value{
+					sabre.Symbol{
+						Value: "help",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
 					},
 				},
-			}),
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name: "WithMultipleEntry",
 			src:  `[+ 0xF 3.1413]`,
-			want: vector([]sabre.Value{
-				sabre.Symbol{
-					Value: "+",
-					PositionInfo: sabre.PositionInfo{
-						File:   "<string>",
-						Line:   1,
-						Column: 2,
+			want: sabre.Vector{
+				Values: []sabre.Value{
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
 					},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
 				},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
-			}),
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name: "WithCommaSeparator",
 			src:  `[+,0xF,3.1413]`,
-			want: vector([]sabre.Value{
-				sabre.Symbol{
-					Value: "+",
-					PositionInfo: sabre.PositionInfo{
-						File:   "<string>",
-						Line:   1,
-						Column: 2,
+			want: sabre.Vector{
+				Values: []sabre.Value{
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
 					},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
 				},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
-			}),
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name: "MultiLine",
@@ -768,18 +792,25 @@ func TestReader_One_Vector(t *testing.T) {
                       0xF
                       3.1413
 					]`,
-			want: vector([]sabre.Value{
-				sabre.Symbol{
-					Value: "+",
-					PositionInfo: sabre.PositionInfo{
-						File:   "<string>",
-						Line:   1,
-						Column: 2,
+			want: sabre.Vector{
+				Values: []sabre.Value{
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
 					},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
 				},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
-			}),
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name: "MultiLineWithComments",
@@ -787,18 +818,25 @@ func TestReader_One_Vector(t *testing.T) {
                       0xF    ; hex representation of 15
                       3.1413 ; value of math constant pi
                   ]`,
-			want: vector([]sabre.Value{
-				sabre.Symbol{
-					Value: "+",
-					PositionInfo: sabre.PositionInfo{
-						File:   "<string>",
-						Line:   1,
-						Column: 2,
+			want: sabre.Vector{
+				Values: []sabre.Value{
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
 					},
+					sabre.Int64(15),
+					sabre.Float64(3.1413),
 				},
-				sabre.Int64(15),
-				sabre.Float64(3.1413),
-			}),
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name:    "UnexpectedEOF",
@@ -813,7 +851,7 @@ func TestReader_One_Set(t *testing.T) {
 		return sabre.Set{Values: items}
 	}
 
-	executeAllReaderTests(t, []readerTestCase{
+	executeReaderTests(t, []readerTestCase{
 		{
 			name: "Empty",
 			src:  "#{}",
@@ -822,7 +860,17 @@ func TestReader_One_Set(t *testing.T) {
 		{
 			name: "Valid",
 			src:  "#{1 2 []}",
-			want: set(sabre.Int64(1), sabre.Int64(2), sabre.Vector{}),
+			want: set(
+				sabre.Int64(1),
+				sabre.Int64(2),
+				sabre.Vector{
+					PositionInfo: sabre.PositionInfo{
+						File:   "<string>",
+						Column: 7,
+						Line:   1,
+					},
+				},
+			),
 		},
 		{
 			name:    "HasDuplicate",
@@ -839,7 +887,7 @@ type readerTestCase struct {
 	wantErr bool
 }
 
-func executeAllReaderTests(t *testing.T, tests []readerTestCase) {
+func executeReaderTests(t *testing.T, tests []readerTestCase) {
 	t.Parallel()
 
 	for _, tt := range tests {
