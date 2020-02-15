@@ -123,7 +123,7 @@ func (pr *prompter) readIn() (string, error) {
 
 func (pr *prompter) writeOut(v interface{}, err error) {
 	if err != nil {
-		pr.ins.Write([]byte(fmt.Sprintf("error: %s\n", err)))
+		pr.ins.Write([]byte(fmt.Sprintf("%s\n", err)))
 		return
 	}
 	pr.ins.Write([]byte(formatResult(v) + "\n"))

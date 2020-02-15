@@ -382,17 +382,25 @@ func verifyArgCount(arities []int, args []Value) error {
 	return nil
 }
 
-func analyze(scope Scope, v Value) error {
+func analyze(scope Scope, v Value) (err error) {
 	switch val := v.(type) {
 	case Module:
-		return analyzeSeq(scope, Values(val))
+		err = analyzeSeq(scope, Values(val))
 
 	case *List:
-		return val.parseSpecial(scope)
+		err = val.parseSpecial(scope)
 
 	case Seq:
-		return analyzeSeq(scope, val)
+		err = analyzeSeq(scope, val)
 
+	}
+
+	if err != nil {
+		return EvalError{
+			Cause:    err,
+			Position: getPosition(v),
+			Form:     v,
+		}
 	}
 
 	return nil

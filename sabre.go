@@ -1,6 +1,7 @@
 package sabre
 
 import (
+	"fmt"
 	"io"
 	"strings"
 )
@@ -13,7 +14,20 @@ func Eval(scope Scope, form Value) (Value, error) {
 		return nil, err
 	}
 
-	return form.Eval(scope)
+	v, err := form.Eval(scope)
+	if err != nil {
+		if _, ok := err.(EvalError); ok {
+			return v, err
+		}
+
+		return v, EvalError{
+			Position: getPosition(form),
+			Form:     v,
+			Cause:    err,
+		}
+	}
+
+	return v, nil
 }
 
 // ReadEval consumes data from reader 'r' till EOF, parses into forms
@@ -38,4 +52,22 @@ type Scope interface {
 	Parent() Scope
 	Bind(symbol string, v Value) error
 	Resolve(symbol string) (Value, error)
+}
+
+// EvalError represents error during evaluation.
+type EvalError struct {
+	Position
+	Cause error
+	Form  Value
+}
+
+// Unwrap returns the underlying cause of this error.
+func (ee EvalError) Unwrap() error {
+	return ee.Cause
+}
+
+func (ee EvalError) Error() string {
+	return fmt.Sprintf("eval error in '%s' (Line %d, Column %d): %v",
+		ee.File, ee.Line, ee.Column, ee.Cause,
+	)
 }

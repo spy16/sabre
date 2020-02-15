@@ -329,15 +329,6 @@ func (rd *Reader) execDispatch() (Value, error) {
 	return form, nil
 }
 
-func setPosition(form Value, pos Position) Value {
-	switch f := form.(type) {
-	case Set:
-		f.Position = pos
-	}
-
-	return form
-}
-
 func (rd *Reader) annotateErr(e error) error {
 	if e == io.EOF || e == ErrSkip {
 		return e
@@ -761,6 +752,11 @@ func (err ReadError) Error() string {
 	)
 }
 
+type positionAttr interface {
+	Value
+	GetPos() (file string, line, col int)
+}
+
 // Position represents the positional information about a value read
 // by reader.
 type Position struct {
@@ -769,8 +765,8 @@ type Position struct {
 	Column int
 }
 
-// Position returns the file, line and column values.
-func (pi Position) Position() (file string, line, col int) {
+// GetPos returns the file, line and column values.
+func (pi Position) GetPos() (file string, line, col int) {
 	return pi.File, pi.Line, pi.Column
 }
 
@@ -780,4 +776,39 @@ func (pi Position) String() string {
 	}
 
 	return fmt.Sprintf("%s:%d:%d", pi.File, pi.Line, pi.Column)
+}
+
+func setPosition(form Value, pos Position) Value {
+	switch v := form.(type) {
+	case *List:
+		v.Position = pos
+		return v
+
+	case Set:
+		v.Position = pos
+		return v
+
+	case Vector:
+		v.Position = pos
+
+	case Symbol:
+		v.Position = pos
+		return v
+	}
+
+	return form
+}
+
+func getPosition(form Value) Position {
+	p, hasPosition := form.(positionAttr)
+	if !hasPosition {
+		return Position{}
+	}
+
+	file, line, col := p.GetPos()
+	return Position{
+		File:   file,
+		Line:   line,
+		Column: col,
+	}
 }
