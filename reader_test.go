@@ -52,15 +52,22 @@ func TestReader_SetMacro(t *testing.T) {
 		rd.SetMacro('~', nil, false) // remove unquote operator
 
 		var want sabre.Value
-		want = sabre.Symbol{Value: "~hello"}
+		want = sabre.Symbol{
+			Value: "~hello",
+			PositionInfo: sabre.PositionInfo{
+				File:   "<string>",
+				Line:   1,
+				Column: 1,
+			},
+		}
 
 		got, err := rd.One()
 		if err != nil {
-			t.Errorf("unexpected error: %v", err)
+			t.Errorf("unexpected error: %#v", err)
 		}
 
 		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got = %v, want = %v", got, want)
+			t.Errorf("got = %#v, want = %#v", got, want)
 		}
 	})
 
@@ -109,12 +116,23 @@ func TestReader_All(t *testing.T) {
 	}{
 		{
 			name: "ValidLiteralSample",
-			src: `"Hello\tWorld" 123 12.34 -0xF   +010
-					true nil 0b1010     \a :hello 'hello
-					#{}`,
+			src:  `'hello 123 "Hello\tWorld" 12.34 -0xF +010 true nil 0b1010 \a :hello #{}`,
 			want: sabre.Module{
-				sabre.String("Hello\tWorld"),
+				&sabre.List{
+					Values: []sabre.Value{
+						sabre.Symbol{Value: "quote"},
+						sabre.Symbol{
+							Value: "hello",
+							PositionInfo: sabre.PositionInfo{
+								File:   "<string>",
+								Line:   1,
+								Column: 2,
+							},
+						},
+					},
+				},
 				sabre.Int64(123),
+				sabre.String("Hello\tWorld"),
 				sabre.Float64(12.34),
 				sabre.Int64(-15),
 				sabre.Int64(8),
@@ -123,12 +141,6 @@ func TestReader_All(t *testing.T) {
 				sabre.Int64(10),
 				sabre.Character('a'),
 				sabre.Keyword("hello"),
-				&sabre.List{
-					Values: []sabre.Value{
-						sabre.Symbol{Value: "quote"},
-						sabre.Symbol{Value: "hello"},
-					},
-				},
 				sabre.Set{},
 			},
 		},
@@ -177,11 +189,11 @@ func TestReader_All(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := sabre.NewReader(strings.NewReader(tt.src)).All()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("All() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("All() error = %#v, wantErr %#v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("All() got = %v, want %v", got, tt.want)
+				t.Errorf("All() got = %#v, want %#v", got, tt.want)
 			}
 		})
 	}
@@ -213,7 +225,14 @@ func TestReader_One(t *testing.T) {
 					sabre.Symbol{Value: "unquote"},
 					&sabre.List{
 						Values: []sabre.Value{
-							sabre.Symbol{Value: "x"},
+							sabre.Symbol{
+								Value: "x",
+								PositionInfo: sabre.PositionInfo{
+									File:   "<string>",
+									Line:   1,
+									Column: 3,
+								},
+							},
 							sabre.Int64(3),
 						},
 					},
@@ -504,17 +523,38 @@ func TestReader_One_Symbol(t *testing.T) {
 		{
 			name: "SimpleASCII",
 			src:  `hello`,
-			want: sabre.Symbol{Value: "hello"},
+			want: sabre.Symbol{
+				Value: "hello",
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name: "Unicode",
 			src:  `find-∂`,
-			want: sabre.Symbol{Value: "find-∂"},
+			want: sabre.Symbol{
+				Value: "find-∂",
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 		{
 			name: "SingleChar",
 			src:  `+`,
-			want: sabre.Symbol{"+"},
+			want: sabre.Symbol{
+				Value: "+",
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
+			},
 		},
 	})
 }
@@ -533,7 +573,14 @@ func TestReader_One_List(t *testing.T) {
 			src:  `(help)`,
 			want: &sabre.List{
 				Values: []sabre.Value{
-					sabre.Symbol{Value: "help"},
+					sabre.Symbol{
+						Value: "help",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
+					},
 				},
 			},
 		},
@@ -542,7 +589,14 @@ func TestReader_One_List(t *testing.T) {
 			src:  `(+ 0xF 3.1413)`,
 			want: &sabre.List{
 				Values: []sabre.Value{
-					sabre.Symbol{Value: "+"},
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
+					},
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
@@ -553,7 +607,14 @@ func TestReader_One_List(t *testing.T) {
 			src:  `(+,0xF,3.1413)`,
 			want: &sabre.List{
 				Values: []sabre.Value{
-					sabre.Symbol{Value: "+"},
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
+					},
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
@@ -567,7 +628,14 @@ func TestReader_One_List(t *testing.T) {
 					)`,
 			want: &sabre.List{
 				Values: []sabre.Value{
-					sabre.Symbol{Value: "+"},
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
+					},
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
@@ -581,7 +649,14 @@ func TestReader_One_List(t *testing.T) {
                   )`,
 			want: &sabre.List{
 				Values: []sabre.Value{
-					sabre.Symbol{Value: "+"},
+					sabre.Symbol{
+						Value: "+",
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
+					},
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
@@ -610,14 +685,28 @@ func TestReader_One_Vector(t *testing.T) {
 			name: "WithOneEntry",
 			src:  `[help]`,
 			want: vector([]sabre.Value{
-				sabre.Symbol{Value: "help"},
+				sabre.Symbol{
+					Value: "help",
+					PositionInfo: sabre.PositionInfo{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
+					},
+				},
 			}),
 		},
 		{
 			name: "WithMultipleEntry",
 			src:  `[+ 0xF 3.1413]`,
 			want: vector([]sabre.Value{
-				sabre.Symbol{Value: "+"},
+				sabre.Symbol{
+					Value: "+",
+					PositionInfo: sabre.PositionInfo{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
+					},
+				},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),
@@ -626,7 +715,14 @@ func TestReader_One_Vector(t *testing.T) {
 			name: "WithCommaSeparator",
 			src:  `[+,0xF,3.1413]`,
 			want: vector([]sabre.Value{
-				sabre.Symbol{Value: "+"},
+				sabre.Symbol{
+					Value: "+",
+					PositionInfo: sabre.PositionInfo{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
+					},
+				},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),
@@ -638,7 +734,14 @@ func TestReader_One_Vector(t *testing.T) {
                       3.1413
 					]`,
 			want: vector([]sabre.Value{
-				sabre.Symbol{Value: "+"},
+				sabre.Symbol{
+					Value: "+",
+					PositionInfo: sabre.PositionInfo{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
+					},
+				},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),
@@ -650,7 +753,14 @@ func TestReader_One_Vector(t *testing.T) {
                       3.1413 ; value of math constant pi
                   ]`,
 			want: vector([]sabre.Value{
-				sabre.Symbol{Value: "+"},
+				sabre.Symbol{
+					Value: "+",
+					PositionInfo: sabre.PositionInfo{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
+					},
+				},
 				sabre.Int64(15),
 				sabre.Float64(3.1413),
 			}),

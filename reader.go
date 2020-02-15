@@ -217,9 +217,13 @@ func (rd *Reader) Unread(runes ...rune) {
 
 // Info returns information about the stream including file name and the
 // position of the reader.
-func (rd Reader) Info() (file string, line, col int) {
-	file = strings.TrimSpace(rd.File)
-	return file, rd.line + 1, rd.col
+func (rd Reader) Info() PositionInfo {
+	file := strings.TrimSpace(rd.File)
+	return PositionInfo{
+		File:   file,
+		Line:   rd.line + 1,
+		Column: rd.col,
+	}
 }
 
 // SkipSpaces consumes and discards runes from stream repeatedly until a
@@ -308,12 +312,9 @@ func (rd *Reader) annotateErr(e error) error {
 		return e
 	}
 
-	file, line, col := rd.Info()
 	return ReadError{
-		Cause:  e,
-		File:   file,
-		Line:   line,
-		Column: col,
+		Cause:        e,
+		PositionInfo: rd.Info(),
 	}
 }
 
@@ -395,13 +396,16 @@ func readNumber(rd *Reader, init rune) (Value, error) {
 }
 
 func readSymbol(rd *Reader, init rune) (Value, error) {
+	pi := rd.Info()
+
 	s, err := readToken(rd, init)
 	if err != nil {
 		return nil, err
 	}
 
 	return Symbol{
-		Value: s,
+		Value:        s,
+		PositionInfo: pi,
 	}, nil
 }
 
@@ -691,11 +695,9 @@ func inferFileName(rs io.Reader) string {
 
 // ReadError wraps the parsing/eval errors with relevant information.
 type ReadError struct {
+	PositionInfo
 	Cause  error
 	Messag string
-	File   string
-	Line   int
-	Column int
 }
 
 // Unwrap returns underlying cause of the error.
@@ -712,4 +714,20 @@ func (err ReadError) Error() string {
 		"syntax error in '%s' (Line %d Col %d): %v",
 		err.File, err.Line, err.Column, err.Cause,
 	)
+}
+
+// PositionInfo represents the positional information about a value read
+// by reader.
+type PositionInfo struct {
+	File   string
+	Line   int
+	Column int
+}
+
+func (pi PositionInfo) String() string {
+	if pi.File == "" {
+		pi.File = "<unknown>"
+	}
+
+	return fmt.Sprintf("%s:%d:%d", pi.File, pi.Line, pi.Column)
 }
