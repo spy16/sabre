@@ -23,10 +23,10 @@ func (b Bool) Eval(_ Scope) (Value, error) { return b, nil }
 func (b Bool) String() string { return fmt.Sprintf("%t", b) }
 
 // Float64 represents double precision floating point numbers represented
-// using float or scientific number formats.
+// using decimal or scientific number formats.
 type Float64 float64
 
-// Eval returns the underlying value.
+// Eval simply returns itself since Floats evaluate to themselves.
 func (f64 Float64) Eval(_ Scope) (Value, error) { return f64, nil }
 
 func (f64 Float64) String() string { return fmt.Sprintf("%f", f64) }
@@ -35,7 +35,7 @@ func (f64 Float64) String() string { return fmt.Sprintf("%f", f64) }
 // and hexadecimal formats.
 type Int64 int64
 
-// Eval returns the underlying value.
+// Eval simply returns itself since Integers evaluate to themselves.
 func (i64 Int64) Eval(_ Scope) (Value, error) { return i64, nil }
 
 func (i64 Int64) String() string { return fmt.Sprintf("%d", i64) }
@@ -45,7 +45,7 @@ func (i64 Int64) String() string { return fmt.Sprintf("%d", i64) }
 // applicable at this level.
 type String string
 
-// Eval returns the underlying value.
+// Eval simply returns itself since Strings evaluate to themselves.
 func (se String) Eval(_ Scope) (Value, error) { return se, nil }
 
 func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
@@ -55,7 +55,7 @@ func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
 // \space etc are supported.
 type Character rune
 
-// Eval returns the underlying value.
+// Eval simply returns itself since Chracters evaluate to themselves.
 func (char Character) Eval(_ Scope) (Value, error) { return char, nil }
 
 func (char Character) String() string { return fmt.Sprintf("\\%c", rune(char)) }
@@ -63,7 +63,7 @@ func (char Character) String() string { return fmt.Sprintf("\\%c", rune(char)) }
 // Keyword represents a keyword literal.
 type Keyword string
 
-// Eval returns the underlying value.
+// Eval simply returns itself since Keywords evaluate to themselves.
 func (kw Keyword) Eval(_ Scope) (Value, error) { return kw, nil }
 
 func (kw Keyword) String() string { return fmt.Sprintf(":%s", string(kw)) }
@@ -71,11 +71,12 @@ func (kw Keyword) String() string { return fmt.Sprintf(":%s", string(kw)) }
 // Symbol represents a name given to a value in memory.
 type Symbol struct {
 	Position
-
 	Value string
 }
 
-// Eval returns the underlying value.
-func (sym Symbol) Eval(scope Scope) (Value, error) { return scope.Resolve(sym.Value) }
+// Eval returns the value bound to this symbol in current context.
+func (sym Symbol) Eval(scope Scope) (Value, error) {
+	return scope.Resolve(sym.Value)
+}
 
 func (sym Symbol) String() string { return sym.Value }

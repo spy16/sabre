@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 
 	"github.com/spy16/sabre/slang"
 )
@@ -13,6 +14,9 @@ var (
 	version = "N/A"
 	commit  = "N/A"
 )
+
+const help = `Sabre %s [Commit: %s] [Compiled with %s]
+Visit https://github.com/spy16/sabre for more.`
 
 var executeFile = flag.String("f", "", "File to read and execute")
 var executeStr = flag.String("e", "", "Execute string")
@@ -52,7 +56,9 @@ func main() {
 		return
 	}
 
-	slang.NewREPL(sl).Run(context.Background())
+	repl := slang.NewREPL(sl)
+	repl.Banner = fmt.Sprintf(help, version, commit, runtime.Version())
+	repl.Run(context.Background())
 }
 
 func fatalf(format string, args ...interface{}) {

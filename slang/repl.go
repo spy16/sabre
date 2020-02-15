@@ -32,8 +32,9 @@ func NewREPL(slang *Slang, opts ...REPLOption) *REPL {
 
 // REPL implements a read-eval-print loop for Slang.
 type REPL struct {
-	sl *Slang
-	ri *readline.Instance
+	sl     *Slang
+	ri     *readline.Instance
+	Banner string
 }
 
 // Run starts the REPL loop and runs until the context is cancelled or
@@ -42,6 +43,10 @@ func (repl *REPL) Run(ctx context.Context) (err error) {
 	repl.ri, err = readline.New(repl.getPrompt(promptPrefix))
 	if err != nil {
 		return err
+	}
+
+	if repl.Banner != "" {
+		fmt.Println(repl.Banner)
 	}
 
 	for {

@@ -3,6 +3,7 @@ package slang
 import (
 	"fmt"
 	"io"
+	"reflect"
 	"strings"
 	"sync"
 
@@ -23,6 +24,7 @@ func New() *Slang {
 
 	_ = sl.SwitchNS(sabre.Symbol{Value: defaultNS})
 	_ = sl.BindGo("ns", sl.SwitchNS)
+	_ = BindAll(sl)
 
 	return sl
 }
@@ -86,6 +88,11 @@ func (slang *Slang) Resolve(symbol string) (sabre.Value, error) {
 
 	v, found := slang.bindings[*nsSym]
 	if !found {
+		v, found = slang.bindings[*nsSym]
+		if !found {
+			return nil, fmt.Errorf("unable to resolve symbol: %v", symbol)
+		}
+
 		return nil, fmt.Errorf("unable to resolve symbol: %v", symbol)
 	}
 
@@ -140,4 +147,36 @@ func (slang *Slang) splitSymbol(symbol string) (*nsSymbol, error) {
 type nsSymbol struct {
 	NS   string
 	Name string
+}
+
+// BindAll binds all core functions into the given scope.
+func BindAll(scope sabre.Scope) error {
+	core := map[string]sabre.Value{
+		"core/eval":     sabre.GoFunc(Eval),
+		"core/not":      Fn(Not),
+		"core/boolean":  Fn(MakeBool),
+		"core/str":      Fn(MakeString),
+		"core/type":     Fn(TypeOf),
+		"core/set":      makeContainer(sabre.Set{}),
+		"core/list":     makeContainer(&sabre.List{}),
+		"core/vector":   makeContainer(sabre.Vector{}),
+		"core/nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
+		"core/int?":     IsType(reflect.TypeOf(sabre.Int64(0))),
+		"core/set?":     IsType(reflect.TypeOf(sabre.Set{})),
+		"core/boolean?": IsType(reflect.TypeOf(sabre.Bool(false))),
+		"core/list?":    IsType(reflect.TypeOf(sabre.List{})),
+		"core/string?":  IsType(reflect.TypeOf(sabre.String(""))),
+		"core/float?":   IsType(reflect.TypeOf(sabre.Float64(0))),
+		"core/vector?":  IsType(reflect.TypeOf(sabre.Vector{})),
+		"core/keyword?": IsType(reflect.TypeOf(sabre.Keyword(""))),
+		"core/symbol?":  IsType(reflect.TypeOf(sabre.Symbol{})),
+	}
+
+	for sym, val := range core {
+		if err := scope.Bind(sym, val); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

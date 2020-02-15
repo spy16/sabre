@@ -23,21 +23,6 @@ func evalValueList(scope sabre.Scope, vals []sabre.Value) ([]sabre.Value, error)
 	return result, nil
 }
 
-func toSymbolList(vals []sabre.Value) ([]sabre.Symbol, error) {
-	var argNames []sabre.Symbol
-
-	for _, arg := range vals {
-		sym, isSymbol := arg.(sabre.Symbol)
-		if !isSymbol {
-			return nil, fmt.Errorf("first argument must be a vector of symbols")
-		}
-
-		argNames = append(argNames, sym)
-	}
-
-	return argNames, nil
-}
-
 func stringFromVals(vals []sabre.Value) sabre.String {
 	argc := len(vals)
 	switch argc {
