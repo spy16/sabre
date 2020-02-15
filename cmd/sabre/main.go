@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/spy16/sabre"
-	"github.com/spy16/sabre/core"
+	"github.com/spy16/sabre/slang"
 )
 
 var (
@@ -22,9 +22,8 @@ var noREPL = flag.Bool("norepl", false, "Don't start REPL after executing file a
 func main() {
 	flag.Parse()
 
-	scope := sabre.NewScope(nil)
-	core.BindAll(scope)
-	scope.Bind("version", sabre.String(version))
+	sl := slang.New()
+	sl.BindGo("version", version)
 
 	var result interface{}
 	var err error
@@ -36,14 +35,14 @@ func main() {
 		}
 		defer fh.Close()
 
-		result, err = sabre.ReadEval(scope, fh)
+		result, err = sabre.ReadEval(sl, fh)
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}
 	}
 
 	if *executeStr != "" {
-		result, err = sabre.ReadEvalStr(scope, *executeStr)
+		result, err = sabre.ReadEvalStr(sl, *executeStr)
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}
@@ -54,12 +53,7 @@ func main() {
 		return
 	}
 
-	repl, err := newREPL(scope)
-	if err != nil {
-		fatalf("REPL: %v", err)
-	}
-
-	repl.Start(context.Background())
+	slang.NewREPL(sl).Run(context.Background())
 }
 
 func fatalf(format string, args ...interface{}) {

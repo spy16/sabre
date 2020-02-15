@@ -1,11 +1,11 @@
-package core_test
+package slang_test
 
 import (
 	"reflect"
 	"testing"
 
 	"github.com/spy16/sabre"
-	"github.com/spy16/sabre/core"
+	"github.com/spy16/sabre/slang"
 )
 
 func TestCore(t *testing.T) {
@@ -21,31 +21,31 @@ func TestCore(t *testing.T) {
 	}{
 		{
 			name:    "Not_InsufficientArgs",
-			fn:      core.Fn(core.Not),
+			fn:      slang.Fn(slang.Not),
 			args:    []sabre.Value{},
 			wantErr: true,
 		},
 		{
 			name: "Not_Nil",
-			fn:   core.Fn(core.Not),
+			fn:   slang.Fn(slang.Not),
 			args: []sabre.Value{sabre.Nil{}},
 			want: sabre.Bool(true),
 		},
 		{
 			name: "Not_Integer",
-			fn:   core.Fn(core.Not),
+			fn:   slang.Fn(slang.Not),
 			args: []sabre.Value{sabre.Int64(10)},
 			want: sabre.Bool(false),
 		},
 		{
 			name: "Not_False",
-			fn:   core.Fn(core.Not),
+			fn:   slang.Fn(slang.Not),
 			args: []sabre.Value{sabre.Bool(false)},
 			want: sabre.Bool(true),
 		},
 		{
 			name: "Not_True",
-			fn:   core.Fn(core.Not),
+			fn:   slang.Fn(slang.Not),
 			args: []sabre.Value{sabre.Bool(true)},
 			want: sabre.Bool(false),
 		},
