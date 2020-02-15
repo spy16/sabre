@@ -111,7 +111,7 @@ func (rd *Reader) All() (Value, error) {
 // One consumes characters from underlying stream until a complete form is
 // parsed and returns the form while ignoring the no-op forms like comments.
 // Except EOF, all errors will be wrapped with ReaderError type along with
-// the positional information obtained using Info().
+// the positional information obtained using Position().
 func (rd *Reader) One() (Value, error) {
 	for {
 		form, err := rd.readOne()
@@ -215,9 +215,9 @@ func (rd *Reader) Unread(runes ...rune) {
 	rd.buf = append(runes, rd.buf...)
 }
 
-// Info returns information about the stream including file name and the
-// position of the reader.
-func (rd Reader) Info() PositionInfo {
+// Position returns information about the stream including file name and
+// the position of the reader.
+func (rd Reader) Position() PositionInfo {
 	file := strings.TrimSpace(rd.File)
 	return PositionInfo{
 		File:   file,
@@ -314,7 +314,7 @@ func (rd *Reader) annotateErr(e error) error {
 
 	return ReadError{
 		Cause:        e,
-		PositionInfo: rd.Info(),
+		PositionInfo: rd.Position(),
 	}
 }
 
@@ -396,7 +396,7 @@ func readNumber(rd *Reader, init rune) (Value, error) {
 }
 
 func readSymbol(rd *Reader, init rune) (Value, error) {
-	pi := rd.Info()
+	pi := rd.Position()
 
 	s, err := readToken(rd, init)
 	if err != nil {
@@ -447,12 +447,16 @@ func readCharacter(rd *Reader, _ rune) (Value, error) {
 }
 
 func readList(rd *Reader, _ rune) (Value, error) {
+	pi := rd.Position()
 	forms, err := readContainer(rd, '(', ')', "list")
 	if err != nil {
 		return nil, err
 	}
 
-	return &List{Values: forms}, nil
+	return &List{
+		Values:       forms,
+		PositionInfo: pi,
+	}, nil
 }
 
 func readVector(rd *Reader, _ rune) (Value, error) {

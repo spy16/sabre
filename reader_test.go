@@ -235,6 +235,11 @@ func TestReader_One(t *testing.T) {
 							},
 							sabre.Int64(3),
 						},
+						PositionInfo: sabre.PositionInfo{
+							File:   "<string>",
+							Line:   1,
+							Column: 2,
+						},
 					},
 				},
 			},
@@ -566,6 +571,11 @@ func TestReader_One_List(t *testing.T) {
 			src:  `()`,
 			want: &sabre.List{
 				Values: nil,
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
 			},
 		},
 		{
@@ -581,6 +591,11 @@ func TestReader_One_List(t *testing.T) {
 							Column: 2,
 						},
 					},
+				},
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
 				},
 			},
 		},
@@ -600,6 +615,11 @@ func TestReader_One_List(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
 			},
 		},
 		{
@@ -617,6 +637,11 @@ func TestReader_One_List(t *testing.T) {
 					},
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
+				},
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
 				},
 			},
 		},
@@ -639,6 +664,11 @@ func TestReader_One_List(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
+				},
 			},
 		},
 		{
@@ -659,6 +689,11 @@ func TestReader_One_List(t *testing.T) {
 					},
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
+				},
+				PositionInfo: sabre.PositionInfo{
+					File:   "<string>",
+					Line:   1,
+					Column: 1,
 				},
 			},
 		},

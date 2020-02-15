@@ -10,6 +10,7 @@ import (
 // function invocation.
 type List struct {
 	Values
+	PositionInfo
 
 	// special is set in case if the list represents invocation of
 	// a special form such as def, fn* etc.
