@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spy16/sabre"
 	"github.com/spy16/sabre/slang"
 )
 
@@ -35,14 +34,14 @@ func main() {
 		}
 		defer fh.Close()
 
-		result, err = sabre.ReadEval(sl, fh)
+		result, err = sl.ReadEval(fh)
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}
 	}
 
 	if *executeStr != "" {
-		result, err = sabre.ReadEvalStr(sl, *executeStr)
+		result, err = sl.ReadEvalStr(*executeStr)
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}

@@ -2,6 +2,7 @@ package slang
 
 import (
 	"fmt"
+	"io"
 	"strings"
 	"sync"
 
@@ -38,8 +39,14 @@ func (slang *Slang) Eval(v sabre.Value) (sabre.Value, error) {
 	return sabre.Eval(slang, v)
 }
 
-// ReadEval reads the source and evalautes it in Slang context.
-func (slang *Slang) ReadEval(src string) (sabre.Value, error) {
+// ReadEval reads from the given reader and evaluates all the forms
+// obtained in Slang context.
+func (slang *Slang) ReadEval(r io.Reader) (sabre.Value, error) {
+	return sabre.ReadEval(slang, r)
+}
+
+// ReadEvalStr reads the source and evalautes it in Slang context.
+func (slang *Slang) ReadEvalStr(src string) (sabre.Value, error) {
 	return sabre.ReadEvalStr(slang, src)
 }
 

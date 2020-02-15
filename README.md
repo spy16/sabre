@@ -17,6 +17,9 @@ Sabre is highly customizable, embeddable LISP engine for Go.
 * Clojure style built-in special forms: `λ` or `fn*`, `def`, `if`, `do`, `throw`, `let*`
 * Simple interface `sabre.Value` (and optional `sabre.Invokable`) for adding custom
   data types. (See [Evaluation](#evaluation))
+* *Slang* (Short for Sabre Lang): A tiny reference LISP dialect built using Sabre.
+  * Contains an Interpreter with REPL.
+  * Some basic standard functions.
 
 ## Usage
 
@@ -102,6 +105,7 @@ access using `([1 2 3] 0)` (returns `1`)
 * [x] Executor
 * [x] Special Forms
 * [X] REPL
+* [X] Slang - A tiny LISP like language built using Sabre.
 * [ ] Standard Functions and Macros
 * [ ] Optimizations
 * [ ] Code Generation?
