@@ -70,7 +70,7 @@ func (kw Keyword) String() string { return fmt.Sprintf(":%s", string(kw)) }
 
 // Symbol represents a name given to a value in memory.
 type Symbol struct {
-	PositionInfo
+	Position
 
 	Value string
 }

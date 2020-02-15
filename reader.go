@@ -217,9 +217,9 @@ func (rd *Reader) Unread(runes ...rune) {
 
 // Position returns information about the stream including file name and
 // the position of the reader.
-func (rd Reader) Position() PositionInfo {
+func (rd Reader) Position() Position {
 	file := strings.TrimSpace(rd.File)
-	return PositionInfo{
+	return Position{
 		File:   file,
 		Line:   rd.line + 1,
 		Column: rd.col,
@@ -279,19 +279,13 @@ func (rd *Reader) readOne() (Value, error) {
 	}
 
 	if r == dispatchTrigger {
-		r2, err := rd.NextRune()
-		if err == nil {
-			dispatchMacro, found := rd.dispatch[r2]
-			if found {
-				rd.dispatching = true
-				defer func() {
-					rd.dispatching = false
-				}()
+		f, err := rd.execDispatch()
+		if err != nil {
+			return nil, err
+		}
 
-				return dispatchMacro(rd, r2)
-			}
-
-			rd.Unread(r2)
+		if f != nil {
+			return f, nil
 		}
 	}
 
@@ -307,14 +301,51 @@ func (rd *Reader) readOne() (Value, error) {
 	return v, nil
 }
 
+func (rd *Reader) execDispatch() (Value, error) {
+	pos := rd.Position()
+
+	r2, err := rd.NextRune()
+	if err != nil {
+		return nil, nil // ignore the error
+	}
+
+	dispatchMacro, found := rd.dispatch[r2]
+	if !found {
+		rd.Unread(r2)
+		return nil, nil
+	}
+
+	rd.dispatching = true
+	defer func() {
+		rd.dispatching = false
+	}()
+
+	form, err := dispatchMacro(rd, r2)
+	if err != nil {
+		return nil, err
+	}
+
+	setPosition(form, pos)
+	return form, nil
+}
+
+func setPosition(form Value, pos Position) Value {
+	switch f := form.(type) {
+	case Set:
+		f.Position = pos
+	}
+
+	return form
+}
+
 func (rd *Reader) annotateErr(e error) error {
 	if e == io.EOF || e == ErrSkip {
 		return e
 	}
 
 	return ReadError{
-		Cause:        e,
-		PositionInfo: rd.Position(),
+		Cause:    e,
+		Position: rd.Position(),
 	}
 }
 
@@ -404,8 +435,8 @@ func readSymbol(rd *Reader, init rune) (Value, error) {
 	}
 
 	return Symbol{
-		Value:        s,
-		PositionInfo: pi,
+		Value:    s,
+		Position: pi,
 	}, nil
 }
 
@@ -454,8 +485,8 @@ func readList(rd *Reader, _ rune) (Value, error) {
 	}
 
 	return &List{
-		Values:       forms,
-		PositionInfo: pi,
+		Values:   forms,
+		Position: pi,
 	}, nil
 }
 
@@ -468,18 +499,23 @@ func readVector(rd *Reader, _ rune) (Value, error) {
 	}
 
 	return Vector{
-		Values:       forms,
-		PositionInfo: pi,
+		Values:   forms,
+		Position: pi,
 	}, nil
 }
 
 func readSet(rd *Reader, _ rune) (Value, error) {
+	pi := rd.Position()
+
 	forms, err := readContainer(rd, '{', '}', "set")
 	if err != nil {
 		return nil, err
 	}
 
-	set := Set{Values: forms}
+	set := Set{
+		Values:   forms,
+		Position: pi,
+	}
 	if !set.valid() {
 		return nil, errors.New("duplicate value in set")
 	}
@@ -704,7 +740,7 @@ func inferFileName(rs io.Reader) string {
 
 // ReadError wraps the parsing/eval errors with relevant information.
 type ReadError struct {
-	PositionInfo
+	Position
 	Cause  error
 	Messag string
 }
@@ -725,15 +761,20 @@ func (err ReadError) Error() string {
 	)
 }
 
-// PositionInfo represents the positional information about a value read
+// Position represents the positional information about a value read
 // by reader.
-type PositionInfo struct {
+type Position struct {
 	File   string
 	Line   int
 	Column int
 }
 
-func (pi PositionInfo) String() string {
+// Position returns the file, line and column values.
+func (pi Position) Position() (file string, line, col int) {
+	return pi.File, pi.Line, pi.Column
+}
+
+func (pi Position) String() string {
 	if pi.File == "" {
 		pi.File = "<unknown>"
 	}

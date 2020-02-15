@@ -10,7 +10,7 @@ import (
 // function invocation.
 type List struct {
 	Values
-	PositionInfo
+	Position
 
 	// special is set in case if the list represents invocation of
 	// a special form such as def, fn* etc.
@@ -76,7 +76,7 @@ func getSpecial(v Value) specialForm {
 // vector does not lead to function invoke.
 type Vector struct {
 	Values
-	PositionInfo
+	Position
 }
 
 // Eval evaluates each value in the vector form and returns the resultant
@@ -121,6 +121,7 @@ func (vf Vector) String() string {
 // Set represents a list of unique values. (Experimental)
 type Set struct {
 	Values
+	Position
 }
 
 // Eval evaluates each value in the set form and returns the resultant

@@ -54,7 +54,7 @@ func TestReader_SetMacro(t *testing.T) {
 		var want sabre.Value
 		want = sabre.Symbol{
 			Value: "~hello",
-			PositionInfo: sabre.PositionInfo{
+			Position: sabre.Position{
 				File:   "<string>",
 				Line:   1,
 				Column: 1,
@@ -116,19 +116,26 @@ func TestReader_All(t *testing.T) {
 	}{
 		{
 			name: "ValidLiteralSample",
-			src:  `'hello 123 "Hello\tWorld" 12.34 -0xF +010 true nil 0b1010 \a :hello #{}`,
+			src:  `'hello #{} 123 "Hello\tWorld" 12.34 -0xF +010 true nil 0b1010 \a :hello`,
 			want: sabre.Module{
 				&sabre.List{
 					Values: []sabre.Value{
 						sabre.Symbol{Value: "quote"},
 						sabre.Symbol{
 							Value: "hello",
-							PositionInfo: sabre.PositionInfo{
+							Position: sabre.Position{
 								File:   "<string>",
 								Line:   1,
 								Column: 2,
 							},
 						},
+					},
+				},
+				sabre.Set{
+					Position: sabre.Position{
+						File:   "<string>",
+						Line:   1,
+						Column: 9,
 					},
 				},
 				sabre.Int64(123),
@@ -141,7 +148,6 @@ func TestReader_All(t *testing.T) {
 				sabre.Int64(10),
 				sabre.Character('a'),
 				sabre.Keyword("hello"),
-				sabre.Set{},
 			},
 		},
 		{
@@ -227,7 +233,7 @@ func TestReader_One(t *testing.T) {
 						Values: []sabre.Value{
 							sabre.Symbol{
 								Value: "x",
-								PositionInfo: sabre.PositionInfo{
+								Position: sabre.Position{
 									File:   "<string>",
 									Line:   1,
 									Column: 3,
@@ -235,7 +241,7 @@ func TestReader_One(t *testing.T) {
 							},
 							sabre.Int64(3),
 						},
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -530,7 +536,7 @@ func TestReader_One_Symbol(t *testing.T) {
 			src:  `hello`,
 			want: sabre.Symbol{
 				Value: "hello",
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -542,7 +548,7 @@ func TestReader_One_Symbol(t *testing.T) {
 			src:  `find-∂`,
 			want: sabre.Symbol{
 				Value: "find-∂",
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -554,7 +560,7 @@ func TestReader_One_Symbol(t *testing.T) {
 			src:  `+`,
 			want: sabre.Symbol{
 				Value: "+",
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -571,7 +577,7 @@ func TestReader_One_List(t *testing.T) {
 			src:  `()`,
 			want: &sabre.List{
 				Values: nil,
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -585,14 +591,14 @@ func TestReader_One_List(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "help",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -606,7 +612,7 @@ func TestReader_One_List(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -615,7 +621,7 @@ func TestReader_One_List(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -629,7 +635,7 @@ func TestReader_One_List(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -638,7 +644,7 @@ func TestReader_One_List(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -655,7 +661,7 @@ func TestReader_One_List(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -664,7 +670,7 @@ func TestReader_One_List(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -681,7 +687,7 @@ func TestReader_One_List(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -690,7 +696,7 @@ func TestReader_One_List(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -712,7 +718,7 @@ func TestReader_One_Vector(t *testing.T) {
 			src:  `[]`,
 			want: sabre.Vector{
 				Values: nil,
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -726,14 +732,14 @@ func TestReader_One_Vector(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "help",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -747,7 +753,7 @@ func TestReader_One_Vector(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -756,7 +762,7 @@ func TestReader_One_Vector(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -770,7 +776,7 @@ func TestReader_One_Vector(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -779,7 +785,7 @@ func TestReader_One_Vector(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -796,7 +802,7 @@ func TestReader_One_Vector(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -805,7 +811,7 @@ func TestReader_One_Vector(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -822,7 +828,7 @@ func TestReader_One_Vector(t *testing.T) {
 				Values: []sabre.Value{
 					sabre.Symbol{
 						Value: "+",
-						PositionInfo: sabre.PositionInfo{
+						Position: sabre.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
@@ -831,7 +837,7 @@ func TestReader_One_Vector(t *testing.T) {
 					sabre.Int64(15),
 					sabre.Float64(3.1413),
 				},
-				PositionInfo: sabre.PositionInfo{
+				Position: sabre.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -847,30 +853,39 @@ func TestReader_One_Vector(t *testing.T) {
 }
 
 func TestReader_One_Set(t *testing.T) {
-	set := func(items ...sabre.Value) sabre.Set {
-		return sabre.Set{Values: items}
-	}
-
 	executeReaderTests(t, []readerTestCase{
 		{
 			name: "Empty",
 			src:  "#{}",
-			want: set(),
+			want: sabre.Set{
+				Values: nil,
+				Position: sabre.Position{
+					File:   "<string>",
+					Line:   1,
+					Column: 2,
+				},
+			},
 		},
 		{
 			name: "Valid",
 			src:  "#{1 2 []}",
-			want: set(
-				sabre.Int64(1),
-				sabre.Int64(2),
-				sabre.Vector{
-					PositionInfo: sabre.PositionInfo{
-						File:   "<string>",
-						Column: 7,
-						Line:   1,
+			want: sabre.Set{
+				Values: []sabre.Value{sabre.Int64(1),
+					sabre.Int64(2),
+					sabre.Vector{
+						Position: sabre.Position{
+							File:   "<string>",
+							Column: 7,
+							Line:   1,
+						},
 					},
 				},
-			),
+				Position: sabre.Position{
+					File:   "<string>",
+					Line:   1,
+					Column: 2,
+				},
+			},
 		},
 		{
 			name:    "HasDuplicate",
@@ -894,11 +909,11 @@ func executeReaderTests(t *testing.T, tests []readerTestCase) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := sabre.NewReader(strings.NewReader(tt.src)).One()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("One() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("One() error = %#v, wantErr %#v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("One() got = %v, want %v", got, tt.want)
+				t.Errorf("One() got = %#v, want %#v", got, tt.want)
 			}
 		})
 	}
