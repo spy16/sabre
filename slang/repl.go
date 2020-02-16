@@ -77,7 +77,7 @@ func (repl *REPL) Run(ctx context.Context) (err error) {
 
 func (repl *REPL) print(res sabre.Value, err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "error: %v\n", err)
+		fmt.Fprintf(os.Stdout, "%v\n", err)
 		return
 	}
 
@@ -104,7 +104,10 @@ func (repl *REPL) read() (sabre.Value, error) {
 			return nil, nil
 		}
 
-		form, err = sabre.NewReader(strings.NewReader(src)).All()
+		rd := sabre.NewReader(strings.NewReader(src))
+		rd.File = "REPL"
+
+		form, err = rd.All()
 		if err != nil {
 			if errors.Is(err, sabre.ErrEOF) {
 				lineNo++
