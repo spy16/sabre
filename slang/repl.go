@@ -68,11 +68,9 @@ func (repl *REPL) Run(ctx context.Context) (err error) {
 				continue
 			}
 
-			if form == nil {
-				continue
+			if form != nil {
+				repl.print(repl.sl.Eval(form))
 			}
-
-			repl.print(repl.sl.Eval(form))
 		}
 	}
 }
@@ -100,6 +98,10 @@ func (repl *REPL) read() (sabre.Value, error) {
 		if err != nil {
 			return nil, err
 		}
+		if strings.TrimSpace(line) == "" {
+			return nil, nil
+		}
+
 		src += line + "\n"
 
 		form, err = sabre.NewReader(strings.NewReader(src)).All()

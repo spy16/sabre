@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	_ sabre.Seq = sabre.List{}
+	_ sabre.Seq = &sabre.List{}
 	_ sabre.Seq = sabre.Vector{}
 	_ sabre.Seq = sabre.Set{}
 )

@@ -91,17 +91,7 @@ func (slang *Slang) Resolve(symbol string) (sabre.Value, error) {
 		return nil, err
 	}
 
-	v, found := slang.bindings[*nsSym]
-	if !found {
-		v, found = slang.bindings[*nsSym]
-		if !found {
-			return nil, fmt.Errorf("unable to resolve symbol: %v", symbol)
-		}
-
-		return nil, fmt.Errorf("unable to resolve symbol: %v", symbol)
-	}
-
-	return v, nil
+	return slang.resolveAny(symbol, *nsSym, nsSym.WithNS("core"))
 }
 
 // BindGo is similar to Bind but handles convertion of Go value 'v' to
@@ -132,6 +122,17 @@ func (slang *Slang) CurrentNS() string {
 	return slang.currentNS
 }
 
+func (slang *Slang) resolveAny(symbol string, syms ...nsSymbol) (sabre.Value, error) {
+	for _, s := range syms {
+		v, found := slang.bindings[s]
+		if found {
+			return v, nil
+		}
+	}
+
+	return nil, fmt.Errorf("unable to resolve symbol: %v", symbol)
+}
+
 func (slang *Slang) splitSymbol(symbol string) (*nsSymbol, error) {
 	sep := string(nsSeparator)
 	parts := strings.SplitN(symbol, sep, 2)
@@ -158,14 +159,29 @@ type nsSymbol struct {
 	Name string
 }
 
+func (s nsSymbol) WithNS(ns string) nsSymbol {
+	s.NS = ns
+	return s
+}
+
 // BindAll binds all core functions into the given scope.
 func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
-		// Core functions
+		"core/->":   sabre.GoFunc(ThreadFirst),
+		"core/->>":  sabre.GoFunc(ThreadLast),
+		"core/eval": sabre.ValueOf(Eval),
+		"core/not":  sabre.ValueOf(Not),
+
+		// Sequence functions
+		"core/next":  sabre.ValueOf(Next),
+		"core/first": sabre.ValueOf(First),
+		"core/cons":  sabre.ValueOf(Cons),
+		"core/conj":  sabre.ValueOf(Conj),
+
+		// Type system functions
 		"core/set":      makeContainer(sabre.Set{}),
 		"core/list":     makeContainer(&sabre.List{}),
 		"core/vector":   makeContainer(sabre.Vector{}),
-		"core/nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
 		"core/int?":     IsType(reflect.TypeOf(sabre.Int64(0))),
 		"core/set?":     IsType(reflect.TypeOf(sabre.Set{})),
 		"core/boolean?": IsType(reflect.TypeOf(sabre.Bool(false))),
@@ -175,16 +191,24 @@ func BindAll(scope sabre.Scope) error {
 		"core/vector?":  IsType(reflect.TypeOf(sabre.Vector{})),
 		"core/keyword?": IsType(reflect.TypeOf(sabre.Keyword(""))),
 		"core/symbol?":  IsType(reflect.TypeOf(sabre.Symbol{})),
-		"core/eval":     sabre.ValueOf(Eval),
+		"core/int":      Fn(MakeInt),
+		"core/float":    Fn(MakeFloat),
+		"core/seq?":     sabre.ValueOf(IsSeq),
 		"core/type":     sabre.ValueOf(TypeOf),
+		"core/nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
 		"core/boolean":  sabre.ValueOf(MakeBool),
-		"core/not":      sabre.ValueOf(Not),
 		"core/str":      sabre.ValueOf(MakeString),
-		"core/+":        sabre.ValueOf(Add),
-		"core/-":        sabre.ValueOf(Sub),
-		"core/*":        sabre.ValueOf(Multiply),
-		"core//":        sabre.ValueOf(Divide),
-		"core/=":        sabre.ValueOf(Equals),
+
+		// Math functions
+		"core/+":  sabre.ValueOf(Add),
+		"core/-":  sabre.ValueOf(Sub),
+		"core/*":  sabre.ValueOf(Multiply),
+		"core//":  sabre.ValueOf(Divide),
+		"core/=":  sabre.ValueOf(Equals),
+		"core/>":  sabre.ValueOf(Gt),
+		"core/>=": sabre.ValueOf(GtE),
+		"core/<":  sabre.ValueOf(Lt),
+		"core/<=": sabre.ValueOf(LtE),
 	}
 
 	for sym, val := range core {
