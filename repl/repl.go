@@ -49,9 +49,7 @@ type REPL struct {
 // Next form runs through once read-eval-print cycle, returning any errors encountered.
 // It is safe to call Next() again after an error, unless the error is EOF.
 func (repl *REPL) Next() error {
-	repl.once.Do(func() {
-		fmt.Println(repl.banner)
-	})
+	repl.once.Do(repl.printBanner)
 
 	repl.setPrompt(false)
 
@@ -128,4 +126,10 @@ func (repl *REPL) setPrompt(multiline bool) {
 
 func (repl *REPL) Write(b []byte) (int, error) {
 	return repl.output.Write(b)
+}
+
+func (repl *REPL) printBanner() {
+	if repl.banner != "" {
+		fmt.Println(repl.banner)
+	}
 }
