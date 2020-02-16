@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
+	log "github.com/lthibault/log/pkg"
 	"github.com/spy16/sabre"
 )
 
@@ -20,10 +21,10 @@ const (
 // NewREPL initializes a new Slang REPL and returns the instance.
 func NewREPL(slang *Slang, opts ...REPLOption) *REPL {
 	repl := REPL{
-		sl: slang,
+		runtime: slang,
 	}
 
-	for _, option := range opts {
+	for _, option := range withDefaults(opts) {
 		option(&repl)
 	}
 
@@ -32,25 +33,28 @@ func NewREPL(slang *Slang, opts ...REPLOption) *REPL {
 
 // REPL implements a read-eval-print loop for Slang.
 type REPL struct {
-	sl     *Slang
-	ri     *readline.Instance
 	Banner string
+
+	log log.Logger
+
+	runtime *Slang
+
+	prompt Prompt
+	// ri *readline.Instance
+
 }
 
 // Run starts the REPL loop and runs until the context is cancelled or
 // a critical error occurs during ReadEval step.
 func (repl *REPL) Run(ctx context.Context) (err error) {
-	repl.ri, err = readline.New(repl.getPrompt(promptPrefix))
-	if err != nil {
-		return err
-	}
+	repl.prompt.SetPrompt(repl.getPrompt(promptPrefix))
 
 	if repl.Banner != "" {
 		fmt.Println(repl.Banner)
 	}
 
 	for {
-		repl.ri.SetPrompt(repl.getPrompt(promptPrefix))
+		repl.prompt.SetPrompt(repl.getPrompt(promptPrefix))
 
 		select {
 		case <-ctx.Done():
@@ -72,7 +76,7 @@ func (repl *REPL) Run(ctx context.Context) (err error) {
 				continue
 			}
 
-			repl.print(repl.sl.Eval(form))
+			repl.print(repl.runtime.Eval(form))
 		}
 	}
 }
@@ -93,10 +97,10 @@ func (repl *REPL) read() (sabre.Value, error) {
 
 	for {
 		if lineNo > 1 {
-			repl.ri.SetPrompt(repl.getPrompt(multiLinePrompt))
+			repl.prompt.SetPrompt(repl.getPrompt(multiLinePrompt))
 		}
 
-		line, err := repl.ri.Readline()
+		line, err := repl.prompt.Readline()
 		if err != nil {
 			return nil, err
 		}
@@ -117,9 +121,5 @@ func (repl *REPL) read() (sabre.Value, error) {
 }
 
 func (repl *REPL) getPrompt(prompt string) string {
-	return fmt.Sprintf("%s%s ", repl.sl.CurrentNS(), prompt)
+	return fmt.Sprintf("%s%s ", repl.runtime.CurrentNS(), prompt)
 }
-
-// REPLOption implmentations can be provided to NewREPL to configure the
-// REPL during initialization.
-type REPLOption func(repl *REPL)
