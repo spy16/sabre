@@ -134,8 +134,14 @@ func (slang *Slang) resolveAny(symbol string, syms ...nsSymbol) (sabre.Value, er
 
 func (slang *Slang) splitSymbol(symbol string) (*nsSymbol, error) {
 	sep := string(nsSeparator)
-	parts := strings.SplitN(symbol, sep, 2)
+	if symbol == sep {
+		return &nsSymbol{
+			NS:   slang.currentNS,
+			Name: symbol,
+		}, nil
+	}
 
+	parts := strings.SplitN(symbol, sep, 2)
 	if len(parts) < 2 {
 		return &nsSymbol{
 			NS:   slang.currentNS,

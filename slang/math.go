@@ -32,12 +32,16 @@ func Multiply(args ...float64) float64 {
 }
 
 // Divide returns the product of given numbers.
-func Divide(args ...float64) float64 {
-	p := 1.0
-	for _, a := range args {
-		p *= a
+func Divide(first float64, args ...float64) float64 {
+	if len(args) == 0 {
+		return 1 / first
 	}
-	return p
+
+	for _, a := range args {
+		first /= a
+	}
+
+	return first
 }
 
 // Gt returns true if the given args are monotonically increasing.
