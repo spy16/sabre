@@ -31,7 +31,7 @@ func New(opt ...RuntimeOption) *Slang {
 	_ = sl.BindGo("ns", sl.SwitchNS)
 
 	if err := BindAll(sl); err != nil {
-		sl.log.Fatalf("%+v", err)
+		sl.log.Fatalf("%+v", err) // show stack-trace, if available
 	}
 
 	sl.checkNS = true
