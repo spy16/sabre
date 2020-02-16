@@ -17,14 +17,10 @@ const (
 )
 
 // New returns a new instance of Slang interpreter.
-func New(opt ...RuntimeOption) *Slang {
+func New() *Slang {
 	sl := &Slang{
 		mu:       &sync.RWMutex{},
 		bindings: map[nsSymbol]sabre.Value{},
-	}
-
-	for _, f := range opt {
-		f(sl)
 	}
 
 	_ = sl.SwitchNS(sabre.Symbol{Value: defaultNS})

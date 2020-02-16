@@ -43,14 +43,3 @@ type Prompt interface {
 	SetPrompt(string)
 	Readline() (string, error)
 }
-
-// RuntimeOption implementations can be provided to New() to configure
-// the language runtime.
-type RuntimeOption func(slang *Slang)
-
-// RuntimeLogger sets the runtime's logger instance.
-func RuntimeLogger(log log.Logger) RuntimeOption {
-	return func(slang *Slang) {
-		slang.log = log
-	}
-}
