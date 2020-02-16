@@ -29,14 +29,14 @@ func Next(seq sabre.Seq) sabre.Value {
 	return n
 }
 
-// Cons inserts the first argument as first element in the second seq
-// argument and returns.
+// Cons inserts the first argument as first element in the second seq argument
+// and returns.
 func Cons(v sabre.Value, seq sabre.Seq) sabre.Value {
 	return seq.Cons(v)
 }
 
-// Conj appends the second argument as last element in the first seq
-// argument and returns.
+// Conj appends the second argument as last element in the first seq argument
+// and returns.
 func Conj(seq sabre.Seq, args ...sabre.Value) sabre.Value {
 	return seq.Conj(args...)
 }
@@ -51,8 +51,7 @@ func Not(val sabre.Value) sabre.Value {
 	return sabre.Bool(!isTruthy(val))
 }
 
-// Equals compares 2 values using reflect.DeepEqual and returns
-// the result.
+// Equals compares 2 values using reflect.DeepEqual and returns the result.
 func Equals(v1 sabre.Value, args ...sabre.Value) bool {
 	eq := true
 	for _, arg := range args {

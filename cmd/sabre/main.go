@@ -56,8 +56,13 @@ func main() {
 		return
 	}
 
-	repl := slang.NewREPL(sl)
-	repl.Banner = fmt.Sprintf(help, version, commit, runtime.Version())
+	repl, err := slang.NewREPL(sl,
+		slang.WithBanner(fmt.Sprintf(help, version, commit, runtime.Version())),
+	)
+	if err != nil {
+		fatalf("failed to setup REPL: %v", err)
+	}
+
 	repl.Run(context.Background())
 }
 

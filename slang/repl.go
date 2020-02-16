@@ -12,41 +12,41 @@ import (
 	"github.com/spy16/sabre"
 )
 
-const (
-	promptPrefix    = "=>"
-	multiLinePrompt = "|"
-)
-
 // NewREPL initializes a new Slang REPL and returns the instance.
-func NewREPL(slang *Slang, opts ...REPLOption) *REPL {
+func NewREPL(slang *Slang, opts ...REPLOption) (*REPL, error) {
 	repl := REPL{
-		sl: slang,
+		sl:          slang,
+		prompt:      "=>",
+		multiPrompt: "|",
 	}
 
 	for _, option := range opts {
 		option(&repl)
 	}
 
-	return &repl
+	ri, err := readline.New(repl.prompt)
+	if err != nil {
+		return nil, err
+	}
+	repl.ri = ri
+
+	return &repl, nil
 }
 
 // REPL implements a read-eval-print loop for Slang.
 type REPL struct {
-	sl     *Slang
-	ri     *readline.Instance
-	Banner string
+	sl          *Slang
+	ri          *readline.Instance
+	banner      string
+	prompt      string
+	multiPrompt string
 }
 
 // Run starts the REPL loop and runs until the context is cancelled or
 // a critical error occurs during ReadEval step.
 func (repl *REPL) Run(ctx context.Context) (err error) {
-	repl.ri, err = readline.New(promptPrefix)
-	if err != nil {
-		return err
-	}
-
-	if repl.Banner != "" {
-		fmt.Println(repl.Banner)
+	if repl.banner != "" {
+		fmt.Println(repl.banner)
 	}
 
 	for {
@@ -123,11 +123,11 @@ func (repl *REPL) read() (sabre.Value, error) {
 
 func (repl *REPL) setPrompt(multiline bool) {
 	nsPrefix := repl.sl.CurrentNS()
-	prompt := promptPrefix
+	prompt := repl.prompt
 
 	if multiline {
 		nsPrefix = strings.Repeat(" ", len(nsPrefix)+1)
-		prompt = multiLinePrompt
+		prompt = repl.multiPrompt
 	}
 
 	repl.ri.SetPrompt(fmt.Sprintf("%s%s ", nsPrefix, prompt))
@@ -136,3 +136,26 @@ func (repl *REPL) setPrompt(multiline bool) {
 // REPLOption implmentations can be provided to NewREPL to configure the
 // REPL during initialization.
 type REPLOption func(repl *REPL)
+
+// WithVimMode enables Vim based editing mode for REPL.
+func WithVimMode() REPLOption {
+	return func(repl *REPL) {
+		repl.ri.SetVimMode(true)
+	}
+}
+
+// WithBanner sets a welcome banner to print when the REPL starts.
+func WithBanner(s string) REPLOption {
+	return func(repl *REPL) {
+		repl.banner = s
+	}
+}
+
+// WithPrompts sets the prompt to be displayed when waiting for user input
+// in the REPL.
+func WithPrompts(oneLine, multiLine string) REPLOption {
+	return func(repl *REPL) {
+		repl.prompt = oneLine
+		repl.multiPrompt = multiLine
+	}
+}
