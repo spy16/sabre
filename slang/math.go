@@ -32,10 +32,52 @@ func Multiply(args ...float64) float64 {
 }
 
 // Divide returns the product of given numbers.
-func Divide(args ...float64) float64 {
-	p := 1.0
-	for _, a := range args {
-		p *= a
+func Divide(first float64, args ...float64) float64 {
+	if len(args) == 0 {
+		return 1 / first
 	}
-	return p
+
+	for _, a := range args {
+		first /= a
+	}
+
+	return first
+}
+
+// Gt returns true if the given args are monotonically increasing.
+func Gt(base float64, args ...float64) bool {
+	inc := true
+	for _, arg := range args {
+		inc = inc && (arg > base)
+	}
+	return inc
+}
+
+// GtE returns true if the given args are monotonically increasing or
+// are all equal.
+func GtE(base float64, args ...float64) bool {
+	inc := true
+	for _, arg := range args {
+		inc = inc && (arg >= base)
+	}
+	return inc
+}
+
+// Lt returns true if the given args are monotonically decreasing.
+func Lt(base float64, args ...float64) bool {
+	inc := true
+	for _, arg := range args {
+		inc = inc && (arg < base)
+	}
+	return inc
+}
+
+// LtE returns true if the given args are monotonically decreasing or
+// all equal.
+func LtE(base float64, args ...float64) bool {
+	inc := true
+	for _, arg := range args {
+		inc = inc && (arg <= base)
+	}
+	return inc
 }

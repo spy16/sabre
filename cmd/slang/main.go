@@ -23,7 +23,7 @@ func main() {
 	}
 
 	repl := repl.New(slang.New(),
-		repl.WithPrompt(lr))
+		repl.WithInput(lr))
 
 	if err := repl.Run(context.Background()); err != nil {
 		log.New().WithError(err).Error("runtime error")

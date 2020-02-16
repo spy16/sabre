@@ -31,6 +31,38 @@ func MakeBool(val sabre.Value) sabre.Bool {
 	return sabre.Bool(isTruthy(val))
 }
 
+// MakeInt converts given value to integer and returns.
+func MakeInt(vals []sabre.Value) (sabre.Value, error) {
+	if err := verifyArgCount([]int{1}, vals); err != nil {
+		return nil, err
+	}
+
+	to := reflect.TypeOf(sabre.Int64(0))
+	rv := reflect.ValueOf(vals[0])
+
+	if !rv.Type().ConvertibleTo(to) {
+		return nil, fmt.Errorf("cannot convert '%s' to '%s'", rv.Type(), to)
+	}
+
+	return rv.Convert(to).Interface().(sabre.Int64), nil
+}
+
+// MakeFloat converts given value to float and returns.
+func MakeFloat(vals []sabre.Value) (sabre.Value, error) {
+	if err := verifyArgCount([]int{1}, vals); err != nil {
+		return nil, err
+	}
+
+	to := reflect.TypeOf(sabre.Float64(0))
+	rv := reflect.ValueOf(vals[0])
+
+	if !rv.Type().ConvertibleTo(to) {
+		return nil, fmt.Errorf("cannot convert '%s' to '%s'", rv.Type(), to)
+	}
+
+	return rv.Convert(to).Interface().(sabre.Float64), nil
+}
+
 // MakeString returns stringified version of all args.
 func MakeString(vals ...sabre.Value) sabre.Value {
 	argc := len(vals)

@@ -19,13 +19,20 @@ type Invokable interface {
 
 // Seq implementations represent a sequence/list of values.
 type Seq interface {
+	Value
 	First() Value
 	Next() Seq
 	Cons(v Value) Seq
+	Conj(vals ...Value) Seq
 }
 
 // Values represents a list of values and implements the Seq interface.
 type Values []Value
+
+// Eval returns itself.
+func (vals Values) Eval(_ Scope) (Value, error) {
+	return vals, nil
+}
 
 // First returns the first value in the list if the list is not empty.
 // Returns Nil{} otherwise.
@@ -52,7 +59,16 @@ func (vals Values) Cons(v Value) Seq {
 	return append(Values{v}, vals...)
 }
 
+// Conj returns a new sequence where 'v' is appended to the values.
+func (vals Values) Conj(args ...Value) Seq {
+	return append(vals, args...)
+}
+
 // Size returns the number of items in the list.
 func (vals Values) Size() int {
 	return len(vals)
+}
+
+func (vals Values) String() string {
+	return containerString(vals, "(", ")", " ")
 }

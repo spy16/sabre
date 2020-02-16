@@ -48,7 +48,36 @@ type String string
 // Eval simply returns itself since Strings evaluate to themselves.
 func (se String) Eval(_ Scope) (Value, error) { return se, nil }
 
+// First returns the first character if string is not empty, nil otherwise.
+func (se String) First() Value {
+	if len(se) == 0 {
+		return nilValue
+	}
+
+	return Character(se[0])
+}
+
+// Next slices the string by excluding first character and returns the
+// remainder.
+func (se String) Next() Seq { return se.chars().Next() }
+
+// Cons converts the string to character sequence and adds the given value
+// to the beginning of the list.
+func (se String) Cons(v Value) Seq { return se.chars().Cons(v) }
+
+// Conj joins the given values to list of characters of the string and returns
+// the new sequence.
+func (se String) Conj(vals ...Value) Seq { return se.chars().Conj(vals...) }
+
 func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
+
+func (se String) chars() Values {
+	var vals Values
+	for _, r := range se {
+		vals = append(vals, Character(r))
+	}
+	return vals
+}
 
 // Character represents a character literal.  For example, \a, \b, \1, \∂ etc
 // are valid character literals. In addition, special literals like \newline,

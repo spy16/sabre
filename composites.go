@@ -181,11 +181,7 @@ func evalValueList(scope Scope, vals []Value) ([]Value, error) {
 	for _, arg := range vals {
 		v, err := arg.Eval(scope)
 		if err != nil {
-			return nil, EvalError{
-				Position: getPosition(arg),
-				Cause:    err,
-				Form:     arg,
-			}
+			return nil, newEvalErr(arg, err)
 		}
 
 		result = append(result, v)

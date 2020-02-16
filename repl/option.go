@@ -1,24 +1,13 @@
 package repl
 
-import (
-	log "github.com/lthibault/log/pkg"
-)
-
 // Option implmentations can be provided to New to configure the
 // REPL during initialization.
 type Option func(repl *REPL)
 
-// WithLogger sets the REPL's logger.  `nil` is a no-op logger.
-func WithLogger(log log.Logger) Option {
+// WithInput sets the REPL's input.  `nil` uses a libreadline implementation.
+func WithInput(input Inputter) Option {
 	return func(repl *REPL) {
-		repl.log = log
-	}
-}
-
-// WithPrompt sets the REPL's prompt.  `nil` uses a libreadline implementation.
-func WithPrompt(prompt Prompt) Option {
-	return func(repl *REPL) {
-		repl.prompt = prompt
+		repl.input = input
 	}
 }
 
@@ -29,17 +18,26 @@ func WithBanner(banner string) Option {
 	}
 }
 
+// WithPrompts sets the prompt to be displayed when waiting for user input
+// in the REPL.
+func WithPrompts(oneLine, multiLine string) Option {
+	return func(repl *REPL) {
+		repl.prompt = oneLine
+		repl.multiPrompt = multiLine
+	}
+}
+
 func withDefaults(opt []Option) []Option {
 	return append([]Option{
-		WithLogger(nil),
 		WithBanner("SLANG - a tiny lisp based on Sabre."),
+		WithPrompts("=>", "|"),
 		// WithSomeOtherOption(...)
 	}, opt...)
 }
 
-// Prompt signals that a goroutine is ready to accept input by setting a prompt, and
+// Inputter signals that a goroutine is ready to accept input by setting a prompt, and
 // reads in a line, blocking until one is available.
-type Prompt interface {
+type Inputter interface {
 	SetPrompt(string)
 	Readline() (string, error)
 }

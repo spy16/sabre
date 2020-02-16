@@ -9,16 +9,10 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-	log "github.com/lthibault/log/pkg"
 	"github.com/spy16/sabre"
 )
 
-const (
-	promptPrefix    = "=>"
-	multiLinePrompt = "->"
-)
-
-// Runtime encapsulates language state.  Calling Eval may change the runtime state.
+// Runtime .
 type Runtime interface {
 	CurrentNS() string
 	Eval(sabre.Value) (sabre.Value, error)
@@ -26,34 +20,33 @@ type Runtime interface {
 
 // New Read-Evaluate-Print Loop.
 func New(r Runtime, opts ...Option) *REPL {
-	repl := REPL{runtime: r}
+	repl := &REPL{runtime: r}
 
 	for _, option := range withDefaults(opts) {
-		option(&repl)
+		option(repl)
 	}
 
-	return &repl
+	return repl
 }
 
 // REPL implements a read-eval-print loop for Slang.
 type REPL struct {
-	log     log.Logger
-	banner  string
-	runtime Runtime
-	prompt  Prompt
+	runtime     Runtime
+	input       Inputter
+	banner      string
+	prompt      string
+	multiPrompt string
 }
 
 // Run starts the REPL loop and runs until the context is cancelled or
 // a critical error occurs during ReadEval step.
 func (repl *REPL) Run(ctx context.Context) (err error) {
-	repl.prompt.SetPrompt(repl.getPrompt(promptPrefix))
-
 	if repl.banner != "" {
 		fmt.Println(repl.banner)
 	}
 
 	for {
-		repl.prompt.SetPrompt(repl.getPrompt(promptPrefix))
+		repl.setPrompt(false)
 
 		select {
 		case <-ctx.Done():
@@ -71,18 +64,16 @@ func (repl *REPL) Run(ctx context.Context) (err error) {
 				continue
 			}
 
-			if form == nil {
-				continue
+			if form != nil {
+				repl.print(repl.runtime.Eval(form))
 			}
-
-			repl.print(repl.runtime.Eval(form))
 		}
 	}
 }
 
 func (repl *REPL) print(res sabre.Value, err error) {
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "error: %v\n", err)
+		fmt.Fprintf(os.Stdout, "%v\n", err)
 		return
 	}
 
@@ -96,16 +87,23 @@ func (repl *REPL) read() (sabre.Value, error) {
 
 	for {
 		if lineNo > 1 {
-			repl.prompt.SetPrompt(repl.getPrompt(multiLinePrompt))
+			repl.setPrompt(true)
 		}
 
-		line, err := repl.prompt.Readline()
+		line, err := repl.input.Readline()
 		if err != nil {
 			return nil, err
 		}
 		src += line + "\n"
 
-		form, err = sabre.NewReader(strings.NewReader(src)).All()
+		if strings.TrimSpace(src) == "" {
+			return nil, nil
+		}
+
+		rd := sabre.NewReader(strings.NewReader(src))
+		rd.File = "REPL"
+
+		form, err = rd.All()
 		if err != nil {
 			if errors.Is(err, sabre.ErrEOF) {
 				lineNo++
@@ -119,6 +117,14 @@ func (repl *REPL) read() (sabre.Value, error) {
 	}
 }
 
-func (repl *REPL) getPrompt(prompt string) string {
-	return fmt.Sprintf("%s%s ", repl.runtime.CurrentNS(), prompt)
+func (repl *REPL) setPrompt(multiline bool) {
+	nsPrefix := repl.runtime.CurrentNS()
+	prompt := repl.prompt
+
+	if multiline {
+		nsPrefix = strings.Repeat(" ", len(nsPrefix)+1)
+		prompt = repl.multiPrompt
+	}
+
+	repl.input.SetPrompt(fmt.Sprintf("%s%s ", nsPrefix, prompt))
 }

@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/spy16/sabre/repl"
 	"github.com/spy16/sabre/slang"
 )
 
@@ -56,8 +57,13 @@ func main() {
 		return
 	}
 
-	repl := slang.NewREPL(sl)
-	repl.Banner = fmt.Sprintf(help, version, commit, runtime.Version())
+	repl, err := repl.New(sl,
+		slang.WithBanner(fmt.Sprintf(help, version, commit, runtime.Version())),
+	)
+	if err != nil {
+		fatalf("failed to setup REPL: %v", err)
+	}
+
 	repl.Run(context.Background())
 }
 
