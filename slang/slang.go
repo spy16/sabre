@@ -22,14 +22,13 @@ func New() *Slang {
 		bindings: map[nsSymbol]sabre.Value{},
 	}
 
-	_ = sl.SwitchNS(sabre.Symbol{Value: defaultNS})
-	_ = sl.BindGo("ns", sl.SwitchNS)
-
 	if err := BindAll(sl); err != nil {
 		panic(err)
 	}
-
 	sl.checkNS = true
+
+	_ = sl.SwitchNS(sabre.Symbol{Value: defaultNS})
+	_ = sl.BindGo("ns", sl.SwitchNS)
 	return sl
 }
 

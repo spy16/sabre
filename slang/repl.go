@@ -14,7 +14,7 @@ import (
 
 const (
 	promptPrefix    = "=>"
-	multiLinePrompt = "->"
+	multiLinePrompt = "|"
 )
 
 // NewREPL initializes a new Slang REPL and returns the instance.
@@ -40,7 +40,7 @@ type REPL struct {
 // Run starts the REPL loop and runs until the context is cancelled or
 // a critical error occurs during ReadEval step.
 func (repl *REPL) Run(ctx context.Context) (err error) {
-	repl.ri, err = readline.New(repl.getPrompt(promptPrefix))
+	repl.ri, err = readline.New(promptPrefix)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (repl *REPL) Run(ctx context.Context) (err error) {
 	}
 
 	for {
-		repl.ri.SetPrompt(repl.getPrompt(promptPrefix))
+		repl.setPrompt(false)
 
 		select {
 		case <-ctx.Done():
@@ -91,18 +91,18 @@ func (repl *REPL) read() (sabre.Value, error) {
 
 	for {
 		if lineNo > 1 {
-			repl.ri.SetPrompt(repl.getPrompt(multiLinePrompt))
+			repl.setPrompt(true)
 		}
 
 		line, err := repl.ri.Readline()
 		if err != nil {
 			return nil, err
 		}
-		if strings.TrimSpace(line) == "" {
+		src += line + "\n"
+
+		if strings.TrimSpace(src) == "" {
 			return nil, nil
 		}
-
-		src += line + "\n"
 
 		form, err = sabre.NewReader(strings.NewReader(src)).All()
 		if err != nil {
@@ -118,8 +118,16 @@ func (repl *REPL) read() (sabre.Value, error) {
 	}
 }
 
-func (repl *REPL) getPrompt(prompt string) string {
-	return fmt.Sprintf("%s%s ", repl.sl.CurrentNS(), prompt)
+func (repl *REPL) setPrompt(multiline bool) {
+	nsPrefix := repl.sl.CurrentNS()
+	prompt := promptPrefix
+
+	if multiline {
+		nsPrefix = strings.Repeat(" ", len(nsPrefix)+1)
+		prompt = multiLinePrompt
+	}
+
+	repl.ri.SetPrompt(fmt.Sprintf("%s%s ", nsPrefix, prompt))
 }
 
 // REPLOption implmentations can be provided to NewREPL to configure the
