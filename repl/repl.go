@@ -1,16 +1,20 @@
 package repl
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"strings"
+	"sync"
 
-	"github.com/chzyer/readline"
 	"github.com/spy16/sabre"
 )
+
+// Input controls input to a REPL
+type Input interface {
+	SetPrompt(string)
+	Readline() (string, error)
+}
 
 // Runtime .
 type Runtime interface {
@@ -31,53 +35,46 @@ func New(r Runtime, opts ...Option) *REPL {
 
 // REPL implements a read-eval-print loop for Slang.
 type REPL struct {
-	runtime     Runtime
-	input       Inputter
+	once sync.Once
+
+	runtime Runtime
+	input   Input
+	output  io.Writer
+
 	banner      string
 	prompt      string
 	multiPrompt string
 }
 
-// Run starts the REPL loop and runs until the context is cancelled or
-// a critical error occurs during ReadEval step.
-func (repl *REPL) Run(ctx context.Context) (err error) {
-	if repl.banner != "" {
+// Next form runs through once read-eval-print cycle, returning any errors encountered.
+// It is safe to call Next() again after an error, unless the error is EOF.
+func (repl *REPL) Next() error {
+	repl.once.Do(func() {
 		fmt.Println(repl.banner)
+	})
+
+	repl.setPrompt(false)
+
+	form, err := repl.read()
+	if err != nil {
+		return err
 	}
 
-	for {
-		repl.setPrompt(false)
-
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-
-		default:
-			form, err := repl.read()
-			if err != nil {
-				if err == readline.ErrInterrupt ||
-					err == io.EOF {
-					return nil
-				}
-
-				repl.print(nil, err)
-				continue
-			}
-
-			if form != nil {
-				repl.print(repl.runtime.Eval(form))
-			}
-		}
+	if form != nil {
+		return repl.print(repl.runtime.Eval(form))
 	}
+
+	return nil
 }
 
-func (repl *REPL) print(res sabre.Value, err error) {
+func (repl *REPL) print(res sabre.Value, err error) error {
 	if err != nil {
-		fmt.Fprintf(os.Stdout, "%v\n", err)
-		return
+		_, err = fmt.Fprintf(repl, "%v\n", err)
+		return err
 	}
 
-	fmt.Fprintf(os.Stdout, "%s\n", res)
+	_, err = fmt.Fprintf(repl, "%s\n", res)
+	return err
 }
 
 func (repl *REPL) read() (sabre.Value, error) {
@@ -127,4 +124,8 @@ func (repl *REPL) setPrompt(multiline bool) {
 	}
 
 	repl.input.SetPrompt(fmt.Sprintf("%s%s ", nsPrefix, prompt))
+}
+
+func (repl *REPL) Write(b []byte) (int, error) {
+	return repl.output.Write(b)
 }

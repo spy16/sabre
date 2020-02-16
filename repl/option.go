@@ -1,13 +1,38 @@
 package repl
 
+import (
+	"bufio"
+	"io"
+	"os"
+	"sync"
+)
+
 // Option implmentations can be provided to New to configure the
 // REPL during initialization.
 type Option func(repl *REPL)
 
-// WithInput sets the REPL's input.  `nil` uses a libreadline implementation.
-func WithInput(input Inputter) Option {
+// WithInput sets the REPL's input stream.  `nil` defaults to a bufio.Scanner backed
+// by os.Stdin
+func WithInput(in Input) Option {
+
+	if in == nil {
+		in = &lineReader{Reader: os.Stdin}
+	}
+
 	return func(repl *REPL) {
-		repl.input = input
+		repl.input = in
+	}
+}
+
+// WithOutput sets the REPL's output stream.  `nil` defaults to os.Stdout.
+func WithOutput(w io.Writer) Option {
+
+	if w == nil {
+		w = os.Stdout
+	}
+
+	return func(repl *REPL) {
+		repl.output = w
 	}
 }
 
@@ -29,15 +54,30 @@ func WithPrompts(oneLine, multiLine string) Option {
 
 func withDefaults(opt []Option) []Option {
 	return append([]Option{
-		WithBanner("SLANG - a tiny lisp based on Sabre."),
 		WithPrompts("=>", "|"),
+		WithInput(nil),
+		WithOutput(nil),
 		// WithSomeOtherOption(...)
 	}, opt...)
 }
 
-// Inputter signals that a goroutine is ready to accept input by setting a prompt, and
-// reads in a line, blocking until one is available.
-type Inputter interface {
-	SetPrompt(string)
-	Readline() (string, error)
+type lineReader struct {
+	once    sync.Once
+	scanner *bufio.Scanner
+	io.Reader
 }
+
+func (lr *lineReader) Readline() (string, error) {
+	lr.once.Do(func() {
+		lr.scanner = bufio.NewScanner(lr.Reader)
+	})
+
+	if !lr.scanner.Scan() && lr.scanner.Err() == nil { // scanner swallows EOF
+		return lr.scanner.Text(), io.EOF
+	}
+
+	return lr.scanner.Text(), nil
+}
+
+// no-op
+func (lr *lineReader) SetPrompt(string) {}

@@ -1,7 +1,9 @@
 package main
 
 import (
-	"context"
+	"errors"
+	"fmt"
+	"io"
 
 	"github.com/chzyer/readline"
 	log "github.com/lthibault/log/pkg"
@@ -9,9 +11,11 @@ import (
 	"github.com/spy16/sabre/slang"
 )
 
+const banner = "SLANG - a tiny lisp based on Sabre."
+
 func main() {
 	lr, err := readline.NewEx(&readline.Config{
-		HistoryFile:       "/tmp/ww.history",
+		HistoryFile:       "/tmp/slang.history",
 		HistorySearchFold: true,
 
 		InterruptPrompt: "^C",
@@ -23,9 +27,26 @@ func main() {
 	}
 
 	repl := repl.New(slang.New(),
-		repl.WithInput(lr))
+		repl.WithBanner(banner),
+		repl.WithInput(lr),
+		repl.WithOutput(lr.Stdout()))
 
-	if err := repl.Run(context.Background()); err != nil {
+	if err := loop(repl); err != nil {
 		log.New().WithError(err).Error("runtime error")
+	}
+}
+
+func loop(repl *repl.REPL) (err error) {
+	for {
+		if err = repl.Next(); err != nil {
+			switch {
+			case errors.Is(err, io.EOF):
+				return nil
+			case errors.Is(err, readline.ErrInterrupt):
+				// print nothing
+			default:
+				fmt.Fprintf(repl, "%+v", err)
+			}
+		}
 	}
 }

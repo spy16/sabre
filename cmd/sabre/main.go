@@ -1,12 +1,14 @@
 package main
 
 import (
-	"context"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 
+	"github.com/chzyer/readline"
 	"github.com/spy16/sabre/repl"
 	"github.com/spy16/sabre/slang"
 )
@@ -57,17 +59,37 @@ func main() {
 		return
 	}
 
-	repl, err := repl.New(sl,
-		slang.WithBanner(fmt.Sprintf(help, version, commit, runtime.Version())),
-	)
+	lr, err := readline.New("")
 	if err != nil {
-		fatalf("failed to setup REPL: %v", err)
+		fatalf("readline: %v", err)
 	}
 
-	repl.Run(context.Background())
+	repl := repl.New(sl,
+		repl.WithBanner(fmt.Sprintf(help, version, commit, runtime.Version())),
+		repl.WithInput(lr),
+		repl.WithOutput(lr.Stdout()))
+
+	if err := loop(repl); err != nil {
+		fatalf("runtime error: %v", err)
+	}
 }
 
 func fatalf(format string, args ...interface{}) {
 	fmt.Printf(format, args...)
 	os.Exit(1)
+}
+
+func loop(repl *repl.REPL) (err error) {
+	for {
+		if err = repl.Next(); err != nil {
+			switch {
+			case errors.Is(err, io.EOF):
+				return nil
+			case errors.Is(err, readline.ErrInterrupt):
+				// continue
+			default:
+				fmt.Fprintf(repl, "%+v", err)
+			}
+		}
+	}
 }
