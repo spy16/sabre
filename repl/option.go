@@ -1,36 +1,36 @@
-package slang
+package repl
 
 import (
 	log "github.com/lthibault/log/pkg"
 )
 
-// REPLOption implmentations can be provided to NewREPL to configure the
+// Option implmentations can be provided to New to configure the
 // REPL during initialization.
-type REPLOption func(repl *REPL)
+type Option func(repl *REPL)
 
 // WithLogger sets the REPL's logger.  `nil` is a no-op logger.
-func WithLogger(log log.Logger) REPLOption {
+func WithLogger(log log.Logger) Option {
 	return func(repl *REPL) {
 		repl.log = log
 	}
 }
 
 // WithPrompt sets the REPL's prompt.  `nil` uses a libreadline implementation.
-func WithPrompt(prompt Prompt) REPLOption {
+func WithPrompt(prompt Prompt) Option {
 	return func(repl *REPL) {
 		repl.prompt = prompt
 	}
 }
 
 // WithBanner sets the REPL's banner.
-func WithBanner(banner string) REPLOption {
+func WithBanner(banner string) Option {
 	return func(repl *REPL) {
 		repl.banner = banner
 	}
 }
 
-func withDefaults(opt []REPLOption) []REPLOption {
-	return append([]REPLOption{
+func withDefaults(opt []Option) []Option {
+	return append([]Option{
 		WithLogger(nil),
 		WithBanner("SLANG - a tiny lisp based on Sabre."),
 		// WithSomeOtherOption(...)

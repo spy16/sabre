@@ -1,4 +1,4 @@
-package slang
+package repl
 
 import (
 	"context"
@@ -24,8 +24,8 @@ type Runtime interface {
 	Eval(sabre.Value) (sabre.Value, error)
 }
 
-// NewREPL initializes a new Slang REPL and returns the instance.
-func NewREPL(r Runtime, opts ...REPLOption) *REPL {
+// New Read-Evaluate-Print Loop.
+func New(r Runtime, opts ...Option) *REPL {
 	repl := REPL{runtime: r}
 
 	for _, option := range withDefaults(opts) {

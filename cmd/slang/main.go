@@ -5,6 +5,7 @@ import (
 
 	"github.com/chzyer/readline"
 	log "github.com/lthibault/log/pkg"
+	"github.com/spy16/sabre/repl"
 	"github.com/spy16/sabre/slang"
 )
 
@@ -21,8 +22,8 @@ func main() {
 		log.New().WithError(err).Fatal("readline initialization failed")
 	}
 
-	repl := slang.NewREPL(slang.New(),
-		slang.WithPrompt(lr))
+	repl := repl.New(slang.New(),
+		repl.WithPrompt(lr))
 
 	if err := repl.Run(context.Background()); err != nil {
 		log.New().WithError(err).Error("runtime error")
