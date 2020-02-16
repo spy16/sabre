@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	log "github.com/lthibault/log/pkg"
 	"github.com/spy16/sabre"
 )
 
@@ -24,7 +23,7 @@ func New() *Slang {
 	}
 
 	if err := BindAll(sl); err != nil {
-		sl.log.Fatalf("%+v", err) // show stack-trace, if available
+		panic(err)
 	}
 	sl.checkNS = true
 
@@ -39,8 +38,6 @@ type Slang struct {
 	currentNS string
 	checkNS   bool
 	bindings  map[nsSymbol]sabre.Value
-
-	log log.Logger
 }
 
 // Eval evalautes the given value in Slang context.

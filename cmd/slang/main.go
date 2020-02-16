@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/chzyer/readline"
-	log "github.com/lthibault/log/pkg"
 	"github.com/spy16/sabre/repl"
 	"github.com/spy16/sabre/slang"
 )
@@ -23,7 +23,7 @@ func main() {
 	})
 
 	if err != nil {
-		log.New().WithError(err).Fatal("readline initialization failed")
+		log.Fatal(err)
 	}
 
 	repl := repl.New(slang.New(),
@@ -32,7 +32,7 @@ func main() {
 		repl.WithOutput(lr.Stdout()))
 
 	if err := loop(repl); err != nil {
-		log.New().WithError(err).Error("runtime error")
+		log.Fatal(err)
 	}
 }
 
