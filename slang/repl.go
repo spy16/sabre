@@ -18,11 +18,15 @@ const (
 	multiLinePrompt = "->"
 )
 
+// Runtime encapsulates language state.  Calling Eval may change the runtime state.
+type Runtime interface {
+	CurrentNS() string
+	Eval(sabre.Value) (sabre.Value, error)
+}
+
 // NewREPL initializes a new Slang REPL and returns the instance.
-func NewREPL(slang *Slang, opts ...REPLOption) *REPL {
-	repl := REPL{
-		runtime: slang,
-	}
+func NewREPL(r Runtime, opts ...REPLOption) *REPL {
+	repl := REPL{runtime: r}
 
 	for _, option := range withDefaults(opts) {
 		option(&repl)
@@ -33,15 +37,10 @@ func NewREPL(slang *Slang, opts ...REPLOption) *REPL {
 
 // REPL implements a read-eval-print loop for Slang.
 type REPL struct {
-	Banner string
-
-	log log.Logger
-
-	runtime *Slang
-
-	prompt Prompt
-	// ri *readline.Instance
-
+	log     log.Logger
+	banner  string
+	runtime Runtime
+	prompt  Prompt
 }
 
 // Run starts the REPL loop and runs until the context is cancelled or
@@ -49,8 +48,8 @@ type REPL struct {
 func (repl *REPL) Run(ctx context.Context) (err error) {
 	repl.prompt.SetPrompt(repl.getPrompt(promptPrefix))
 
-	if repl.Banner != "" {
-		fmt.Println(repl.Banner)
+	if repl.banner != "" {
+		fmt.Println(repl.banner)
 	}
 
 	for {

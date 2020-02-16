@@ -22,22 +22,18 @@ func WithPrompt(prompt Prompt) REPLOption {
 	}
 }
 
-// WithRuntime sets the runtime options.  `nil` uses sensible defaults.
-func WithRuntime(ropts ...RuntimeOption) REPLOption {
+// WithBanner sets the REPL's banner.
+func WithBanner(banner string) REPLOption {
 	return func(repl *REPL) {
-		for _, f := range ropts {
-			f(repl.runtime)
-		}
+		repl.banner = banner
 	}
 }
 
 func withDefaults(opt []REPLOption) []REPLOption {
-
-	log := log.New()
-
 	return append([]REPLOption{
-		WithLogger(log),
-		WithRuntime(RuntimeLogger(log.WithField("runtime", true))),
+		WithLogger(nil),
+		WithBanner("SLANG - a tiny lisp based on Sabre."),
+		// WithSomeOtherOption(...)
 	}, opt...)
 }
 
