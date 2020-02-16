@@ -3,12 +3,13 @@ package main
 import (
 	"context"
 
+	"github.com/chzyer/readline"
 	log "github.com/lthibault/log/pkg"
 	"github.com/spy16/sabre/slang"
 )
 
 func main() {
-	lr, err := rl.NewEx(&rl.Config{
+	lr, err := readline.NewEx(&readline.Config{
 		HistoryFile:       "/tmp/ww.history",
 		HistorySearchFold: true,
 
