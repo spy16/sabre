@@ -25,7 +25,47 @@ Sabre is highly customizable, embeddable LISP engine for Go.
 
 > Sabre requires Go 1.13 or higher.
 
-### As Library
+### As Interpreter
+
+Writing your own lisp dialects with Sabre is as easy as implementing the `repl.Runtime` interface and passing it to `repl.New`.
+
+```go
+package main
+
+import (
+  "log"
+
+  "github.com/spy16/sabre"
+  "github.com/spy16/sabre/repl"
+)
+
+type myLang struct{
+  // ...
+}
+
+func (myLang) CurrentNS() string {
+  // ...
+}
+
+func (myLang) Eval(sabre.Value) (sabre.Value, error) {
+  // ...
+}
+
+func main() {
+  myRepl := repl.New(&myLang{})
+
+  for  {
+    if err := myRepl.Next(); err != nil {
+      log.Fatal(err)
+    }
+  }
+}
+
+```
+
+### Evaluate one-off expressions
+
+You don't need a REPL.  [Sabre has no interpreter.](https://clojure.org/reference/evaluation).
 
 ```go
 package main
