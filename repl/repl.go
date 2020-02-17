@@ -29,13 +29,6 @@ func New(scope sabre.Scope, opts ...Option) *REPL {
 	return repl
 }
 
-// Input implementation is used by REPL to read user-input. See WithInput()
-// REPL option to configure an Input.
-type Input interface {
-	SetPrompt(string)
-	Readline() (string, error)
-}
-
 // NamespacedScope can be implemented by sabre.Scope implementations to allow
 // namespace based isolation (similar to Clojure). REPL will call CurrentNS()
 // method to get the current Namespace and display it as part of input prompt.
@@ -47,17 +40,25 @@ type NamespacedScope interface {
 type REPL struct {
 	scope            sabre.Scope
 	input            Input
-	inputErrMapper   func(err error) error
 	output           io.Writer
+	mapInputErr      ErrMapper
 	currentNamespace func() string
+	newReader        ReaderFactory
 
 	banner      string
 	prompt      string
 	multiPrompt string
 }
 
+// Input implementation is used by REPL to read user-input. See WithInput()
+// REPL option to configure an Input.
+type Input interface {
+	SetPrompt(string)
+	Readline() (string, error)
+}
+
 // Loop starts the read-eval-print loop. Loop runs until context is cancelled
-// or input stream returns an irrecoverable error.
+// or input stream returns an irrecoverable error (See WithInput()).
 func (repl *REPL) Loop(ctx context.Context) error {
 	repl.printBanner()
 	repl.setPrompt(false)
@@ -126,7 +127,7 @@ func (repl *REPL) read() (sabre.Value, error) {
 		repl.setPrompt(lineNo > 1)
 
 		line, err := repl.input.Readline()
-		err = repl.inputErrMapper(err)
+		err = repl.mapInputErr(err)
 		if err != nil {
 			return nil, err
 		}
@@ -137,7 +138,7 @@ func (repl *REPL) read() (sabre.Value, error) {
 			return nil, nil
 		}
 
-		rd := sabre.NewReader(strings.NewReader(src))
+		rd := repl.newReader(strings.NewReader(src))
 		rd.File = "REPL"
 
 		form, err := rd.All()

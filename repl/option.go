@@ -5,15 +5,26 @@ import (
 	"io"
 	"os"
 	"strings"
+
+	"github.com/spy16/sabre"
 )
 
 // Option implementations can be provided to New() to configure the REPL
 // during initialization.
 type Option func(repl *REPL)
 
+// ReaderFactory should return an instance of reader when called. This might
+// be called repeatedly. See WithReaderFactory()
+type ReaderFactory func(r io.Reader) *sabre.Reader
+
+// ErrMapper should map a custom Input error to nil to indicate error that
+// should be ignored by REPL, EOF to signal end of REPL session and any
+// other error to indicate a irrecoverable failure.
+type ErrMapper func(err error) error
+
 // WithInput sets the REPL's input stream. `nil` defaults to bufio.Scanner
 // backed by os.Stdin
-func WithInput(in Input, errMapper func(error) error) Option {
+func WithInput(in Input, mapErr ErrMapper) Option {
 	if in == nil {
 		in = &lineReader{
 			scanner: bufio.NewScanner(os.Stdin),
@@ -21,13 +32,13 @@ func WithInput(in Input, errMapper func(error) error) Option {
 		}
 	}
 
-	if errMapper == nil {
-		errMapper = func(e error) error { return e }
+	if mapErr == nil {
+		mapErr = func(e error) error { return e }
 	}
 
 	return func(repl *REPL) {
 		repl.input = in
-		repl.inputErrMapper = errMapper
+		repl.mapInputErr = mapErr
 	}
 }
 
@@ -59,10 +70,23 @@ func WithPrompts(oneLine, multiLine string) Option {
 	}
 }
 
+// WithReaderFactory can be used set factory function for initializing sabre
+// Reader. This is useful when you want REPL to use custom reader instance.
+func WithReaderFactory(factory ReaderFactory) Option {
+	if factory == nil {
+		factory = sabre.NewReader
+	}
+
+	return func(repl *REPL) {
+		repl.newReader = factory
+	}
+}
+
 func withDefaults(opts []Option) []Option {
 	return append([]Option{
 		WithInput(nil, nil),
 		WithOutput(os.Stdout),
+		WithReaderFactory(nil),
 	}, opts...)
 }
 

@@ -32,7 +32,8 @@ Sabre is highly customizable, embeddable LISP engine for Go.
 
 Sabre has concept of `Scope` which is responsible for maintaining bindings. You can bind
 any Go value and access it using LISP code, which makes it possible to expose parts of your
-API and make it scriptable.
+API and make it scriptable or build your own LISP dialect. Also, See [Extending](#extending)
+for more information on customizing the reader or eval.
 
 ```go
 package main
@@ -50,10 +51,10 @@ func main() {
 }
 ```
 
-### Build your own interpreter with REPL
+### Expose through a REPL
 
-Writing your own lisp dialects with Sabre is as easy as implementing the `repl.Runtime`
-interface and passing it to `repl.New`.
+Sabre comes with a tiny `repl` package that is very flexible and easy to setup
+to expose your LISP setup through a read-eval-print-loop.
 
 ```go
 package main
@@ -65,26 +66,19 @@ import (
   "github.com/spy16/sabre/repl"
 )
 
-type myLang struct{
-  // ...
-}
-
-func (myLang) CurrentNS() string {
-  // ...
-}
-
-func (myLang) Eval(form sabre.Value) (sabre.Value, error) {
-  // ...
-}
-
 func main() {
-  myREPL := repl.New(&myLang{})
-  myREPL.Loop(context.Background())
+  scope := sabre.NewScope(nil)
+  scope.BindGo("inc", func(v int) int {
+    return v+1
+  })
+
+  repl.New(scope,
+    repl.WithBanner("Welcome to my own LISP!"),
+    repl.WithPrompts("=>", "|"),
+    // many more options available
+  ).Loop(context.Background())
 }
-
 ```
-
-See [Extending](#extending) for more information on customizing the reader or eval.
 
 ### Standalone
 
