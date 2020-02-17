@@ -69,6 +69,23 @@ func (vals Values) Size() int {
 	return len(vals)
 }
 
+// Uniq removes all the duplicates from the given value array.
+// TODO: remove this naive implementation
+func (vals Values) Uniq() []Value {
+	var result []Value
+
+	hashSet := map[string]struct{}{}
+	for _, v := range vals {
+		src := v.String()
+		if _, found := hashSet[src]; !found {
+			hashSet[src] = struct{}{}
+			result = append(result, v)
+		}
+	}
+
+	return result
+}
+
 func (vals Values) String() string {
 	return containerString(vals, "(", ")", " ")
 }

@@ -10,13 +10,22 @@ import (
 	"github.com/spy16/sabre"
 )
 
-// New returns a new instance of REPL with given runtime. Option values can
-// be used to configure REPL input, output etc.
-func New(r Runtime, opts ...Option) *REPL {
-	repl := &REPL{runtime: r}
+// New returns a new instance of REPL with given sabre Scope. Option values
+// can be used to configure REPL input, output etc.
+func New(scope sabre.Scope, opts ...Option) *REPL {
+	repl := &REPL{
+		scope:            scope,
+		currentNamespace: func() string { return "" },
+	}
+
+	if ns, ok := scope.(NamespacedScope); ok {
+		repl.currentNamespace = ns.CurrentNS
+	}
+
 	for _, option := range withDefaults(opts) {
 		option(repl)
 	}
+
 	return repl
 }
 
@@ -27,22 +36,20 @@ type Input interface {
 	Readline() (string, error)
 }
 
-// Runtime implementation is used by REPL to evaluate user input.
-type Runtime interface {
-	// CurrentNS should return the current active name-space in the runtime.
+// NamespacedScope can be implemented by sabre.Scope implementations to allow
+// namespace based isolation (similar to Clojure). REPL will call CurrentNS()
+// method to get the current Namespace and display it as part of input prompt.
+type NamespacedScope interface {
 	CurrentNS() string
-
-	// Eval should evaluate the given form and return the result. Any error
-	// returned by Eval will be formatted and printed to configured output.
-	Eval(form sabre.Value) (sabre.Value, error)
 }
 
 // REPL implements a read-eval-print loop for a generic Runtime.
 type REPL struct {
-	runtime        Runtime
-	input          Input
-	inputErrMapper func(err error) error
-	output         io.Writer
+	scope            sabre.Scope
+	input            Input
+	inputErrMapper   func(err error) error
+	output           io.Writer
+	currentNamespace func() string
 
 	banner      string
 	prompt      string
@@ -55,8 +62,8 @@ func (repl *REPL) Loop(ctx context.Context) error {
 	repl.printBanner()
 	repl.setPrompt(false)
 
-	if repl.runtime == nil {
-		return errors.New("runtime is not set")
+	if repl.scope == nil {
+		return errors.New("scope is not set")
 	}
 
 	for {
@@ -81,14 +88,20 @@ func (repl *REPL) Loop(ctx context.Context) error {
 func (repl *REPL) readEvalPrint() error {
 	form, err := repl.read()
 	if err != nil {
-		return repl.inputErrMapper(err)
+		switch e := err.(type) {
+		case sabre.ReadError, sabre.EvalError:
+			repl.print(nil, e)
+
+		default:
+			return err
+		}
 	}
 
 	if form == nil {
 		return nil
 	}
 
-	return repl.print(repl.runtime.Eval(form))
+	return repl.print(sabre.Eval(repl.scope, form))
 }
 
 func (repl *REPL) Write(b []byte) (int, error) {
@@ -113,9 +126,11 @@ func (repl *REPL) read() (sabre.Value, error) {
 		repl.setPrompt(lineNo > 1)
 
 		line, err := repl.input.Readline()
+		err = repl.inputErrMapper(err)
 		if err != nil {
 			return nil, err
 		}
+
 		src += line + "\n"
 
 		if strings.TrimSpace(src) == "" {
@@ -140,7 +155,11 @@ func (repl *REPL) read() (sabre.Value, error) {
 }
 
 func (repl *REPL) setPrompt(multiline bool) {
-	nsPrefix := repl.runtime.CurrentNS()
+	if repl.prompt == "" {
+		return
+	}
+
+	nsPrefix := repl.currentNamespace()
 	prompt := repl.prompt
 
 	if multiline {

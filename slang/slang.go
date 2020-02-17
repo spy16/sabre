@@ -190,7 +190,7 @@ func BindAll(scope sabre.Scope) error {
 		"core/int?":     IsType(reflect.TypeOf(sabre.Int64(0))),
 		"core/set?":     IsType(reflect.TypeOf(sabre.Set{})),
 		"core/boolean?": IsType(reflect.TypeOf(sabre.Bool(false))),
-		"core/list?":    IsType(reflect.TypeOf(sabre.List{})),
+		"core/list?":    IsType(reflect.TypeOf(&sabre.List{})),
 		"core/string?":  IsType(reflect.TypeOf(sabre.String(""))),
 		"core/float?":   IsType(reflect.TypeOf(sabre.Float64(0))),
 		"core/vector?":  IsType(reflect.TypeOf(sabre.Vector{})),

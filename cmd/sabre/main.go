@@ -64,6 +64,7 @@ func main() {
 		repl.WithBanner(fmt.Sprintf(help, version, commit, runtime.Version())),
 		repl.WithInput(lr, errMapper),
 		repl.WithOutput(lr.Stdout()),
+		repl.WithPrompts("=>", "|"),
 	)
 
 	if err := repl.Loop(context.Background()); err != nil {

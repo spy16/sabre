@@ -15,7 +15,10 @@ type Option func(repl *REPL)
 // backed by os.Stdin
 func WithInput(in Input, errMapper func(error) error) Option {
 	if in == nil {
-		in = &lineReader{scanner: bufio.NewScanner(os.Stdin)}
+		in = &lineReader{
+			scanner: bufio.NewScanner(os.Stdin),
+			out:     os.Stdout,
+		}
 	}
 
 	if errMapper == nil {
@@ -58,7 +61,6 @@ func WithPrompts(oneLine, multiLine string) Option {
 
 func withDefaults(opts []Option) []Option {
 	return append([]Option{
-		WithPrompts("=>", "|"),
 		WithInput(nil, nil),
 		WithOutput(os.Stdout),
 	}, opts...)
@@ -66,9 +68,13 @@ func withDefaults(opts []Option) []Option {
 
 type lineReader struct {
 	scanner *bufio.Scanner
+	out     io.Writer
+	prompt  string
 }
 
 func (lr *lineReader) Readline() (string, error) {
+	lr.out.Write([]byte(lr.prompt))
+
 	if !lr.scanner.Scan() {
 		if lr.scanner.Err() == nil { // scanner swallows EOF
 			return lr.scanner.Text(), io.EOF
@@ -81,4 +87,6 @@ func (lr *lineReader) Readline() (string, error) {
 }
 
 // no-op
-func (lr *lineReader) SetPrompt(string) {}
+func (lr *lineReader) SetPrompt(p string) {
+	lr.prompt = p
+}
