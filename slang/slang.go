@@ -40,7 +40,7 @@ type Slang struct {
 	bindings  map[nsSymbol]sabre.Value
 }
 
-// Eval evalautes the given value in Slang context.
+// Eval evaluates the given value in Slang context.
 func (slang *Slang) Eval(v sabre.Value) (sabre.Value, error) {
 	return sabre.Eval(slang, v)
 }
@@ -108,17 +108,17 @@ func (slang *Slang) SwitchNS(sym sabre.Symbol) error {
 	return slang.Bind("*ns*", sym)
 }
 
-// Parent always returns nil to represent this is the root scope.
-func (slang *Slang) Parent() sabre.Scope {
-	return nil
-}
-
 // CurrentNS returns the current active namespace.
 func (slang *Slang) CurrentNS() string {
 	slang.mu.RLock()
 	defer slang.mu.RUnlock()
 
 	return slang.currentNS
+}
+
+// Parent always returns nil to represent this is the root scope.
+func (slang *Slang) Parent() sabre.Scope {
+	return nil
 }
 
 func (slang *Slang) resolveAny(symbol string, syms ...nsSymbol) (sabre.Value, error) {
