@@ -214,6 +214,10 @@ func BindAll(scope sabre.Scope) error {
 		"core/>=": sabre.ValueOf(GtE),
 		"core/<":  sabre.ValueOf(Lt),
 		"core/<=": sabre.ValueOf(LtE),
+
+		// io functions
+		"core/println": sabre.ValueOf(Println),
+		"core/printf":  sabre.ValueOf(Printf),
 	}
 
 	for sym, val := range core {
