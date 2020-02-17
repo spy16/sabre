@@ -14,7 +14,7 @@ import (
 	"github.com/spy16/sabre/slang"
 )
 
-const help = `Sabre %s [Commit: %s] [Compiled with %s]
+const help = `Slang %s [Commit: %s] [Compiled with %s]
 Visit https://github.com/spy16/sabre for more.`
 
 var (

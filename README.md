@@ -85,11 +85,11 @@ func main() {
 Sabre has a small reference LISP dialect named ***Slang*** (short for *Sabre Lang*) for
 which a standalone binary is available.
 
-1. Install Sabre into `GOBIN` path: `go get -u -v github.com/spy16/sabre/cmd/sabre`
+1. Install Slang into `GOBIN` path: `go get -u -v github.com/spy16/sabre/cmd/slang`
 2. Run:
-   1. `sabre` for REPL
-   2. `sabre -e "(+ 1 2 3)"` for executing string
-   3. `sabre -f "examples/full.lisp"` for executing file
+   1. `slang` for REPL
+   2. `slang -e "(+ 1 2 3)"` for executing string
+   3. `slang -f "examples/simple.lisp"` for executing file
 
 > If you specify both `-f` and `-e` flags, file will be executed first and then the
 > string will be executed in the same scope and you will be dropped into REPL. If

@@ -67,7 +67,7 @@ func (repl *REPL) Loop(ctx context.Context) error {
 		return errors.New("scope is not set")
 	}
 
-	for ctx.Err() != nil {
+	for ctx.Err() == nil {
 		err := repl.readEvalPrint()
 		if err != nil {
 			if err == io.EOF {
