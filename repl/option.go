@@ -4,29 +4,32 @@ import (
 	"bufio"
 	"io"
 	"os"
-	"sync"
+	"strings"
 )
 
-// Option implmentations can be provided to New to configure the
-// REPL during initialization.
+// Option implementations can be provided to New() to configure the REPL
+// during initialization.
 type Option func(repl *REPL)
 
-// WithInput sets the REPL's input stream.  `nil` defaults to a bufio.Scanner backed
-// by os.Stdin
-func WithInput(in Input) Option {
-
+// WithInput sets the REPL's input stream. `nil` defaults to bufio.Scanner
+// backed by os.Stdin
+func WithInput(in Input, errMapper func(error) error) Option {
 	if in == nil {
-		in = &lineReader{Reader: os.Stdin}
+		in = &lineReader{scanner: bufio.NewScanner(os.Stdin)}
+	}
+
+	if errMapper == nil {
+		errMapper = func(e error) error { return e }
 	}
 
 	return func(repl *REPL) {
 		repl.input = in
+		repl.inputErrMapper = errMapper
 	}
 }
 
-// WithOutput sets the REPL's output stream.  `nil` defaults to os.Stdout.
+// WithOutput sets the REPL's output stream.`nil` defaults to stdout.
 func WithOutput(w io.Writer) Option {
-
 	if w == nil {
 		w = os.Stdout
 	}
@@ -36,10 +39,11 @@ func WithOutput(w io.Writer) Option {
 	}
 }
 
-// WithBanner sets the REPL's banner.
+// WithBanner sets the REPL's banner which is displayed once when the REPL
+// starts.
 func WithBanner(banner string) Option {
 	return func(repl *REPL) {
-		repl.banner = banner
+		repl.banner = strings.TrimSpace(banner)
 	}
 }
 
@@ -52,28 +56,25 @@ func WithPrompts(oneLine, multiLine string) Option {
 	}
 }
 
-func withDefaults(opt []Option) []Option {
+func withDefaults(opts []Option) []Option {
 	return append([]Option{
 		WithPrompts("=>", "|"),
-		WithInput(nil),
-		WithOutput(nil),
-		// WithSomeOtherOption(...)
-	}, opt...)
+		WithInput(nil, nil),
+		WithOutput(os.Stdout),
+	}, opts...)
 }
 
 type lineReader struct {
-	once    sync.Once
 	scanner *bufio.Scanner
-	io.Reader
 }
 
 func (lr *lineReader) Readline() (string, error) {
-	lr.once.Do(func() {
-		lr.scanner = bufio.NewScanner(lr.Reader)
-	})
+	if !lr.scanner.Scan() {
+		if lr.scanner.Err() == nil { // scanner swallows EOF
+			return lr.scanner.Text(), io.EOF
+		}
 
-	if !lr.scanner.Scan() && lr.scanner.Err() == nil { // scanner swallows EOF
-		return lr.scanner.Text(), io.EOF
+		return "", lr.scanner.Err()
 	}
 
 	return lr.scanner.Text(), nil

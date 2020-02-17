@@ -9,6 +9,10 @@ import (
 // Eval evaluates the given form against the scope and returns the result
 // of evaluation.
 func Eval(scope Scope, form Value) (Value, error) {
+	if form == nil {
+		return nilValue, nil
+	}
+
 	err := analyze(scope, form)
 	if err != nil {
 		return nil, err

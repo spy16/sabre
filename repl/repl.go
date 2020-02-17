@@ -1,68 +1,98 @@
 package repl
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
-	"sync"
 
 	"github.com/spy16/sabre"
 )
 
-// Input controls input to a REPL
+// New returns a new instance of REPL with given runtime. Option values can
+// be used to configure REPL input, output etc.
+func New(r Runtime, opts ...Option) *REPL {
+	repl := &REPL{runtime: r}
+	for _, option := range withDefaults(opts) {
+		option(repl)
+	}
+	return repl
+}
+
+// Input implementation is used by REPL to read user-input. See WithInput()
+// REPL option to configure an Input.
 type Input interface {
 	SetPrompt(string)
 	Readline() (string, error)
 }
 
-// Runtime .
+// Runtime implementation is used by REPL to evaluate user input.
 type Runtime interface {
+	// CurrentNS should return the current active name-space in the runtime.
 	CurrentNS() string
-	Eval(sabre.Value) (sabre.Value, error)
+
+	// Eval should evaluate the given form and return the result. Any error
+	// returned by Eval will be formatted and printed to configured output.
+	Eval(form sabre.Value) (sabre.Value, error)
 }
 
-// New Read-Evaluate-Print Loop.
-func New(r Runtime, opts ...Option) *REPL {
-	repl := &REPL{runtime: r}
-
-	for _, option := range withDefaults(opts) {
-		option(repl)
-	}
-
-	return repl
-}
-
-// REPL implements a read-eval-print loop for Slang.
+// REPL implements a read-eval-print loop for a generic Runtime.
 type REPL struct {
-	once sync.Once
-
-	runtime Runtime
-	input   Input
-	output  io.Writer
+	runtime        Runtime
+	input          Input
+	inputErrMapper func(err error) error
+	output         io.Writer
 
 	banner      string
 	prompt      string
 	multiPrompt string
 }
 
-// Next form runs through once read-eval-print cycle, returning any errors encountered.
-// It is safe to call Next() again after an error, unless the error is EOF.
-func (repl *REPL) Next() error {
-	repl.once.Do(repl.printBanner)
-
+// Loop starts the read-eval-print loop. Loop runs until context is cancelled
+// or input stream returns an irrecoverable error.
+func (repl *REPL) Loop(ctx context.Context) error {
+	repl.printBanner()
 	repl.setPrompt(false)
 
+	if repl.runtime == nil {
+		return errors.New("runtime is not set")
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+
+		default:
+			err := repl.readEvalPrint()
+			if err != nil {
+				if err == io.EOF {
+					return nil
+				}
+
+				return err
+			}
+		}
+	}
+}
+
+// readEval reads one form from the input, evaluates it and prints the result.
+func (repl *REPL) readEvalPrint() error {
 	form, err := repl.read()
 	if err != nil {
-		return err
+		return repl.inputErrMapper(err)
 	}
 
-	if form != nil {
-		return repl.print(repl.runtime.Eval(form))
+	if form == nil {
+		return nil
 	}
 
-	return nil
+	return repl.print(repl.runtime.Eval(form))
+}
+
+func (repl *REPL) Write(b []byte) (int, error) {
+	return repl.output.Write(b)
 }
 
 func (repl *REPL) print(res sabre.Value, err error) error {
@@ -77,13 +107,10 @@ func (repl *REPL) print(res sabre.Value, err error) error {
 
 func (repl *REPL) read() (sabre.Value, error) {
 	var src string
-	var form sabre.Value
 	lineNo := 1
 
 	for {
-		if lineNo > 1 {
-			repl.setPrompt(true)
-		}
+		repl.setPrompt(lineNo > 1)
 
 		line, err := repl.input.Readline()
 		if err != nil {
@@ -98,7 +125,7 @@ func (repl *REPL) read() (sabre.Value, error) {
 		rd := sabre.NewReader(strings.NewReader(src))
 		rd.File = "REPL"
 
-		form, err = rd.All()
+		form, err := rd.All()
 		if err != nil {
 			if errors.Is(err, sabre.ErrEOF) {
 				lineNo++
@@ -122,10 +149,6 @@ func (repl *REPL) setPrompt(multiline bool) {
 	}
 
 	repl.input.SetPrompt(fmt.Sprintf("%s%s ", nsPrefix, prompt))
-}
-
-func (repl *REPL) Write(b []byte) (int, error) {
-	return repl.output.Write(b)
 }
 
 func (repl *REPL) printBanner() {
