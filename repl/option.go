@@ -15,7 +15,17 @@ type Option func(repl *REPL)
 
 // ReaderFactory should return an instance of reader when called. This might
 // be called repeatedly. See WithReaderFactory()
-type ReaderFactory func(r io.Reader) *sabre.Reader
+type ReaderFactory interface {
+	NewReader(r io.Reader) *sabre.Reader
+}
+
+// ReaderFactoryFunc implements ReaderFactory using a function value.
+type ReaderFactoryFunc func(r io.Reader) *sabre.Reader
+
+// NewReader simply calls the wrapped function value and returns the result.
+func (factory ReaderFactoryFunc) NewReader(r io.Reader) *sabre.Reader {
+	return factory(r)
+}
 
 // ErrMapper should map a custom Input error to nil to indicate error that
 // should be ignored by REPL, EOF to signal end of REPL session and any
@@ -74,11 +84,11 @@ func WithPrompts(oneLine, multiLine string) Option {
 // Reader. This is useful when you want REPL to use custom reader instance.
 func WithReaderFactory(factory ReaderFactory) Option {
 	if factory == nil {
-		factory = sabre.NewReader
+		factory = ReaderFactoryFunc(sabre.NewReader)
 	}
 
 	return func(repl *REPL) {
-		repl.newReader = factory
+		repl.factory = factory
 	}
 }
 

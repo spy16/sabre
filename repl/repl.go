@@ -43,7 +43,7 @@ type REPL struct {
 	output           io.Writer
 	mapInputErr      ErrMapper
 	currentNamespace func() string
-	newReader        ReaderFactory
+	factory          ReaderFactory
 
 	banner      string
 	prompt      string
@@ -67,22 +67,18 @@ func (repl *REPL) Loop(ctx context.Context) error {
 		return errors.New("scope is not set")
 	}
 
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-
-		default:
-			err := repl.readEvalPrint()
-			if err != nil {
-				if err == io.EOF {
-					return nil
-				}
-
-				return err
+	for ctx.Err() != nil {
+		err := repl.readEvalPrint()
+		if err != nil {
+			if err == io.EOF {
+				return nil
 			}
+
+			return err
 		}
 	}
+
+	return ctx.Err()
 }
 
 // readEval reads one form from the input, evaluates it and prints the result.
@@ -138,7 +134,7 @@ func (repl *REPL) read() (sabre.Value, error) {
 			return nil, nil
 		}
 
-		rd := repl.newReader(strings.NewReader(src))
+		rd := repl.factory.NewReader(strings.NewReader(src))
 		rd.File = "REPL"
 
 		form, err := rd.All()
