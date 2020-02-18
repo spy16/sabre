@@ -1,3 +1,5 @@
+project_name: slang
+
 before:
   hooks:
     - go mod tidy
