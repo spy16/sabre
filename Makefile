@@ -24,6 +24,10 @@ test-verbose:
 	@echo "Running tests..."
 	@go test -v -cover ./...
 
+benchmark:
+	@echo "Running benchmarks..."
+	@go test -benchmem -run="none" -bench="Benchmark.*" -v ./...
+
 build:
 	@echo "Building..."
 	@mkdir -p ./bin

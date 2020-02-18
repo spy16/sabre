@@ -7,6 +7,24 @@ import (
 	"github.com/spy16/sabre"
 )
 
+func BenchmarkEval(b *testing.B) {
+	scope := sabre.NewScope(nil)
+	_ = scope.BindGo("inc", func(a int) int {
+		return a + 1
+	})
+
+	f := &sabre.List{
+		Values: sabre.Values{
+			sabre.Symbol{Value: "inc"},
+			sabre.Int64(10),
+		},
+	}
+
+	for i := 0; i < b.N; i++ {
+		_, _ = sabre.Eval(scope, f)
+	}
+}
+
 func TestEval(t *testing.T) {
 	t.Parallel()
 

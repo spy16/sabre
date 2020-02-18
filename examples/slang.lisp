@@ -57,3 +57,35 @@
 (assert (not (vector? nil)))
 (assert (= (type [])(type [1 2 3])))
 (assert (symbol? 'hello))
+
+; simple function definition
+(def dec (fn* [i] (int (- i 1))))
+
+; simple recursive function with variadic args
+(def down-range (fn* down-range [start & args]
+    (if (> start 0)
+        (cons start (down-range (int (dec start))))
+        [0])))
+
+; complex recursive function
+(def reverse (fn* reverse [coll]
+    (if (not (seq? coll))
+        (throw "argument must be a sequence"))
+    (if (nil? (next coll))
+        [(first coll)]
+        (let* [f   (first coll)
+            reverse (reverse (next coll))]
+            (conj reverse f)))))
+
+; multi arity function
+(def greet (fn* greet
+    ([] "Hello!")
+    ([name] (str "Hello " name "!"))
+    ([prefix name] (str prefix " " name "!"))))
+
+(assert (= 9 (dec 10)))
+(assert (= '(5 4 3 2 1 0) (down-range 5)))
+(assert (= '(5 4 3 2 1) (reverse '(1 2 3 4 5))))
+(assert (= "Hello!" (greet)))
+(assert (= "Hello Bob!" (greet "Bob")))
+(assert (= "Hi Bob!" (greet 'Hi 'Bob)))
