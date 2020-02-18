@@ -8,6 +8,52 @@ import (
 	"github.com/spy16/sabre"
 )
 
+// Assert implements (assert <expr> message?).
+func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
+	if err := verifyArgCount([]int{1, 2}, args); err != nil {
+		return nil, err
+	}
+
+	test, err := args[0].Eval(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	if IsTruthy(test) {
+		return nil, nil
+	}
+
+	if len(args) == 1 {
+		return nil, fmt.Errorf("assertion failed: '%s'", args[0])
+	}
+
+	msg, err := args[1].Eval(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	return nil, fmt.Errorf("%v", msg)
+}
+
+// IsTruthy returns true if the given value is truthy. Boolean true,
+// and all non-nil values are considered truthy.
+func IsTruthy(v sabre.Value) bool {
+	if v == nil {
+		return false
+	}
+
+	var sabreNil = sabre.Nil{}
+	if v == sabreNil {
+		return false
+	}
+
+	if b, ok := v.(sabre.Bool); ok {
+		return bool(b)
+	}
+
+	return true
+}
+
 // IsSeq returns true if the given value is a Seq.
 func IsSeq(v sabre.Value) bool {
 	_, isSeq := v.(sabre.Seq)
@@ -42,22 +88,22 @@ func Conj(seq sabre.Seq, args ...sabre.Value) sabre.Value {
 }
 
 // Eval evaluates the first argument and returns the result.
-func Eval(scope sabre.Scope, arg sabre.Value) (sabre.Value, error) {
-	return arg.Eval(scope)
+func Eval(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
+	if err := verifyArgCount([]int{1}, args); err != nil {
+		return nil, err
+	}
+
+	val, err := args[0].Eval(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	return val.Eval(scope)
 }
 
 // Not returns the negated version of the argument value.
 func Not(val sabre.Value) sabre.Value {
-	return sabre.Bool(!isTruthy(val))
-}
-
-// Equals compares 2 values using reflect.DeepEqual and returns the result.
-func Equals(v1 sabre.Value, args ...sabre.Value) bool {
-	eq := true
-	for _, arg := range args {
-		eq = eq && reflect.DeepEqual(v1, arg)
-	}
-	return eq
+	return sabre.Bool(!IsTruthy(val))
 }
 
 // ThreadFirst threads the expressions through forms by inserting result of

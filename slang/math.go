@@ -44,8 +44,8 @@ func Divide(first float64, args ...float64) float64 {
 	return first
 }
 
-// Gt returns true if the given args are monotonically increasing.
-func Gt(base float64, args ...float64) bool {
+// Lt returns true if the given args are monotonically increasing.
+func Lt(base float64, args ...float64) bool {
 	inc := true
 	for _, arg := range args {
 		inc = inc && (arg > base)
@@ -53,9 +53,9 @@ func Gt(base float64, args ...float64) bool {
 	return inc
 }
 
-// GtE returns true if the given args are monotonically increasing or
+// LtE returns true if the given args are monotonically increasing or
 // are all equal.
-func GtE(base float64, args ...float64) bool {
+func LtE(base float64, args ...float64) bool {
 	inc := true
 	for _, arg := range args {
 		inc = inc && (arg >= base)
@@ -63,8 +63,8 @@ func GtE(base float64, args ...float64) bool {
 	return inc
 }
 
-// Lt returns true if the given args are monotonically decreasing.
-func Lt(base float64, args ...float64) bool {
+// Gt returns true if the given args are monotonically decreasing.
+func Gt(base float64, args ...float64) bool {
 	inc := true
 	for _, arg := range args {
 		inc = inc && (arg < base)
@@ -72,9 +72,9 @@ func Lt(base float64, args ...float64) bool {
 	return inc
 }
 
-// LtE returns true if the given args are monotonically decreasing or
+// GtE returns true if the given args are monotonically decreasing or
 // all equal.
-func LtE(base float64, args ...float64) bool {
+func GtE(base float64, args ...float64) bool {
 	inc := true
 	for _, arg := range args {
 		inc = inc && (arg <= base)

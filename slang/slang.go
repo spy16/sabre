@@ -172,10 +172,12 @@ func (s nsSymbol) WithNS(ns string) nsSymbol {
 // BindAll binds all core functions into the given scope.
 func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
-		"core/->":   sabre.GoFunc(ThreadFirst),
-		"core/->>":  sabre.GoFunc(ThreadLast),
-		"core/eval": sabre.ValueOf(Eval),
-		"core/not":  sabre.ValueOf(Not),
+		"core/->":     sabre.GoFunc(ThreadFirst),
+		"core/->>":    sabre.GoFunc(ThreadLast),
+		"core/eval":   sabre.GoFunc(Eval),
+		"core/not":    sabre.ValueOf(Not),
+		"core/true?":  sabre.ValueOf(IsTruthy),
+		"core/assert": sabre.GoFunc(Assert),
 
 		// Sequence functions
 		"core/next":  sabre.ValueOf(Next),
@@ -209,7 +211,7 @@ func BindAll(scope sabre.Scope) error {
 		"core/-":  sabre.ValueOf(Sub),
 		"core/*":  sabre.ValueOf(Multiply),
 		"core//":  sabre.ValueOf(Divide),
-		"core/=":  sabre.ValueOf(Equals),
+		"core/=":  sabre.ValueOf(sabre.Compare),
 		"core/>":  sabre.ValueOf(Gt),
 		"core/>=": sabre.ValueOf(GtE),
 		"core/<":  sabre.ValueOf(Lt),

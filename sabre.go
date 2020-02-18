@@ -79,7 +79,7 @@ func (ee EvalError) Unwrap() error {
 }
 
 func (ee EvalError) Error() string {
-	return fmt.Sprintf("eval-error in '%s' (at line %d:%d):\n%v",
+	return fmt.Sprintf("eval-error in '%s' (at line %d:%d): %v",
 		ee.File, ee.Line, ee.Column, ee.Cause,
 	)
 }

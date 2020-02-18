@@ -28,7 +28,7 @@ func IsType(rt reflect.Type) Fn {
 // MakeBool converts given argument to a boolean. Any truthy value
 // is converted to true and else false.
 func MakeBool(val sabre.Value) sabre.Bool {
-	return sabre.Bool(isTruthy(val))
+	return sabre.Bool(IsTruthy(val))
 }
 
 // MakeInt converts given value to integer and returns.
@@ -71,6 +71,11 @@ func MakeString(vals ...sabre.Value) sabre.Value {
 		return sabre.String("")
 
 	case 1:
+		nilVal := sabre.Nil{}
+		if vals[0] == nilVal || vals[0] == nil {
+			return sabre.String("")
+		}
+
 		return sabre.String(strings.Trim(vals[0].String(), "\""))
 
 	default:
@@ -85,16 +90,34 @@ func MakeString(vals ...sabre.Value) sabre.Value {
 // makeContainer can make a composite type like list, set and vector from
 // given args.
 func makeContainer(targetType sabre.Value) Fn {
-	return func(vals []sabre.Value) (sabre.Value, error) {
+	return func(args []sabre.Value) (sabre.Value, error) {
 		switch targetType.(type) {
 		case *sabre.List:
-			return &sabre.List{Values: vals}, nil
+			return &sabre.List{Values: args}, nil
 
 		case sabre.Vector:
-			return sabre.Vector{Values: vals}, nil
+			return sabre.Vector{Values: args}, nil
 
 		case sabre.Set:
-			return sabre.Set{Values: sabre.Values(vals).Uniq()}, nil
+			if err := verifyArgCount([]int{1}, args); err != nil {
+				return nil, err
+			}
+
+			seq, ok := args[0].(sabre.Seq)
+			if !ok {
+				return nil, fmt.Errorf("can't create seq from '%s'",
+					reflect.TypeOf(args[0]))
+			}
+
+			var seqVals sabre.Values
+			for seq != nil && seq.First() != nil {
+				seqVals = append(seqVals, seq.First())
+				seq = seq.Next()
+			}
+
+			return sabre.Set{
+				Values: sabre.Values(seqVals).Uniq(),
+			}, nil
 		}
 
 		return nil, fmt.Errorf("cannot make container of type '%s'", reflect.TypeOf(targetType))
