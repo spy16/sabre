@@ -1,11 +1,17 @@
 package slang_test
 
 import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/spy16/sabre"
 	"github.com/spy16/sabre/slang"
 )
+
+const testDir = "../examples/"
 
 var _ sabre.Scope = (*slang.Slang)(nil)
 
@@ -80,5 +86,43 @@ func TestSlang_Resolve(t *testing.T) {
 				return
 			}
 		})
+	}
+}
+
+func TestSlang(t *testing.T) {
+	if testing.Short() {
+		return
+	}
+
+	t.Parallel()
+
+	files, err := ioutil.ReadDir(testDir)
+	if err != nil {
+		t.Fatalf("failed to read dir: %v", err)
+	}
+
+	for _, fi := range files {
+		if !strings.HasSuffix(fi.Name(), ".lisp") {
+			continue
+		}
+
+		t.Run(fi.Name(), func(t *testing.T) {
+			testFile(t, filepath.Join(testDir, fi.Name()))
+		})
+	}
+}
+
+func testFile(t *testing.T, file string) {
+	fh, err := os.Open(file)
+	if err != nil {
+		t.Fatalf("failed to open file: %v", err)
+	}
+	defer fh.Close()
+
+	sl := slang.New()
+
+	_, err = sl.ReadEval(fh)
+	if err != nil {
+		t.Errorf("execution failed for '%s': %v", file, err)
 	}
 }

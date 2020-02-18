@@ -1,5 +1,7 @@
 package sabre
 
+import "reflect"
+
 // Value represents data/forms in sabre. This includes those emitted by
 // Reader, values obtained as result of an evaluation etc.
 type Value interface {
@@ -24,6 +26,24 @@ type Seq interface {
 	Next() Seq
 	Cons(v Value) Seq
 	Conj(vals ...Value) Seq
+}
+
+// Compare compares two values in an identity independent manner.
+func Compare(v1, v2 Value) bool {
+	if (v1 == nil && v2 == nil) ||
+		(v1 == nilValue && v2 == nilValue) {
+		return true
+	}
+
+	if cmp, ok := v1.(comparable); ok {
+		return cmp.Compare(v2)
+	}
+
+	return reflect.DeepEqual(v1, v2)
+}
+
+type comparable interface {
+	Compare(other Value) bool
 }
 
 // Values represents a list of values and implements the Seq interface.
@@ -67,6 +87,36 @@ func (vals Values) Conj(args ...Value) Seq {
 // Size returns the number of items in the list.
 func (vals Values) Size() int {
 	return len(vals)
+}
+
+// Compare compares the values in this sequence to the other sequence.
+// other sequence will be realized for comparison.
+func (vals Values) Compare(v Value) bool {
+	other, ok := v.(Seq)
+	if !ok {
+		return false
+	}
+
+	var this Seq = vals
+
+	if otherVals, ok := other.(Values); ok {
+		if otherVals.Size() != vals.Size() {
+			return false
+		}
+	}
+
+	isEqual := true
+	for this != nil && other != nil {
+		isEqual = isEqual && Compare(this.First(), other.First())
+		if !isEqual {
+			break
+		}
+
+		this = this.Next()
+		other = other.Next()
+	}
+
+	return isEqual && (this == nil && other == nil)
 }
 
 // Uniq removes all the duplicates from the given value array.

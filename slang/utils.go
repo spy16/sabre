@@ -22,23 +22,6 @@ func evalValueList(scope sabre.Scope, vals []sabre.Value) ([]sabre.Value, error)
 	return result, nil
 }
 
-func isTruthy(v sabre.Value) bool {
-	if v == nil {
-		return false
-	}
-
-	var sabreNil = sabre.Nil{}
-	if v == sabreNil {
-		return false
-	}
-
-	if b, ok := v.(sabre.Bool); ok {
-		return bool(b)
-	}
-
-	return true
-}
-
 func verifyArgCount(arities []int, args []sabre.Value) error {
 	actual := len(args)
 	sort.Ints(arities)
