@@ -57,8 +57,8 @@ func (scope *MapScope) Resolve(symbol string) (Value, error) {
 	return v, nil
 }
 
-// BindGo is similar to Bind but handles covnertion of Go value 'v' to
-// sabre Val type.
+// BindGo is similar to Bind but handles conversion of Go value 'v' to
+// sabre Value type.
 func (scope *MapScope) BindGo(symbol string, v interface{}) error {
 	return scope.Bind(symbol, ValueOf(v))
 }

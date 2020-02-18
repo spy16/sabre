@@ -9,6 +9,10 @@ import (
 // Eval evaluates the given form against the scope and returns the result
 // of evaluation.
 func Eval(scope Scope, form Value) (Value, error) {
+	if form == nil {
+		return nilValue, nil
+	}
+
 	err := analyze(scope, form)
 	if err != nil {
 		return nil, err
@@ -20,11 +24,7 @@ func Eval(scope Scope, form Value) (Value, error) {
 			return v, err
 		}
 
-		return v, EvalError{
-			Position: getPosition(form),
-			Form:     v,
-			Cause:    err,
-		}
+		return v, newEvalErr(form, err)
 	}
 
 	return v, nil
@@ -54,6 +54,18 @@ type Scope interface {
 	Resolve(symbol string) (Value, error)
 }
 
+func newEvalErr(v Value, err error) EvalError {
+	if ee, ok := err.(EvalError); ok {
+		return ee
+	}
+
+	return EvalError{
+		Position: getPosition(v),
+		Cause:    err,
+		Form:     v,
+	}
+}
+
 // EvalError represents error during evaluation.
 type EvalError struct {
 	Position
@@ -67,7 +79,7 @@ func (ee EvalError) Unwrap() error {
 }
 
 func (ee EvalError) Error() string {
-	return fmt.Sprintf("eval error in '%s' (Line %d, Column %d): %v",
+	return fmt.Sprintf("eval-error in '%s' (at line %d:%d):\n%v",
 		ee.File, ee.Line, ee.Column, ee.Cause,
 	)
 }

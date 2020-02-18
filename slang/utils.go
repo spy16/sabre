@@ -1,9 +1,8 @@
-package core
+package slang
 
 import (
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/spy16/sabre"
 )
@@ -23,40 +22,11 @@ func evalValueList(scope sabre.Scope, vals []sabre.Value) ([]sabre.Value, error)
 	return result, nil
 }
 
-func toSymbolList(vals []sabre.Value) ([]sabre.Symbol, error) {
-	var argNames []sabre.Symbol
-
-	for _, arg := range vals {
-		sym, isSymbol := arg.(sabre.Symbol)
-		if !isSymbol {
-			return nil, fmt.Errorf("first argument must be a vector of symbols")
-		}
-
-		argNames = append(argNames, sym)
-	}
-
-	return argNames, nil
-}
-
-func stringFromVals(vals []sabre.Value) sabre.String {
-	argc := len(vals)
-	switch argc {
-	case 0:
-		return sabre.String("")
-
-	case 1:
-		return sabre.String(strings.Trim(vals[0].String(), "\""))
-
-	default:
-		var sb strings.Builder
-		for _, v := range vals {
-			sb.WriteString(strings.Trim(v.String(), "\""))
-		}
-		return sabre.String(sb.String())
-	}
-}
-
 func isTruthy(v sabre.Value) bool {
+	if v == nil {
+		return false
+	}
+
 	var sabreNil = sabre.Nil{}
 	if v == sabreNil {
 		return false

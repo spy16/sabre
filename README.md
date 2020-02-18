@@ -17,12 +17,23 @@ Sabre is highly customizable, embeddable LISP engine for Go.
 * Clojure style built-in special forms: `λ` or `fn*`, `def`, `if`, `do`, `throw`, `let*`
 * Simple interface `sabre.Value` (and optional `sabre.Invokable`) for adding custom
   data types. (See [Evaluation](#evaluation))
+* *Slang* (Short for Sabre Lang): A tiny reference LISP dialect built using Sabre.
+  * Contains an Interpreter with REPL.
+  * Some basic standard functions.
+
+> Please note that Sabre is _NOT_ an implementation of a particular LISP dialect. It provides
+> pieces that can be used to build a LISP dialect or can be used as a scripting layer.
 
 ## Usage
 
 > Sabre requires Go 1.13 or higher.
 
-### As Library
+### As Embedded Script Engine
+
+Sabre has concept of `Scope` which is responsible for maintaining bindings. You can bind
+any Go value and access it using LISP code, which makes it possible to expose parts of your
+API and make it scriptable or build your own LISP dialect. Also, See [Extending](#extending)
+for more information on customizing the reader or eval.
 
 ```go
 package main
@@ -31,25 +42,54 @@ import "github.com/spy16/sabre"
 
 func main() {
     scope := sabre.NewScope(nil)
+    scope.BindGo("inc", func(v int) int {
+      return v+1
+    })
 
-    result, err := sabre.ReadEvalStr(scope, "(+ 1 2)")
-    if err != nil {
-        log.Fatalf("failed to eval: %v", err)
-    }
-
-    fmt.Printf("Result:\n %v\n", result)
+    result, _:= sabre.ReadEvalStr(scope, "(inc 10)")
+    fmt.Printf("Result: %v\n", result) // should print "Result: 11"
 }
 ```
 
-See [Extending](#extending) for more information on customizing the reader or eval.
+### Expose through a REPL
+
+Sabre comes with a tiny `repl` package that is very flexible and easy to setup
+to expose your LISP setup through a read-eval-print-loop.
+
+```go
+package main
+
+import (
+  "log"
+
+  "github.com/spy16/sabre"
+  "github.com/spy16/sabre/repl"
+)
+
+func main() {
+  scope := sabre.NewScope(nil)
+  scope.BindGo("inc", func(v int) int {
+    return v+1
+  })
+
+  repl.New(scope,
+    repl.WithBanner("Welcome to my own LISP!"),
+    repl.WithPrompts("=>", "|"),
+    // many more options available
+  ).Loop(context.Background())
+}
+```
 
 ### Standalone
 
-1. Install Sabre into `GOBIN` path: `go get -u -v github.com/spy16/sabre/cmd/sabre`
+Sabre has a small reference LISP dialect named ***Slang*** (short for *Sabre Lang*) for
+which a standalone binary is available.
+
+1. Install Slang into `GOBIN` path: `go get -u -v github.com/spy16/sabre/cmd/slang`
 2. Run:
-   1. `sabre` for REPL
-   2. `sabre -e "(+ 1 2 3)"` for executing string
-   3. `sabre -f "examples/full.lisp"` for executing file
+   1. `slang` for REPL
+   2. `slang -e "(+ 1 2 3)"` for executing string
+   3. `slang -f "examples/simple.lisp"` for executing file
 
 > If you specify both `-f` and `-e` flags, file will be executed first and then the
 > string will be executed in the same scope and you will be dropped into REPL. If
@@ -94,14 +134,13 @@ In addition, `sabre.Value` types can also implement `sabre.Invokable` interface 
 enable invocation. For example `Vector` uses this to enable Clojure style element
 access using `([1 2 3] 0)` (returns `1`)
 
-> Please note that Sabre is _NOT_ an implementation of a particular LISP dialect (although
-> it derives ideas from Clojure)
-
 ## TODO
 
 * [x] Executor
 * [x] Special Forms
 * [X] REPL
-* [ ] Standard Functions and Macros
+* [X] Slang - A tiny LISP like language built using Sabre.
+* [x] Standard Functions
+* [ ] Macros
 * [ ] Optimizations
 * [ ] Code Generation?

@@ -8,8 +8,8 @@ fmt:
 	@goimports -l -w ./
 
 install:
-	@echo "Installing sabre to GOBIN..."
-	@go install -ldflags="-X main.version=${VERSION} -X main.commit=${COMMIT}" ./cmd/sabre/
+	@echo "Installing slang to GOBIN..."
+	@go install -ldflags="-X main.version=${VERSION} -X main.commit=${COMMIT}" ./cmd/slang/
 
 clean:
 	@echo "Cleaning up..."
@@ -27,4 +27,4 @@ test-verbose:
 build:
 	@echo "Building..."
 	@mkdir -p ./bin
-	@go build -ldflags="-X main.version=${VERSION} -X main.commit=${COMMIT}" -o ./bin/sabre ./cmd/sabre/
+	@go build -ldflags="-X main.version=${VERSION} -X main.commit=${COMMIT}" -o ./bin/slang ./cmd/slang/

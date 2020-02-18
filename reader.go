@@ -22,8 +22,9 @@ var (
 	// should be discarded (e.g., Comments).
 	ErrSkip = errors.New("skip expr")
 
-	errStringEOF = errors.New("EOF while reading string")
-	errCharEOF   = errors.New("EOF while reading character")
+	// ErrEOF is returned when stream ends prematurely to indicate that more
+	// data is needed to complete the current form.
+	ErrEOF = errors.New("unexpected EOF")
 )
 
 var (
@@ -347,7 +348,7 @@ func readString(rd *Reader, _ rune) (Value, error) {
 		r, err := rd.NextRune()
 		if err != nil {
 			if err == io.EOF {
-				return nil, errStringEOF
+				return nil, fmt.Errorf("%w: while reading string", ErrEOF)
 			}
 
 			return nil, err
@@ -357,7 +358,7 @@ func readString(rd *Reader, _ rune) (Value, error) {
 			r2, err := rd.NextRune()
 			if err != nil {
 				if err == io.EOF {
-					return nil, errStringEOF
+					return nil, fmt.Errorf("%w: while reading string", ErrEOF)
 				}
 
 				return nil, err
@@ -443,7 +444,7 @@ func readKeyword(rd *Reader, init rune) (Value, error) {
 func readCharacter(rd *Reader, _ rune) (Value, error) {
 	r, err := rd.NextRune()
 	if err != nil {
-		return nil, errCharEOF
+		return nil, fmt.Errorf("%w: while reading character", ErrEOF)
 	}
 
 	token, err := readToken(rd, r)
@@ -547,7 +548,7 @@ func quoteFormReader(expandFunc string) ReaderMacro {
 		expr, err := rd.One()
 		if err != nil {
 			if err == io.EOF {
-				return nil, errors.New("EOF while reading quote form")
+				return nil, fmt.Errorf("%w: while reading quote form", ErrEOF)
 			} else if err == ErrSkip {
 				return nil, errors.New("no-op form while reading quote form")
 			}
@@ -652,7 +653,7 @@ func readContainer(rd *Reader, _ rune, end rune, formType string) ([]Value, erro
 	for {
 		if err := rd.SkipSpaces(); err != nil {
 			if err == io.EOF {
-				return nil, fmt.Errorf("EOF while reading %s", formType)
+				return nil, fmt.Errorf("%w: while reading %s", ErrEOF, formType)
 			}
 			return nil, err
 		}
@@ -660,7 +661,7 @@ func readContainer(rd *Reader, _ rune, end rune, formType string) ([]Value, erro
 		r, err := rd.NextRune()
 		if err != nil {
 			if err == io.EOF {
-				return nil, fmt.Errorf("EOF while reading %s", formType)
+				return nil, fmt.Errorf("%w: while reading %s", ErrEOF, formType)
 			}
 			return nil, err
 		}

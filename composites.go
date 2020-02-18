@@ -127,20 +127,20 @@ type Set struct {
 // Eval evaluates each value in the set form and returns the resultant
 // values as new set.
 func (set Set) Eval(scope Scope) (Value, error) {
-	vals, err := evalValueList(scope, set.Values)
+	vals, err := evalValueList(scope, set.Uniq())
 	if err != nil {
 		return nil, err
 	}
 
-	return Set{Values: uniq(vals)}, nil
+	return Set{Values: Values(vals).Uniq()}, nil
 }
 
 func (set Set) String() string {
 	return containerString(set.Values, "#{", "}", " ")
 }
 
+// TODO: Remove this naive solution
 func (set Set) valid() bool {
-	// TODO: Remove this naive solution
 	s := map[string]struct{}{}
 
 	for _, v := range set.Values {
@@ -181,11 +181,7 @@ func evalValueList(scope Scope, vals []Value) ([]Value, error) {
 	for _, arg := range vals {
 		v, err := arg.Eval(scope)
 		if err != nil {
-			return nil, EvalError{
-				Position: getPosition(arg),
-				Cause:    err,
-				Form:     arg,
-			}
+			return nil, newEvalErr(arg, err)
 		}
 
 		result = append(result, v)
@@ -200,20 +196,4 @@ func containerString(vals []Value, begin, end, sep string) string {
 		parts[i] = fmt.Sprintf("%v", expr)
 	}
 	return begin + strings.Join(parts, sep) + end
-}
-
-func uniq(items []Value) []Value {
-	// TODO: remove this naive implementation
-	vs := map[string]Value{}
-	for _, v := range items {
-		s := v.String()
-		vs[s] = v
-	}
-
-	var set []Value
-	for _, v := range vs {
-		set = append(set, v)
-	}
-
-	return set
 }

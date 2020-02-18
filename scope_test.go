@@ -9,7 +9,7 @@ import (
 
 var _ sabre.Scope = (*sabre.MapScope)(nil)
 
-func TestMapScope_Get(t *testing.T) {
+func TestMapScope_Resolve(t *testing.T) {
 	tests := []struct {
 		name     string
 		symbol   string
