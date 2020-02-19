@@ -13,12 +13,6 @@ func ApplySeq(scope sabre.Scope, fn sabre.Invokable, seq sabre.Seq) (sabre.Value
 	return fn.Invoke(scope, Realize(seq).Values...)
 }
 
-// IsSeq returns true if the given value is a Seq.
-func IsSeq(v sabre.Value) bool {
-	_, isSeq := v.(sabre.Seq)
-	return isSeq
-}
-
 // Realize realizes a sequence by continuosly calling First() and Next()
 // until the sequence becomes nil.
 func Realize(seq sabre.Seq) *sabre.List {
@@ -37,23 +31,23 @@ func Realize(seq sabre.Seq) *sabre.List {
 	return &sabre.List{Values: vals}
 }
 
-// IsTruthy returns true if the given value is truthy. Boolean true,
-// and all non-nil values are considered truthy.
-func IsTruthy(v sabre.Value) bool {
-	if v == nil || v == (sabre.Nil{}) {
-		return false
-	}
-
-	if b, ok := v.(sabre.Bool); ok {
-		return bool(b)
-	}
-
-	return true
+// TypeOf returns the type information object for the given argument.
+func TypeOf(v interface{}) sabre.Value {
+	return sabre.ValueOf(reflect.TypeOf(v))
 }
 
-// TypeOf returns the type information object for the given argument.
-func TypeOf(val sabre.Value) sabre.Value {
-	return sabre.ValueOf(reflect.TypeOf(val))
+// Implements checks if given value implements the interface represented
+// by 't'. Returns error if 't' does not represent an interface type.
+func Implements(v interface{}, t sabre.Type) (bool, error) {
+	if t.R.Kind() == reflect.Ptr {
+		t.R = t.R.Elem()
+	}
+
+	if t.R.Kind() != reflect.Interface {
+		return false, fmt.Errorf("type '%s' is not an interface type", t)
+	}
+
+	return reflect.TypeOf(v).Implements(t.R), nil
 }
 
 // ToType attempts to convert given sabre value to target type. Returns
@@ -78,7 +72,7 @@ func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 		return nil, err
 	}
 
-	if IsTruthy(test) {
+	if isTruthy(test) {
 		return nil, nil
 	}
 
@@ -168,4 +162,16 @@ func threadCall(scope sabre.Scope, args []sabre.Value, last bool) (sabre.Value, 
 	}
 
 	return res, nil
+}
+
+func isTruthy(v sabre.Value) bool {
+	if v == nil || v == (sabre.Nil{}) {
+		return false
+	}
+
+	if b, ok := v.(sabre.Bool); ok {
+		return bool(b)
+	}
+
+	return true
 }
