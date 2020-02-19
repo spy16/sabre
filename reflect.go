@@ -113,13 +113,8 @@ func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
 func reflectFn(rv reflect.Value) *Fn {
 	fw := wrapFunc(rv)
 
-	cleanArgName := func(t reflect.Type) string {
-		return strings.Replace(t.String(), "sabre.", "", -1)
-	}
-
-	var argNames []string
-
 	i := 0
+	var argNames []string
 	for ; i < fw.minArgs; i++ {
 		argNames = append(argNames, cleanArgName(fw.rt.In(i)))
 	}
@@ -127,7 +122,7 @@ func reflectFn(rv reflect.Value) *Fn {
 		argNames = append(argNames, cleanArgName(fw.rt.In(i).Elem()))
 	}
 
-	fn := Fn{
+	return &Fn{
 		Args:     argNames,
 		Variadic: rv.Type().IsVariadic(),
 		Func: func(scope Scope, args []Value) (_ Value, err error) {
@@ -145,8 +140,6 @@ func reflectFn(rv reflect.Value) *Fn {
 			return fw.Call(scope, args...)
 		},
 	}
-
-	return &fn
 }
 
 func wrapFunc(rv reflect.Value) *funcWrapper {
@@ -286,6 +279,10 @@ func convertArgsTo(expected reflect.Type, args ...reflect.Value) ([]reflect.Valu
 	}
 
 	return converted, nil
+}
+
+func cleanArgName(t reflect.Type) string {
+	return strings.Replace(t.String(), "sabre.", "", -1)
 }
 
 func isAssignable(from, to reflect.Type) bool {

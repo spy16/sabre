@@ -188,12 +188,11 @@ func BindAll(scope sabre.Scope) error {
 		},
 
 		"core/eval":      sabre.ValueOf(sabre.Eval),
-		"core/true?":     sabre.ValueOf(IsTruthy),
 		"core/type":      sabre.ValueOf(TypeOf),
 		"core/to-type":   sabre.ValueOf(ToType),
+		"core/impl?":     sabre.ValueOf(Implements),
 		"core/realize":   sabre.ValueOf(Realize),
 		"core/apply-seq": sabre.ValueOf(ApplySeq),
-		"core/seq?":      sabre.ValueOf(IsSeq),
 
 		// Sequence functions
 		"core/next":  sabre.ValueOf(Next),
@@ -218,6 +217,9 @@ func BindAll(scope sabre.Scope) error {
 		// io functions
 		"core/println": sabre.ValueOf(Println),
 		"core/printf":  sabre.ValueOf(Printf),
+
+		"types/Seq":       TypeOf((*sabre.Seq)(nil)),
+		"types/Invokable": TypeOf((*sabre.Invokable)(nil)),
 	}
 
 	for sym, val := range core {

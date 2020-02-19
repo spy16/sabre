@@ -65,7 +65,7 @@ func TestSlang_Resolve(t *testing.T) {
 	}{
 		{
 			name:   "CoreBinding",
-			symbol: "core/true?",
+			symbol: "core/impl?",
 		},
 		{
 			name:    "UserBinding",

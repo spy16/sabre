@@ -25,6 +25,16 @@ func BenchmarkEval(b *testing.B) {
 	}
 }
 
+func BenchmarkGoCall(b *testing.B) {
+	inc := func(a int) int {
+		return a + 1
+	}
+
+	for i := 0; i < b.N; i++ {
+		_ = inc(10)
+	}
+}
+
 func TestEval(t *testing.T) {
 	t.Parallel()
 

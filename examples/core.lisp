@@ -6,9 +6,14 @@
 (def empty? (fn* empty? [coll]
     (if (nil? coll)
         true
-        (if (not (seq? coll))
-            (throw "argument must be a sequence")
-            (nil? (first coll))))))
+        (nil? (first coll)))))
+
+(def true? (fn* true? [arg]
+    (if (nil? arg)
+        false
+        (if (boolean? arg)
+            arg
+            true))))
 
 (def not (fn* not [arg]
     (= false (true? arg))))
@@ -16,6 +21,7 @@
 (def same-type? (fn* same-type? [a b] (= (type a) (type b))))
 
 ; Type check functions
+(def seq? (fn* seq? [arg] (impl? arg types/Seq)))
 (def set? (fn* set? [s] (same-type? #{} s)))
 (def list? (fn* list? [s] (same-type? () s)))
 (def vector? (fn* vector? [s] (same-type? [] s)))
