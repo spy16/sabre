@@ -23,7 +23,7 @@ func ValueOf(v interface{}) Value {
 	}
 
 	if rt, ok := v.(reflect.Type); ok {
-		return Type{rt: rt}
+		return Type{R: rt}
 	}
 
 	rv := reflect.ValueOf(v)
@@ -66,7 +66,7 @@ func (any Any) String() string { return fmt.Sprintf("Any{%v}", any.R) }
 // Type represents the type value of a given value. Type also implements
 // Value type.
 type Type struct {
-	rt reflect.Type
+	R reflect.Type
 }
 
 // Eval returns the type value itself.
@@ -75,32 +75,37 @@ func (t Type) Eval(_ Scope) (Value, error) {
 }
 
 func (t Type) String() string {
-	return fmt.Sprintf("%v", t.rt)
+	return fmt.Sprintf("%v", t.R)
 }
 
 // Invoke creates zero value of the given type.
 func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
-	if isKind(t.rt, reflect.Interface, reflect.Chan, reflect.Func) {
-		return nil, fmt.Errorf("type '%s' cannot be initialized", t.rt)
+	if isKind(t.R, reflect.Interface, reflect.Chan, reflect.Func) {
+		return nil, fmt.Errorf("type '%s' cannot be initialized", t.R)
 	}
 
-	switch t.rt {
+	argVals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	switch t.R {
 	case reflect.TypeOf((*List)(nil)):
-		return &List{Values: args}, nil
+		return &List{Values: argVals}, nil
 
 	case reflect.TypeOf(Vector{}):
-		return Vector{Values: args}, nil
+		return Vector{Values: argVals}, nil
 
 	case reflect.TypeOf(Set{}):
-		return Set{Values: Values(args).Uniq()}, nil
+		return Set{Values: Values(argVals).Uniq()}, nil
 	}
 
-	likeSeq := isKind(t.rt, reflect.Slice, reflect.Array)
+	likeSeq := isKind(t.R, reflect.Slice, reflect.Array)
 	if likeSeq {
-		return Values(args), nil
+		return Values(argVals), nil
 	}
 
-	return ValueOf(reflect.New(t.rt).Elem().Interface()), nil
+	return ValueOf(reflect.New(t.R).Elem().Interface()), nil
 }
 
 // reflectFn creates a wrapper Fn for the given Go function value using

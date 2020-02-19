@@ -65,7 +65,7 @@ func TestSlang_Resolve(t *testing.T) {
 	}{
 		{
 			name:   "CoreBinding",
-			symbol: "core/not",
+			symbol: "core/true?",
 		},
 		{
 			name:    "UserBinding",
@@ -119,10 +119,28 @@ func testFile(t *testing.T, file string) {
 	}
 	defer fh.Close()
 
-	sl := slang.New()
+	sl, err := initSlang()
+	if err != nil {
+		t.Fatalf("failed to init slang: %v", err)
+	}
 
 	_, err = sl.ReadEval(fh)
 	if err != nil {
 		t.Errorf("execution failed for '%s': %v", file, err)
 	}
+}
+
+func initSlang() (*slang.Slang, error) {
+	fh, err := os.Open(filepath.Join(testDir, "core.lisp"))
+	if err != nil {
+		return nil, err
+	}
+	defer fh.Close()
+
+	sl := slang.New()
+	if _, err := sl.ReadEval(fh); err != nil {
+		return nil, err
+	}
+
+	return sl, nil
 }

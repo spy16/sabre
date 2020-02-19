@@ -8,6 +8,65 @@ import (
 	"github.com/spy16/sabre"
 )
 
+// ApplySeq invokes fn with argument list formed by realizing the sequence.
+func ApplySeq(scope sabre.Scope, fn sabre.Invokable, seq sabre.Seq) (sabre.Value, error) {
+	return fn.Invoke(scope, Realize(seq).Values...)
+}
+
+// IsSeq returns true if the given value is a Seq.
+func IsSeq(v sabre.Value) bool {
+	_, isSeq := v.(sabre.Seq)
+	return isSeq
+}
+
+// Realize realizes a sequence by continuosly calling First() and Next()
+// until the sequence becomes nil.
+func Realize(seq sabre.Seq) *sabre.List {
+	var vals []sabre.Value
+
+	for seq != nil {
+		v := seq.First()
+		if v == nil {
+			break
+		}
+
+		vals = append(vals, v)
+		seq = seq.Next()
+	}
+
+	return &sabre.List{Values: vals}
+}
+
+// IsTruthy returns true if the given value is truthy. Boolean true,
+// and all non-nil values are considered truthy.
+func IsTruthy(v sabre.Value) bool {
+	if v == nil || v == (sabre.Nil{}) {
+		return false
+	}
+
+	if b, ok := v.(sabre.Bool); ok {
+		return bool(b)
+	}
+
+	return true
+}
+
+// TypeOf returns the type information object for the given argument.
+func TypeOf(val sabre.Value) sabre.Value {
+	return sabre.ValueOf(reflect.TypeOf(val))
+}
+
+// ToType attempts to convert given sabre value to target type. Returns
+// error if conversion not possible.
+func ToType(val sabre.Value, to sabre.Type) (sabre.Value, error) {
+	rv := reflect.ValueOf(val)
+	if rv.Type().ConvertibleTo(to.R) || rv.Type().AssignableTo(to.R) {
+		return sabre.ValueOf(rv.Convert(to.R).Interface()), nil
+	}
+
+	return nil, fmt.Errorf("cannot convert '%s' to '%s'", rv.Type(), to.R)
+}
+
 // Assert implements (assert <expr> message?).
 func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 	if err := verifyArgCount([]int{1, 2}, args); err != nil {
@@ -35,47 +94,6 @@ func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 	return nil, fmt.Errorf("%v", msg)
 }
 
-// IsEmpty returns true if the given value is nil or is an empty seq.
-// If the value is non-nil and non-seq, returns error.
-func IsEmpty(v sabre.Value) (bool, error) {
-	if v == (sabre.Nil{}) || v == nil {
-		return true, nil
-	}
-
-	seq, isSeq := v.(sabre.Seq)
-	if !isSeq {
-		return false, fmt.Errorf("value of type '%s' is not a sequence", reflect.TypeOf(v))
-	}
-
-	first := seq.First()
-	return (first == (sabre.Nil{}) || first == nil), nil
-}
-
-// IsTruthy returns true if the given value is truthy. Boolean true,
-// and all non-nil values are considered truthy.
-func IsTruthy(v sabre.Value) bool {
-	if v == nil {
-		return false
-	}
-
-	var sabreNil = sabre.Nil{}
-	if v == sabreNil {
-		return false
-	}
-
-	if b, ok := v.(sabre.Bool); ok {
-		return bool(b)
-	}
-
-	return true
-}
-
-// IsSeq returns true if the given value is a Seq.
-func IsSeq(v sabre.Value) bool {
-	_, isSeq := v.(sabre.Seq)
-	return isSeq
-}
-
 // First returns the first value from the given Seq value.
 func First(seq sabre.Seq) sabre.Value {
 	return seq.First()
@@ -101,11 +119,6 @@ func Cons(v sabre.Value, seq sabre.Seq) sabre.Value {
 // and returns.
 func Conj(seq sabre.Seq, args ...sabre.Value) sabre.Value {
 	return seq.Conj(args...)
-}
-
-// Not returns the negated version of the argument value.
-func Not(val sabre.Value) sabre.Value {
-	return sabre.Bool(!IsTruthy(val))
 }
 
 // ThreadFirst threads the expressions through forms by inserting result of
