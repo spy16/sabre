@@ -1,6 +1,7 @@
 package sabre
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 )
@@ -70,16 +71,28 @@ func Test_strictFn_Invoke(t *testing.T) {
 	t.Parallel()
 
 	table := []struct {
-		name    string
-		v       interface{}
-		args    []Value
-		want    Value
-		wantErr bool
+		name     string
+		getScope func() Scope
+		v        interface{}
+		args     []Value
+		want     Value
+		wantErr  bool
 	}{
+		{
+			name: "WithScopeArgNoBinding",
+			getScope: func() Scope {
+				sc := NewScope(nil)
+				sc.Bind("hello", Int64(10))
+				return sc
+			},
+			v:       func(sc Scope) (Value, error) { return sc.Resolve("hello") },
+			want:    Int64(10),
+			wantErr: false,
+		},
 		{
 			name: "SimpleNoArgNoReturn",
 			v:    func() {},
-			want: nil,
+			want: Nil{},
 		},
 		{
 			name: "SimpleNoArg",
@@ -87,10 +100,21 @@ func Test_strictFn_Invoke(t *testing.T) {
 			want: Int64(10),
 		},
 		{
+			name:    "NoArgSingleErrorReturn",
+			v:       func() error { return errors.New("failed") },
+			wantErr: true,
+		},
+		{
+			name:    "NoArgSingleReturnNilError",
+			v:       func() error { return nil },
+			want:    Nil{},
+			wantErr: false,
+		},
+		{
 			name: "SimpleNoReturn",
 			v:    func(arg Int64) {},
 			args: []Value{Int64(10)},
-			want: nil,
+			want: Nil{},
 		},
 		{
 			name: "SimpleSingleReturn",
@@ -99,10 +123,20 @@ func Test_strictFn_Invoke(t *testing.T) {
 			want: Int64(10),
 		},
 		{
-			name: "SimpleMultiReturn",
+			name: "MultiReturn",
 			v:    func(arg Int64) (int64, string) { return 10, "hello" },
 			args: []Value{Int64(10)},
 			want: &List{Values: []Value{Int64(10), String("hello")}},
+		},
+		{
+			name:    "NoArgMultiReturnWithError",
+			v:       func() (int, error) { return 0, errors.New("failed") },
+			wantErr: true,
+		},
+		{
+			name: "NoArgMultiReturnWithoutError",
+			v:    func() (int, error) { return 10, nil },
+			want: Int64(10),
 		},
 		{
 			name: "PureVariadicNoCallArgs",
@@ -159,9 +193,13 @@ func Test_strictFn_Invoke(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.getScope == nil {
+				tt.getScope = func() Scope { return NewScope(nil) }
+			}
+
 			fn := reflectFn(reflect.ValueOf(tt.v))
 
-			got, err := fn.Invoke(NewScope(nil), tt.args...)
+			got, err := fn.Invoke(tt.getScope(), tt.args...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Invoke() error = %v, wantErr %v", err, tt.wantErr)
 				return

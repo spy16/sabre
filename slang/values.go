@@ -14,15 +14,11 @@ func TypeOf(val sabre.Value) sabre.Value {
 }
 
 // IsType returns a Fn that checks if the value is of given type.
-func IsType(rt reflect.Type) Fn {
-	return func(vals []sabre.Value) (sabre.Value, error) {
-		if err := verifyArgCount([]int{1}, vals); err != nil {
-			return nil, err
-		}
-
-		target := reflect.TypeOf(vals[0])
+func IsType(rt reflect.Type) sabre.Value {
+	return sabre.ValueOf(func(val sabre.Value) (sabre.Value, error) {
+		target := reflect.TypeOf(val)
 		return sabre.Bool(target == rt), nil
-	}
+	})
 }
 
 // MakeBool converts given argument to a boolean. Any truthy value
@@ -32,13 +28,9 @@ func MakeBool(val sabre.Value) sabre.Bool {
 }
 
 // MakeInt converts given value to integer and returns.
-func MakeInt(vals []sabre.Value) (sabre.Value, error) {
-	if err := verifyArgCount([]int{1}, vals); err != nil {
-		return nil, err
-	}
-
+func MakeInt(val sabre.Value) (sabre.Value, error) {
 	to := reflect.TypeOf(sabre.Int64(0))
-	rv := reflect.ValueOf(vals[0])
+	rv := reflect.ValueOf(val)
 
 	if !rv.Type().ConvertibleTo(to) {
 		return nil, fmt.Errorf("cannot convert '%s' to '%s'", rv.Type(), to)
@@ -48,13 +40,9 @@ func MakeInt(vals []sabre.Value) (sabre.Value, error) {
 }
 
 // MakeFloat converts given value to float and returns.
-func MakeFloat(vals []sabre.Value) (sabre.Value, error) {
-	if err := verifyArgCount([]int{1}, vals); err != nil {
-		return nil, err
-	}
-
+func MakeFloat(val sabre.Value) (sabre.Value, error) {
 	to := reflect.TypeOf(sabre.Float64(0))
-	rv := reflect.ValueOf(vals[0])
+	rv := reflect.ValueOf(val)
 
 	if !rv.Type().ConvertibleTo(to) {
 		return nil, fmt.Errorf("cannot convert '%s' to '%s'", rv.Type(), to)
@@ -89,8 +77,8 @@ func MakeString(vals ...sabre.Value) sabre.Value {
 
 // makeContainer can make a composite type like list, set and vector from
 // given args.
-func makeContainer(targetType sabre.Value) Fn {
-	return func(args []sabre.Value) (sabre.Value, error) {
+func makeContainer(targetType sabre.Value) sabre.Value {
+	return sabre.ValueOf(func(args ...sabre.Value) (sabre.Value, error) {
 		switch targetType.(type) {
 		case *sabre.List:
 			return &sabre.List{Values: args}, nil
@@ -109,11 +97,7 @@ func makeContainer(targetType sabre.Value) Fn {
 					reflect.TypeOf(args[0]))
 			}
 
-			var seqVals sabre.Values
-			for seq != nil && seq.First() != nil {
-				seqVals = append(seqVals, seq.First())
-				seq = seq.Next()
-			}
+			seqVals := realize(seq)
 
 			return sabre.Set{
 				Values: sabre.Values(seqVals).Uniq(),
@@ -121,7 +105,23 @@ func makeContainer(targetType sabre.Value) Fn {
 		}
 
 		return nil, fmt.Errorf("cannot make container of type '%s'", reflect.TypeOf(targetType))
+	})
+}
+
+func realize(seq sabre.Seq) []sabre.Value {
+	var vals []sabre.Value
+
+	for seq != nil {
+		v := seq.First()
+		if v == nil {
+			break
+		}
+
+		vals = append(vals, v)
+		seq = seq.Next()
 	}
+
+	return vals
 }
 
 // Type represents the type value of a given value. Type also implements
@@ -142,27 +142,4 @@ func (t Type) String() string {
 // Invoke creates zero value of the given type.
 func (t Type) Invoke(scope sabre.Scope, args ...sabre.Value) (sabre.Value, error) {
 	return sabre.ValueOf(reflect.New(t.rt).Interface()), nil
-}
-
-// Fn implements invokable with simple functions.
-type Fn func(vals []sabre.Value) (sabre.Value, error)
-
-// Eval simply returns the value.
-func (fn Fn) Eval(_ sabre.Scope) (sabre.Value, error) {
-	return fn, nil
-}
-
-func (fn Fn) String() string {
-	return fmt.Sprintf("%s", reflect.ValueOf(fn).Type())
-}
-
-// Invoke evaluates all the args against the scope and dispatches the
-// evaluated list as args to the wrapped function.
-func (fn Fn) Invoke(scope sabre.Scope, args ...sabre.Value) (sabre.Value, error) {
-	vals, err := evalValueList(scope, args)
-	if err != nil {
-		return nil, err
-	}
-
-	return fn(vals)
 }

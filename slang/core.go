@@ -35,6 +35,22 @@ func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 	return nil, fmt.Errorf("%v", msg)
 }
 
+// IsEmpty returns true if the given value is nil or is an empty seq.
+// If the value is non-nil and non-seq, returns error.
+func IsEmpty(v sabre.Value) (bool, error) {
+	if v == (sabre.Nil{}) || v == nil {
+		return true, nil
+	}
+
+	seq, isSeq := v.(sabre.Seq)
+	if !isSeq {
+		return false, fmt.Errorf("value of type '%s' is not a sequence", reflect.TypeOf(v))
+	}
+
+	first := seq.First()
+	return (first == (sabre.Nil{}) || first == nil), nil
+}
+
 // IsTruthy returns true if the given value is truthy. Boolean true,
 // and all non-nil values are considered truthy.
 func IsTruthy(v sabre.Value) bool {
@@ -85,20 +101,6 @@ func Cons(v sabre.Value, seq sabre.Seq) sabre.Value {
 // and returns.
 func Conj(seq sabre.Seq, args ...sabre.Value) sabre.Value {
 	return seq.Conj(args...)
-}
-
-// Eval evaluates the first argument and returns the result.
-func Eval(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
-	if err := verifyArgCount([]int{1}, args); err != nil {
-		return nil, err
-	}
-
-	val, err := args[0].Eval(scope)
-	if err != nil {
-		return nil, err
-	}
-
-	return val.Eval(scope)
 }
 
 // Not returns the negated version of the argument value.

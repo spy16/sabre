@@ -46,6 +46,16 @@ func ValueOf(v interface{}) Value {
 	}
 }
 
+type anyValue struct{ rv reflect.Value }
+
+func (any anyValue) Eval(_ Scope) (Value, error) {
+	return any, nil
+}
+
+func (any anyValue) String() string {
+	return fmt.Sprintf("Any{%v}", any.rv)
+}
+
 func reflectFn(rv reflect.Value) GoFunc {
 	return func(scope Scope, args []Value) (_ Value, err error) {
 		defer func() {
@@ -83,30 +93,43 @@ func reflectFn(rv reflect.Value) GoFunc {
 		}
 
 		retVals := rv.Call(converted)
-
-		if rt.NumOut() == 0 {
-			return nil, nil
-		} else if rt.NumOut() == 1 {
-			return ValueOf(retVals[0].Interface()), nil
-		}
-
-		var wrappedRetVals []Value
-		for _, retVal := range retVals {
-			wrappedRetVals = append(wrappedRetVals, ValueOf(retVal.Interface()))
-		}
-
-		return &List{Values: wrappedRetVals}, nil
+		return wrapReturnValues(rt, retVals)
 	}
 }
 
-type anyValue struct{ rv reflect.Value }
+func wrapReturnValues(fn reflect.Type, vals []reflect.Value) (Value, error) {
+	if fn.NumOut() == 0 {
+		return Nil{}, nil
+	}
 
-func (any anyValue) Eval(_ Scope) (Value, error) {
-	return any, nil
-}
+	lastArgIdx := fn.NumOut() - 1
+	isLastArgErr := fn.Out(lastArgIdx).Name() == "error"
 
-func (any anyValue) String() string {
-	return fmt.Sprintf("Any{%v}", any.rv)
+	if isLastArgErr {
+		if !vals[lastArgIdx].IsNil() {
+			return nil, vals[lastArgIdx].Interface().(error)
+		}
+
+		if fn.NumOut() == 1 {
+			return Nil{}, nil
+		}
+	}
+
+	lastValIdx := lastArgIdx + 1
+	if isLastArgErr {
+		lastValIdx = lastValIdx - 1
+	}
+
+	var wrappedRetVals []Value
+	for _, retVal := range vals[0:lastValIdx] {
+		wrappedRetVals = append(wrappedRetVals, ValueOf(retVal.Interface()))
+	}
+
+	if len(wrappedRetVals) == 1 {
+		return wrappedRetVals[0], nil
+	}
+
+	return &List{Values: wrappedRetVals}, nil
 }
 
 func convertArgTypes(rt reflect.Type, args []reflect.Value) ([]reflect.Value, error) {

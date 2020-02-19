@@ -51,7 +51,7 @@ func (slang *Slang) ReadEval(r io.Reader) (sabre.Value, error) {
 	return sabre.ReadEval(slang, r)
 }
 
-// ReadEvalStr reads the source and evalautes it in Slang context.
+// ReadEvalStr reads the source and evaluates it in Slang context.
 func (slang *Slang) ReadEvalStr(src string) (sabre.Value, error) {
 	return sabre.ReadEvalStr(slang, src)
 }
@@ -174,10 +174,11 @@ func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
 		"core/->":     sabre.GoFunc(ThreadFirst),
 		"core/->>":    sabre.GoFunc(ThreadLast),
-		"core/eval":   sabre.GoFunc(Eval),
-		"core/not":    sabre.ValueOf(Not),
-		"core/true?":  sabre.ValueOf(IsTruthy),
 		"core/assert": sabre.GoFunc(Assert),
+		"core/eval":   sabre.ValueOf(sabre.Eval),
+		"core/not":    sabre.ValueOf(Not),
+		"core/empty?": sabre.ValueOf(IsEmpty),
+		"core/true?":  sabre.ValueOf(IsTruthy),
 
 		// Sequence functions
 		"core/next":  sabre.ValueOf(Next),
@@ -198,11 +199,11 @@ func BindAll(scope sabre.Scope) error {
 		"core/vector?":  IsType(reflect.TypeOf(sabre.Vector{})),
 		"core/keyword?": IsType(reflect.TypeOf(sabre.Keyword(""))),
 		"core/symbol?":  IsType(reflect.TypeOf(sabre.Symbol{})),
-		"core/int":      Fn(MakeInt),
-		"core/float":    Fn(MakeFloat),
+		"core/nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
+		"core/int":      sabre.ValueOf(MakeInt),
+		"core/float":    sabre.ValueOf(MakeFloat),
 		"core/seq?":     sabre.ValueOf(IsSeq),
 		"core/type":     sabre.ValueOf(TypeOf),
-		"core/nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
 		"core/boolean":  sabre.ValueOf(MakeBool),
 		"core/str":      sabre.ValueOf(MakeString),
 
