@@ -3,7 +3,6 @@ package slang
 import (
 	"fmt"
 	"io"
-	"reflect"
 	"strings"
 	"sync"
 
@@ -187,10 +186,14 @@ func BindAll(scope sabre.Scope) error {
 			Args:     []string{"expr", "err?"},
 			Variadic: true,
 		},
-		"core/eval":   sabre.ValueOf(sabre.Eval),
-		"core/not":    sabre.ValueOf(Not),
-		"core/empty?": sabre.ValueOf(IsEmpty),
-		"core/true?":  sabre.ValueOf(IsTruthy),
+
+		"core/eval":      sabre.ValueOf(sabre.Eval),
+		"core/true?":     sabre.ValueOf(IsTruthy),
+		"core/type":      sabre.ValueOf(TypeOf),
+		"core/to-type":   sabre.ValueOf(ToType),
+		"core/realize":   sabre.ValueOf(Realize),
+		"core/apply-seq": sabre.ValueOf(ApplySeq),
+		"core/seq?":      sabre.ValueOf(IsSeq),
 
 		// Sequence functions
 		"core/next":  sabre.ValueOf(Next),
@@ -199,25 +202,7 @@ func BindAll(scope sabre.Scope) error {
 		"core/conj":  sabre.ValueOf(Conj),
 
 		// Type system functions
-		"core/set":      makeContainer(sabre.Set{}),
-		"core/list":     makeContainer(&sabre.List{}),
-		"core/vector":   makeContainer(sabre.Vector{}),
-		"core/int?":     IsType(reflect.TypeOf(sabre.Int64(0))),
-		"core/set?":     IsType(reflect.TypeOf(sabre.Set{})),
-		"core/boolean?": IsType(reflect.TypeOf(sabre.Bool(false))),
-		"core/list?":    IsType(reflect.TypeOf(&sabre.List{})),
-		"core/string?":  IsType(reflect.TypeOf(sabre.String(""))),
-		"core/float?":   IsType(reflect.TypeOf(sabre.Float64(0))),
-		"core/vector?":  IsType(reflect.TypeOf(sabre.Vector{})),
-		"core/keyword?": IsType(reflect.TypeOf(sabre.Keyword(""))),
-		"core/symbol?":  IsType(reflect.TypeOf(sabre.Symbol{})),
-		"core/nil?":     IsType(reflect.TypeOf(sabre.Nil{})),
-		"core/int":      sabre.ValueOf(MakeInt),
-		"core/float":    sabre.ValueOf(MakeFloat),
-		"core/seq?":     sabre.ValueOf(IsSeq),
-		"core/type":     sabre.ValueOf(TypeOf),
-		"core/boolean":  sabre.ValueOf(MakeBool),
-		"core/str":      sabre.ValueOf(MakeString),
+		"core/str": sabre.ValueOf(MakeString),
 
 		// Math functions
 		"core/+":  sabre.ValueOf(Add),
