@@ -1,6 +1,8 @@
 package sabre
 
-import "reflect"
+import (
+	"reflect"
+)
 
 // Value represents data/forms in sabre. This includes those emitted by
 // Reader, values obtained as result of an evaluation etc.

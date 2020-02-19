@@ -10,7 +10,7 @@ import (
 
 // TypeOf returns the type information object for the given argument.
 func TypeOf(val sabre.Value) sabre.Value {
-	return Type{rt: reflect.TypeOf(val)}
+	return sabre.ValueOf(reflect.TypeOf(val))
 }
 
 // IsType returns a Fn that checks if the value is of given type.
@@ -124,22 +124,25 @@ func realize(seq sabre.Seq) []sabre.Value {
 	return vals
 }
 
-// Type represents the type value of a given value. Type also implements
-// Value type.
-type Type struct {
-	rt reflect.Type
+// Fn implements invokable with simple functions.
+type Fn func(vals []sabre.Value) (sabre.Value, error)
+
+// Eval simply returns the value.
+func (fn Fn) Eval(_ sabre.Scope) (sabre.Value, error) {
+	return fn, nil
 }
 
-// Eval returns the type value itself.
-func (t Type) Eval(_ sabre.Scope) (sabre.Value, error) {
-	return t, nil
+func (fn Fn) String() string {
+	return fmt.Sprintf("%s", reflect.ValueOf(fn).Type())
 }
 
-func (t Type) String() string {
-	return fmt.Sprintf("%v", t.rt)
-}
+// Invoke evaluates all the args against the scope and dispatches the
+// evaluated list as args to the wrapped function.
+func (fn Fn) Invoke(scope sabre.Scope, args ...sabre.Value) (sabre.Value, error) {
+	vals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
 
-// Invoke creates zero value of the given type.
-func (t Type) Invoke(scope sabre.Scope, args ...sabre.Value) (sabre.Value, error) {
-	return sabre.ValueOf(reflect.New(t.rt).Interface()), nil
+	return fn(vals)
 }

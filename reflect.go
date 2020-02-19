@@ -19,6 +19,10 @@ func ValueOf(v interface{}) Value {
 		return Nil{}
 	}
 
+	if rt, ok := v.(reflect.Type); ok {
+		return Type{rt: rt}
+	}
+
 	rv := reflect.ValueOf(v)
 
 	switch rv.Kind() {
@@ -54,6 +58,46 @@ func (any anyValue) Eval(_ Scope) (Value, error) {
 
 func (any anyValue) String() string {
 	return fmt.Sprintf("Any{%v}", any.rv)
+}
+
+// Type represents the type value of a given value. Type also implements
+// Value type.
+type Type struct {
+	rt reflect.Type
+}
+
+// Eval returns the type value itself.
+func (t Type) Eval(_ Scope) (Value, error) {
+	return t, nil
+}
+
+func (t Type) String() string {
+	return fmt.Sprintf("%v", t.rt)
+}
+
+// Invoke creates zero value of the given type.
+func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
+	if isKind(t.rt, reflect.Interface, reflect.Chan, reflect.Func) {
+		return nil, fmt.Errorf("type '%s' cannot be initialized", t.rt)
+	}
+
+	switch t.rt {
+	case reflect.TypeOf((*List)(nil)):
+		return &List{Values: args}, nil
+
+	case reflect.TypeOf(Vector{}):
+		return Vector{Values: args}, nil
+
+	case reflect.TypeOf(Set{}):
+		return Set{Values: Values(args).Uniq()}, nil
+	}
+
+	likeSeq := isKind(t.rt, reflect.Slice, reflect.Array)
+	if likeSeq {
+		return Values(args), nil
+	}
+
+	return ValueOf(reflect.New(t.rt).Elem().Interface()), nil
 }
 
 func reflectFn(rv reflect.Value) GoFunc {
@@ -188,6 +232,16 @@ func reflectValues(args []Value) []reflect.Value {
 	}
 
 	return rvs
+}
+
+func isKind(rt reflect.Type, kinds ...reflect.Kind) bool {
+	for _, k := range kinds {
+		if k == rt.Kind() {
+			return true
+		}
+	}
+
+	return false
 }
 
 func minArgs(rt reflect.Type) int {
