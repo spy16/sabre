@@ -53,7 +53,7 @@ func TestValueOf(t *testing.T) {
 		{
 			name: "Any",
 			v:    anyVal,
-			want: anyValue{rv: anyValRV},
+			want: Any{R: anyValRV},
 		},
 	}
 
@@ -126,7 +126,7 @@ func Test_strictFn_Invoke(t *testing.T) {
 			name: "MultiReturn",
 			v:    func(arg Int64) (int64, string) { return 10, "hello" },
 			args: []Value{Int64(10)},
-			want: &List{Values: []Value{Int64(10), String("hello")}},
+			want: Values([]Value{Int64(10), String("hello")}),
 		},
 		{
 			name:    "NoArgMultiReturnWithError",
