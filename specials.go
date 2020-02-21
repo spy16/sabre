@@ -231,18 +231,19 @@ func syntaxQuote(scope Scope, forms []Value) (specialExpr, error) {
 
 	return func(scope Scope) (Value, error) {
 		quoteScope := NewScope(scope)
-		quoteScope.Bind("unquote", GoFunc(unquote))
+		quoteScope.Bind("unquote", Fn{
+			Args: []string{"expr"},
+			Func: func(scope Scope, args []Value) (Value, error) {
+				if err := verifyArgCount([]int{1}, forms); err != nil {
+					return nil, err
+				}
+
+				return forms[0].Eval(scope)
+			},
+		})
 
 		return recursiveQuote(quoteScope, forms[0])
 	}, nil
-}
-
-func unquote(scope Scope, forms []Value) (Value, error) {
-	if err := verifyArgCount([]int{1}, forms); err != nil {
-		return nil, err
-	}
-
-	return forms[0].Eval(scope)
 }
 
 func makeFn(scope Scope, spec []Value) (*Fn, error) {

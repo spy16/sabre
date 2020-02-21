@@ -23,7 +23,7 @@ func TestMultiFn_String(t *testing.T) {
 			value: sabre.MultiFn{
 				Name: "hello",
 			},
-			want: "MultiFn{name=hello}",
+			want: "(hello)",
 		},
 	})
 }
@@ -135,9 +135,9 @@ func TestFn_Invoke(t *testing.T) {
 		{
 			name: "GoFuncWrap",
 			fn: sabre.Fn{
-				Func: sabre.GoFunc(func(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
+				Func: func(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 					return sabre.Int64(10), nil
-				}),
+				},
 			},
 			want: sabre.Int64(10),
 		},
@@ -176,7 +176,7 @@ func TestFn_Invoke(t *testing.T) {
 				scope = tt.getScope()
 			}
 
-			got, err := tt.fn.Invoke(scope, tt.args)
+			got, err := tt.fn.Invoke(scope, tt.args...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Invoke() error = %v, wantErr %v", err, tt.wantErr)
 				return

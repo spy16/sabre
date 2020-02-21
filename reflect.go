@@ -100,8 +100,10 @@ func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
 	return ValueOf(reflect.New(t.rt).Elem().Interface()), nil
 }
 
-func reflectFn(rv reflect.Value) GoFunc {
-	return func(scope Scope, args []Value) (_ Value, err error) {
+func reflectFn(rv reflect.Value) Fn {
+	fn := Fn{}
+
+	fn.Func = func(scope Scope, args []Value) (_ Value, err error) {
 		defer func() {
 			if v := recover(); v != nil {
 				if e, ok := v.(error); ok {
@@ -139,6 +141,8 @@ func reflectFn(rv reflect.Value) GoFunc {
 		retVals := rv.Call(converted)
 		return wrapReturnValues(rt, retVals)
 	}
+
+	return fn
 }
 
 func wrapReturnValues(fn reflect.Type, vals []reflect.Value) (Value, error) {

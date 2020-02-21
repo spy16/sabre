@@ -3,6 +3,7 @@ package sabre
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 // MultiFn represents a multi-arity function or macro definition.
@@ -18,7 +19,13 @@ func (multiFn MultiFn) Eval(_ Scope) (Value, error) {
 }
 
 func (multiFn MultiFn) String() string {
-	return fmt.Sprintf("MultiFn{name=%s}", multiFn.Name)
+	var sb strings.Builder
+	for _, fn := range multiFn.Methods {
+		sb.WriteString("[" + strings.Trim(fn.String(), "()") + "] ")
+	}
+
+	s := "(" + strings.TrimSpace(multiFn.Name+" "+strings.TrimSpace(sb.String())) + ")"
+	return s
 }
 
 // Invoke dispatches the call to a method based on number of arguments.
@@ -29,7 +36,7 @@ func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
 	}
 
 	if multiFn.IsMacro {
-		v, err := fn.Invoke(scope, args)
+		v, err := fn.Invoke(scope, args...)
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +49,7 @@ func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
 		return nil, err
 	}
 
-	return fn.Invoke(scope, argVals)
+	return fn.Invoke(scope, argVals...)
 }
 
 func (multiFn MultiFn) selectMethod(args []Value) (Fn, error) {
@@ -65,13 +72,32 @@ type Fn struct {
 	Args     []string
 	Variadic bool
 	Body     Value
-	Func     Invokable
+	Func     func(scope Scope, args []Value) (Value, error)
+}
+
+// Eval returns the function itself.
+func (fn Fn) Eval(_ Scope) (Value, error) {
+	return fn, nil
+}
+
+func (fn Fn) String() string {
+	var sb strings.Builder
+
+	for i, arg := range fn.Args {
+		if i == len(fn.Args)-1 && fn.Variadic {
+			sb.WriteString(" & " + arg)
+		} else {
+			sb.WriteString(arg + " ")
+		}
+	}
+
+	return "(" + strings.TrimSpace(sb.String()) + ")"
 }
 
 // Invoke executes the function with given arguments.
-func (fn Fn) Invoke(scope Scope, args []Value) (Value, error) {
+func (fn Fn) Invoke(scope Scope, args ...Value) (Value, error) {
 	if fn.Func != nil {
-		return fn.Func.Invoke(scope, args...)
+		return fn.Func(scope, args)
 	}
 
 	fnScope := NewScope(scope)
@@ -166,21 +192,4 @@ func toArgNames(vals []Value) ([]string, error) {
 	}
 
 	return names, nil
-}
-
-// GoFunc implements Invokable using a Go function value.
-type GoFunc func(scope Scope, args []Value) (Value, error)
-
-// Eval simply returns the value itself.
-func (goFn GoFunc) Eval(_ Scope) (Value, error) {
-	return goFn, nil
-}
-
-func (goFn GoFunc) String() string {
-	return fmt.Sprintf("GoFunc{%#v}", goFn)
-}
-
-// Invoke dispatches the call to the underlying Go function.
-func (goFn GoFunc) Invoke(scope Scope, args ...Value) (Value, error) {
-	return goFn(scope, args)
 }
