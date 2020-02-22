@@ -11,7 +11,7 @@ func evalValueList(scope sabre.Scope, vals []sabre.Value) ([]sabre.Value, error)
 	var result []sabre.Value
 
 	for _, arg := range vals {
-		v, err := arg.Eval(scope)
+		v, err := sabre.Eval(scope, arg)
 		if err != nil {
 			return nil, err
 		}

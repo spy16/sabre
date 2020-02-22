@@ -21,6 +21,13 @@ type Invokable interface {
 	Invoke(scope Scope, args ...Value) (Value, error)
 }
 
+// Meta can be implemented by Value types to support adding metadata.
+type Meta interface {
+	Value
+	SetMeta(m map[Keyword]Value)
+	GetMeta() map[Keyword]Value
+}
+
 // Seq implementations represent a sequence/list of values.
 type Seq interface {
 	Value
@@ -109,7 +116,8 @@ func (vals Values) Compare(v Value) bool {
 
 	isEqual := true
 	for this != nil && other != nil {
-		isEqual = isEqual && Compare(this.First(), other.First())
+		v1, v2 := this.First(), other.First()
+		isEqual = isEqual && Compare(v1, v2)
 		if !isEqual {
 			break
 		}

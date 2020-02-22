@@ -14,10 +14,12 @@
                 msg))
 ))
 
-(def defn (fn* [name args body]
+
+
+(def defn (fn* defn [name args & body]
     (do
         (if (not (symbol? name))
-            (throw "name must be symbol, not " (type name)))
+            (throw "name must be symbol, not " ))
         (if (not (vector? args))
-            (throw "args must be a vector, not " (type args)))
-        (eval `(def ~name (fn ~args ~body))))))
+            (throw "args must be a vector, not "))
+        `(def ~name (fn* ~args ~body)))))

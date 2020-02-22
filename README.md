@@ -9,7 +9,7 @@ Sabre is highly customizable, embeddable LISP engine for Go.
 * Highly Customizable reader/parser through a read table (Inspired by Clojure) (See [Reader](#reader))
 * Built-in data types: nil, bool, string, number, character, keyword, symbol, list, vector, set, module
 * Multiple number formats supported: decimal, octal, hexadecimal, radix and scientific notations.
-* Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π` etc.)
+* Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π`, `🧠` etc.)
 * Character Literals with support for:
   1. simple literals  (e.g., `\a` for `a`)
   2. special literals (e.g., `\newline`, `\tab` etc.)

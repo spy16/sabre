@@ -46,11 +46,14 @@ func main() {
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}
+		sl.SwitchNS(sabre.Symbol{Value: "user"})
 	}
 
-	result, err = sl.ReadEvalStr(*executeStr)
-	if err != nil {
-		fatalf("error: %v\n", err)
+	if *executeStr != "" {
+		result, err = sl.ReadEvalStr(*executeStr)
+		if err != nil {
+			fatalf("error: %v\n", err)
+		}
 	}
 
 	if *noREPL {

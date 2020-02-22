@@ -108,4 +108,15 @@ func (sym Symbol) Eval(scope Scope) (Value, error) {
 	return scope.Resolve(sym.Value)
 }
 
+// Compare compares this symbol to the given value. Returns true if
+// the given value is a symbol with same data.
+func (sym Symbol) Compare(v Value) bool {
+	other, ok := v.(Symbol)
+	if !ok {
+		return false
+	}
+
+	return other.Value == sym.Value
+}
+
 func (sym Symbol) String() string { return sym.Value }

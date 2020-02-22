@@ -8,18 +8,18 @@ import (
 
 var scopeType = reflect.TypeOf((*Scope)(nil)).Elem()
 
-// ValueOf converts a Go value to sabre Value type. Functions will be
-// converted to the Func type. Other primitive Go types like string, rune,
-// int (variants), float (variants) are converted to the right sabre Value
-// types. If 'v' is already Value type, then it will be returned without
-// conversion.
+// ValueOf converts a Go value to sabre Value type. Primitive Go values
+// like string, rune, int, float are converted to the right sabre Value
+// types. Functions are converted to the wrapper Fn type. Value of type
+// 'reflect.Type' will be wrapped as 'Type' which enables initializing
+// a value of that type when invoked.
 func ValueOf(v interface{}) Value {
-	if val, isValue := v.(Value); isValue {
-		return val
-	}
-
 	if v == nil {
 		return Nil{}
+	}
+
+	if val, isValue := v.(Value); isValue {
+		return val
 	}
 
 	if rt, ok := v.(reflect.Type); ok {
@@ -112,18 +112,8 @@ func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
 // reflection.
 func reflectFn(rv reflect.Value) *Fn {
 	fw := wrapFunc(rv)
-
-	i := 0
-	var argNames []string
-	for ; i < fw.minArgs; i++ {
-		argNames = append(argNames, cleanArgName(fw.rt.In(i)))
-	}
-	if fw.rt.IsVariadic() {
-		argNames = append(argNames, cleanArgName(fw.rt.In(i).Elem()))
-	}
-
 	return &Fn{
-		Args:     argNames,
+		Args:     fw.argNames(),
 		Variadic: rv.Type().IsVariadic(),
 		Func: func(scope Scope, args []Value) (_ Value, err error) {
 			defer func() {
@@ -192,6 +182,25 @@ func (fw *funcWrapper) Call(scope Scope, vals ...Value) (Value, error) {
 	}
 
 	return fw.wrapReturns(fw.rv.Call(args)...)
+}
+
+func (fw *funcWrapper) argNames() []string {
+	cleanArgName := func(t reflect.Type) string {
+		return strings.Replace(t.String(), "sabre.", "", -1)
+	}
+
+	var argNames []string
+
+	i := 0
+	for ; i < fw.minArgs; i++ {
+		argNames = append(argNames, cleanArgName(fw.rt.In(i)))
+	}
+
+	if fw.rt.IsVariadic() {
+		argNames = append(argNames, cleanArgName(fw.rt.In(i).Elem()))
+	}
+
+	return argNames
 }
 
 func (fw *funcWrapper) convertTypes(args ...reflect.Value) ([]reflect.Value, error) {
@@ -279,10 +288,6 @@ func convertArgsTo(expected reflect.Type, args ...reflect.Value) ([]reflect.Valu
 	}
 
 	return converted, nil
-}
-
-func cleanArgName(t reflect.Type) string {
-	return strings.Replace(t.String(), "sabre.", "", -1)
 }
 
 func isAssignable(from, to reflect.Type) bool {

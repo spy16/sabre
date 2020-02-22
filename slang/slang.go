@@ -171,21 +171,30 @@ func (s nsSymbol) WithNS(ns string) nsSymbol {
 // BindAll binds all core functions into the given scope.
 func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
-		"core/->": sabre.Fn{
+		"core/->": &sabre.Fn{
 			Args:     []string{"exprs"},
 			Func:     ThreadFirst,
 			Variadic: true,
 		},
-		"core/->>": sabre.Fn{
+		"core/->>": &sabre.Fn{
 			Args:     []string{"exprs"},
 			Func:     ThreadLast,
 			Variadic: true,
 		},
-		"core/assert": sabre.Fn{
+		"core/assert": &sabre.Fn{
 			Func:     Assert,
 			Args:     []string{"expr", "err?"},
 			Variadic: true,
 		},
+
+		// special forms
+		"core/do":           sabre.Do,
+		"core/def":          sabre.Def,
+		"core/if":           sabre.If,
+		"core/fn*":          sabre.Lambda,
+		"core/let*":         sabre.Let,
+		"core/quote":        sabre.SimpleQuote,
+		"core/syntax-quote": sabre.SyntaxQuote,
 
 		"core/eval":      sabre.ValueOf(sabre.Eval),
 		"core/type":      sabre.ValueOf(TypeOf),
@@ -193,12 +202,14 @@ func BindAll(scope sabre.Scope) error {
 		"core/impl?":     sabre.ValueOf(Implements),
 		"core/realize":   sabre.ValueOf(Realize),
 		"core/apply-seq": sabre.ValueOf(ApplySeq),
+		"core/throw":     sabre.ValueOf(Throw),
 
 		// Sequence functions
-		"core/next":  sabre.ValueOf(Next),
-		"core/first": sabre.ValueOf(First),
-		"core/cons":  sabre.ValueOf(Cons),
-		"core/conj":  sabre.ValueOf(Conj),
+		"core/next":   sabre.ValueOf(Next),
+		"core/first":  sabre.ValueOf(First),
+		"core/cons":   sabre.ValueOf(Cons),
+		"core/conj":   sabre.ValueOf(Conj),
+		"core/concat": sabre.ValueOf(Concat),
 
 		// Type system functions
 		"core/str": sabre.ValueOf(MakeString),

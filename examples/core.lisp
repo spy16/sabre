@@ -36,7 +36,22 @@
 (def set (fn* set [s] (apply-seq (type #{}) s)))
 (def list (fn* list [& args] (realize args)))
 (def vector (fn* list [& args] (realize args)))
-
 (def int (fn* int [arg] (to-type arg (type 0))))
 (def float (fn* float [arg] (to-type arg (type 0.0))))
 (def boolean (fn* boolean [arg] (true? arg)))
+
+(def defn (fn* [name args & body]
+    (do
+        (if (not (symbol? name))
+            (throw "name must be symbol, not " (type name)))
+        (if (not (vector? args))
+            (throw "args must be a vector, not " (type args)))
+        (let* [f (concat `(fn* ~name ~args) body)]
+            (eval `(def ~name ~f))))))
+
+(def last (fn* last [coll]
+    (let* [v   (first coll)
+          rem (next coll)]
+        (if (nil? rem)
+            v
+            (last (next coll))))))

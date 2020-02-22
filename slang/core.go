@@ -4,13 +4,27 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/spy16/sabre"
 )
 
+// Throw converts args to strings and returns an error with all the strings
+// joined.
+func Throw(scope sabre.Scope, args ...sabre.Value) error {
+	return errors.New(strings.Trim(MakeString(args...).String(), "\""))
+}
+
 // ApplySeq invokes fn with argument list formed by realizing the sequence.
 func ApplySeq(scope sabre.Scope, fn sabre.Invokable, seq sabre.Seq) (sabre.Value, error) {
 	return fn.Invoke(scope, Realize(seq).Values...)
+}
+
+// Concat concatenates s1 and s2 and returns a new sequence.
+func Concat(s1, s2 sabre.Seq) sabre.Seq {
+	vals := Realize(s1)
+	vals.Values = append(vals.Values, Realize(s2).Values...)
+	return vals
 }
 
 // Realize realizes a sequence by continuosly calling First() and Next()
@@ -23,7 +37,6 @@ func Realize(seq sabre.Seq) *sabre.List {
 		if v == nil {
 			break
 		}
-
 		vals = append(vals, v)
 		seq = seq.Next()
 	}
@@ -67,7 +80,7 @@ func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 		return nil, err
 	}
 
-	test, err := args[0].Eval(scope)
+	test, err := sabre.Eval(scope, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +93,7 @@ func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 		return nil, fmt.Errorf("assertion failed: '%s'", args[0])
 	}
 
-	msg, err := args[1].Eval(scope)
+	msg, err := sabre.Eval(scope, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +145,7 @@ func threadCall(scope sabre.Scope, args []sabre.Value, last bool) (sabre.Value, 
 		return nil, errors.New("at-least 1 argument required")
 	}
 
-	res, err := args[0].Eval(scope)
+	res, err := sabre.Eval(scope, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +160,7 @@ func threadCall(scope sabre.Scope, args []sabre.Value, last bool) (sabre.Value, 
 			} else {
 				f.Values = append([]sabre.Value{f.Values[0], res}, f.Values[1:]...)
 			}
-			res, err = f.Eval(scope)
+			res, err = sabre.Eval(scope, f)
 
 		case sabre.Invokable:
 			res, err = f.Invoke(scope, res)

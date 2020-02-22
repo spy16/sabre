@@ -203,7 +203,7 @@ func executeEvalTests(t *testing.T, tests []evalTestCase) {
 				scope = tt.getScope()
 			}
 
-			got, err := tt.value.Eval(scope)
+			got, err := sabre.Eval(scope, tt.value)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Eval() error = %v, wantErr %v", err, tt.wantErr)
 				return

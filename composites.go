@@ -11,10 +11,7 @@ import (
 type List struct {
 	Values
 	Position
-
-	// special is set in case if the list represents invocation of
-	// a special form such as def, fn* etc.
-	special func(scope Scope) (Value, error)
+	special *Fn
 }
 
 // Eval performs an invocation.
@@ -24,52 +21,61 @@ func (lf *List) Eval(scope Scope) (Value, error) {
 	}
 
 	if lf.special != nil {
-		return lf.special(scope)
+		return lf.special.Invoke(scope, lf.Values[1:]...)
 	}
 
-	target, err := lf.Values[0].Eval(scope)
+	if err := lf.parse(scope); err == nil {
+		if lf.special != nil {
+			return lf.special.Invoke(scope, lf.Values[1:]...)
+		}
+	}
+
+	target, err := Eval(scope, lf.Values[0])
 	if err != nil {
 		return nil, err
 	}
 
-	fn, ok := target.(Invokable)
+	invokable, ok := target.(Invokable)
 	if !ok {
-		return nil, fmt.Errorf("cannot invoke value of type '%s'", reflect.TypeOf(target))
+		return nil, fmt.Errorf(
+			"cannot invoke value of type '%s'", reflect.TypeOf(target),
+		)
 	}
 
-	return fn.Invoke(scope, lf.Values[1:]...)
+	return invokable.Invoke(scope, lf.Values[1:]...)
 }
 
-func (lf List) String() string {
-	return containerString(lf.Values, "(", ")", " ")
-}
-
-func (lf *List) parseSpecial(scope Scope) error {
+func (lf *List) parse(scope Scope) error {
 	if lf.Size() == 0 {
 		return nil
 	}
 
-	special := getSpecial(lf.Values[0])
-	if special == nil {
-		return analyzeSeq(scope, lf)
-	}
-
-	expr, err := special(scope, lf.Values[1:])
-	if err != nil {
-		return err
-	}
-
-	lf.special = expr
-	return nil
-}
-
-func getSpecial(v Value) specialForm {
-	sym, isSymbol := v.(Symbol)
+	sym, isSymbol := lf.Values[0].(Symbol)
 	if !isSymbol {
+		return analyzeSeq(scope, lf.Values)
+	}
+
+	v, err := scope.Resolve(sym.Value)
+	if err != nil {
 		return nil
 	}
 
-	return specialForms[sym.Value]
+	sf, ok := v.(SpecialForm)
+	if !ok {
+		return analyzeSeq(scope, lf.Values)
+	}
+
+	fn, err := sf.Parse(scope, lf.Values[1:])
+	if err != nil {
+		return fmt.Errorf("%s: %v", sf.Name, err)
+	}
+	lf.special = fn
+
+	return nil
+}
+
+func (lf List) String() string {
+	return containerString(lf.Values, "(", ")", " ")
 }
 
 // Vector represents a list of values. Unlike List type, evaluation of
