@@ -116,6 +116,6 @@
 (def sum-through-let (let* [numbers [1 2 3 4 5]]
                         (do (println "Numbers: " numbers)
                             (let* [sum (apply-seq + numbers)]
-                                (println "Sum of numbers: " numbers)
+                                (println "Sum of numbers: " sum)
                                 sum))))
 (assert (= (+ 1 2 3 4 5) sum-through-let))

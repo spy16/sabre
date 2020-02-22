@@ -119,13 +119,13 @@ func Next(seq sabre.Seq) sabre.Value {
 // Cons inserts the first argument as first element in the second seq argument
 // and returns.
 func Cons(v sabre.Value, seq sabre.Seq) sabre.Value {
-	return seq.Cons(v)
+	return Realize(seq.Cons(v))
 }
 
 // Conj appends the second argument as last element in the first seq argument
 // and returns.
 func Conj(seq sabre.Seq, args ...sabre.Value) sabre.Value {
-	return seq.Conj(args...)
+	return Realize(seq.Conj(args...))
 }
 
 // ThreadFirst threads the expressions through forms by inserting result of

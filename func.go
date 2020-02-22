@@ -18,6 +18,20 @@ func (multiFn MultiFn) Eval(_ Scope) (Value, error) {
 	return multiFn, nil
 }
 
+// Expand executes the macro body and returns the result of the expansion.
+func (multiFn MultiFn) Expand(scope Scope, args []Value) (Value, error) {
+	fn, err := multiFn.selectMethod(args)
+	if err != nil {
+		return nil, err
+	}
+
+	if !multiFn.IsMacro {
+		return &fn, nil
+	}
+
+	return fn.Invoke(scope, args...)
+}
+
 func (multiFn MultiFn) String() string {
 	var sb strings.Builder
 	for _, fn := range multiFn.Methods {
@@ -30,18 +44,18 @@ func (multiFn MultiFn) String() string {
 
 // Invoke dispatches the call to a method based on number of arguments.
 func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
-	fn, err := multiFn.selectMethod(args)
-	if err != nil {
-		return nil, err
-	}
-
 	if multiFn.IsMacro {
-		v, err := fn.Invoke(scope, args...)
+		form, err := multiFn.Expand(scope, args)
 		if err != nil {
 			return nil, err
 		}
 
-		return Eval(scope, v)
+		return form.Eval(scope)
+	}
+
+	fn, err := multiFn.selectMethod(args)
+	if err != nil {
+		return nil, err
 	}
 
 	argVals, err := evalValueList(scope, args)

@@ -18,7 +18,14 @@ var (
 	// (fn* name? [arg*] expr*) or (fn* name? ([arg]* expr*)+)
 	Lambda = SpecialForm{
 		Name:  "fn*",
-		Parse: parseLambda,
+		Parse: fnParser(false),
+	}
+
+	// Macro defines an anonymous function and returns. Must have the form
+	// (macro* name? [arg*] expr*) or (fn* name? ([arg]* expr*)+)
+	Macro = SpecialForm{
+		Name:  "macro*",
+		Parse: fnParser(true),
 	}
 
 	// Let implements the (let [binding*] expr*) form. expr are evaluated
@@ -54,48 +61,52 @@ var (
 	}
 )
 
-func parseLambda(scope Scope, forms []Value) (*Fn, error) {
-	if len(forms) < 1 {
-		return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(forms))
-	}
+func fnParser(isMacro bool) func(scope Scope, forms []Value) (*Fn, error) {
+	return func(scope Scope, forms []Value) (*Fn, error) {
+		if len(forms) < 1 {
+			return nil, fmt.Errorf("insufficient args (%d) for 'fn'", len(forms))
+		}
 
-	nextIndex := 0
-	def := MultiFn{}
+		nextIndex := 0
+		def := MultiFn{
+			IsMacro: isMacro,
+		}
 
-	name, isName := forms[nextIndex].(Symbol)
-	if isName {
-		def.Name = name.String()
-		nextIndex++
-	}
+		name, isName := forms[nextIndex].(Symbol)
+		if isName {
+			def.Name = name.String()
+			nextIndex++
+		}
 
-	return &Fn{
-		Func: func(_ Scope, args []Value) (Value, error) {
-			_, isList := forms[nextIndex].(*List)
-			if isList {
-				for _, arg := range forms[nextIndex:] {
-					spec, isList := arg.(*List)
-					if !isList {
-						return nil, fmt.Errorf("expected arg to be list, not %s",
-							reflect.TypeOf(arg))
+		return &Fn{
+			Func: func(_ Scope, args []Value) (Value, error) {
+				_, isList := forms[nextIndex].(*List)
+				if isList {
+					for _, arg := range forms[nextIndex:] {
+						spec, isList := arg.(*List)
+						if !isList {
+							return nil, fmt.Errorf("expected arg to be list, not %s",
+								reflect.TypeOf(arg))
+						}
+
+						fn, err := makeFn(scope, spec.Values)
+						if err != nil {
+							return nil, err
+						}
+
+						def.Methods = append(def.Methods, *fn)
 					}
-
-					fn, err := makeFn(scope, spec.Values)
+				} else {
+					fn, err := makeFn(scope, forms[nextIndex:])
 					if err != nil {
 						return nil, err
 					}
-
 					def.Methods = append(def.Methods, *fn)
 				}
-			} else {
-				fn, err := makeFn(scope, forms[nextIndex:])
-				if err != nil {
-					return nil, err
-				}
-				def.Methods = append(def.Methods, *fn)
-			}
-			return def, def.validate()
-		},
-	}, nil
+				return def, def.validate()
+			},
+		}, nil
+	}
 }
 
 func parseLet(scope Scope, args []Value) (*Fn, error) {
@@ -276,6 +287,9 @@ func analyze(scope Scope, form Value) error {
 
 	case *List:
 		return f.parse(scope)
+
+	case String:
+		return nil
 
 	case Seq:
 		return analyzeSeq(scope, f)

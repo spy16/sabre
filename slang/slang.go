@@ -195,6 +195,7 @@ func BindAll(scope sabre.Scope) error {
 		"core/def":          sabre.Def,
 		"core/if":           sabre.If,
 		"core/fn*":          sabre.Lambda,
+		"core/macro*":       sabre.Macro,
 		"core/let*":         sabre.Let,
 		"core/quote":        sabre.SimpleQuote,
 		"core/syntax-quote": sabre.SyntaxQuote,

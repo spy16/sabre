@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.0 (2020-02-22)
+
+* Add support for macros through `macro*` special form.
+* Use Macro support to add `defn` and `defmacro` macros.
+* Rewrite `core.lisp` with `defn` macro.
+
+## v0.2.3 (2020-02-22)
+
+* Add support for custom special forms through `SpecialForm` type.
+* Update package documentation.
+* Remove all type specific functions in favour generic slang core.
+
 ## v0.2.2 (2020-02-21)
 
 * Add type init through Type.Invoke() method

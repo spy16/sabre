@@ -1,57 +1,57 @@
 (ns 'core)
 
-(def nil? (fn* nil? [arg]
-    (= nil arg)))
+(def fn
+    (macro* fn
+        ([& decl] (cons 'fn* decl))))
 
-(def empty? (fn* empty? [coll]
+(def defn (macro* defn [name & fdecl]
+    (let* [func (cons 'fn (cons name fdecl))]
+    `(def ~name ~func))))
+
+(def defmacro (macro* defmacro [name & mdecl]
+    (let* [macro (cons 'macro* (cons name mdecl))]
+    `(def ~name ~macro))))
+
+(defn nil? [arg] (= nil arg))
+
+(defn empty? [coll]
     (if (nil? coll)
         true
-        (nil? (first coll)))))
+        (nil? (first coll))))
 
-(def true? (fn* true? [arg]
+; Type check functions
+(defn same-type? [a b] (= (type a) (type b)))
+(defn seq? [arg] (impl? arg types/Seq))
+(defn set? [arg] (same-type? #{} arg))
+(defn list? [arg] (same-type? () arg))
+(defn vector? [arg] (same-type? [] arg))
+(defn int? [arg] (same-type? 0 arg))
+(defn float? [arg] (same-type? 0.0 arg))
+(defn boolean? [arg] (same-type? true arg))
+(defn string? [arg] (same-type? "" arg))
+(defn keyword? [arg] (same-type? :specimen arg))
+(defn symbol? [arg] (same-type? 'specimen arg))
+
+; Type initialization functions
+(defn set [coll] (apply-seq (type #{}) coll))
+(defn list [& coll] (apply-seq (type ()) coll))
+(defn vector [& coll] (apply-seq (type []) coll))
+(defn int [arg] (to-type arg (type 0)))
+(defn float [arg] (to-type arg (type 0.0)))
+(defn boolean [arg] (true? arg))
+
+(defn true? [arg]
     (if (nil? arg)
         false
         (if (boolean? arg)
             arg
-            true))))
+            true)))
 
-(def not (fn* not [arg]
-    (= false (true? arg))))
+(defn not [arg] (= false (true? arg)))
 
-(def same-type? (fn* same-type? [a b] (= (type a) (type b))))
-
-; Type check functions
-(def seq? (fn* seq? [arg] (impl? arg types/Seq)))
-(def set? (fn* set? [s] (same-type? #{} s)))
-(def list? (fn* list? [s] (same-type? () s)))
-(def vector? (fn* vector? [s] (same-type? [] s)))
-(def int? (fn* int? [arg] (same-type? 0 arg)))
-(def float? (fn* float? [arg] (same-type? 0.0 arg)))
-(def boolean? (fn* boolean? [arg] (same-type? true arg)))
-(def string? (fn* string? [arg] (same-type? "" arg)))
-(def keyword? (fn* keyword? [arg] (same-type? :keyword arg)))
-(def symbol? (fn* symbol? [arg] (same-type? 'sample arg)))
-
-; Type initialization functions
-(def set (fn* set [s] (apply-seq (type #{}) s)))
-(def list (fn* list [& args] (realize args)))
-(def vector (fn* list [& args] (realize args)))
-(def int (fn* int [arg] (to-type arg (type 0))))
-(def float (fn* float [arg] (to-type arg (type 0.0))))
-(def boolean (fn* boolean [arg] (true? arg)))
-
-(def defn (fn* [name args & body]
-    (do
-        (if (not (symbol? name))
-            (throw "name must be symbol, not " (type name)))
-        (if (not (vector? args))
-            (throw "args must be a vector, not " (type args)))
-        (let* [f (concat `(fn* ~name ~args) body)]
-            (eval `(def ~name ~f))))))
-
-(def last (fn* last [coll]
+(defn last [coll]
     (let* [v   (first coll)
-          rem (next coll)]
+           rem (next coll)]
         (if (nil? rem)
             v
-            (last (next coll))))))
+            (last (next coll)))))
