@@ -13,6 +13,10 @@ func Eval(scope Scope, form Value) (Value, error) {
 		return nilValue, nil
 	}
 
+	if err := analyze(scope, form); err != nil {
+		return nil, err
+	}
+
 	v, err := form.Eval(scope)
 	if err != nil {
 		return v, newEvalErr(form, err)

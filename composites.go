@@ -11,6 +11,7 @@ import (
 type List struct {
 	Values
 	Position
+	special *Fn
 }
 
 // Eval performs an invocation.
@@ -19,7 +20,17 @@ func (lf *List) Eval(scope Scope) (Value, error) {
 		return &List{}, nil
 	}
 
-	target, err := lf.Values[0].Eval(scope)
+	if lf.special != nil {
+		return lf.special.Invoke(scope, lf.Values[1:]...)
+	}
+
+	if err := lf.parse(scope); err == nil {
+		if lf.special != nil {
+			return lf.special.Invoke(scope, lf.Values[1:]...)
+		}
+	}
+
+	target, err := Eval(scope, lf.Values[0])
 	if err != nil {
 		return nil, err
 	}
@@ -32,6 +43,35 @@ func (lf *List) Eval(scope Scope) (Value, error) {
 	}
 
 	return invokable.Invoke(scope, lf.Values[1:]...)
+}
+
+func (lf *List) parse(scope Scope) error {
+	if lf.Size() == 0 {
+		return nil
+	}
+
+	sym, isSymbol := lf.Values[0].(Symbol)
+	if !isSymbol {
+		return analyzeSeq(scope, lf.Values)
+	}
+
+	v, err := scope.Resolve(sym.Value)
+	if err != nil {
+		return nil
+	}
+
+	sf, ok := v.(SpecialForm)
+	if !ok {
+		return analyzeSeq(scope, lf.Values)
+	}
+
+	fn, err := sf.Parse(scope, lf.Values[1:])
+	if err != nil {
+		return fmt.Errorf("%s: %v", sf.Name, err)
+	}
+	lf.special = fn
+
+	return nil
 }
 
 func (lf List) String() string {

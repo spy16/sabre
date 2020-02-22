@@ -40,3 +40,6 @@
 (def int (fn* int [arg] (to-type arg (type 0))))
 (def float (fn* float [arg] (to-type arg (type 0.0))))
 (def boolean (fn* boolean [arg] (true? arg)))
+
+(def defn (fn* defn [name args & body]
+    `(def ~name (fn* ~args (do (quote ~body))))))

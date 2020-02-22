@@ -187,12 +187,22 @@ func BindAll(scope sabre.Scope) error {
 			Variadic: true,
 		},
 
+		// special forms
+		"core/do":           sabre.Do,
+		"core/def":          sabre.Def,
+		"core/if":           sabre.If,
+		"core/fn*":          sabre.Lambda,
+		"core/let*":         sabre.Let,
+		"core/quote":        sabre.SimpleQuote,
+		"core/syntax-quote": sabre.SyntaxQuote,
+
 		"core/eval":      sabre.ValueOf(sabre.Eval),
 		"core/type":      sabre.ValueOf(TypeOf),
 		"core/to-type":   sabre.ValueOf(ToType),
 		"core/impl?":     sabre.ValueOf(Implements),
 		"core/realize":   sabre.ValueOf(Realize),
 		"core/apply-seq": sabre.ValueOf(ApplySeq),
+		"core/throw":     sabre.ValueOf(Throw),
 
 		// Sequence functions
 		"core/next":  sabre.ValueOf(Next),

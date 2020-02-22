@@ -4,9 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/spy16/sabre"
 )
+
+// Throw converts args to strings and returns an error with all the strings
+// joined.
+func Throw(scope sabre.Scope, args ...sabre.Value) error {
+	return errors.New(strings.Trim(MakeString(args...).String(), "\""))
+}
 
 // ApplySeq invokes fn with argument list formed by realizing the sequence.
 func ApplySeq(scope sabre.Scope, fn sabre.Invokable, seq sabre.Seq) (sabre.Value, error) {

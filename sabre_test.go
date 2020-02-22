@@ -82,6 +82,8 @@ func TestEval(t *testing.T) {
 			name: "Program",
 			getScope: func() sabre.Scope {
 				scope := sabre.NewScope(nil)
+				scope.Bind("def", sabre.Def)
+				scope.Bind("fn*", sabre.Lambda)
 				return scope
 			},
 			src:  sampleProgram,
