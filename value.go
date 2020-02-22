@@ -109,7 +109,8 @@ func (vals Values) Compare(v Value) bool {
 
 	isEqual := true
 	for this != nil && other != nil {
-		isEqual = isEqual && Compare(this.First(), other.First())
+		v1, v2 := this.First(), other.First()
+		isEqual = isEqual && Compare(v1, v2)
 		if !isEqual {
 			break
 		}

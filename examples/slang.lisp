@@ -89,3 +89,9 @@
 (assert (= "Hello!" (greet)))
 (assert (= "Hello Bob!" (greet "Bob")))
 (assert (= "Hi Bob!" (greet 'Hi 'Bob)))
+
+
+(def defn (fn* defn [name args & body]
+    `(def ~name (fn* ~args (do (quote ~body))))))
+
+(assert (= '(def hello (fn* [arg] (do (quote (arg))))) (defn 'hello '[arg] 'arg)))
