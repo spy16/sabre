@@ -27,7 +27,7 @@ func Concat(s1, s2 sabre.Seq) sabre.Seq {
 	return vals
 }
 
-// Realize realizes a sequence by continuosly calling First() and Next()
+// Realize realizes a sequence by continuously calling First() and Next()
 // until the sequence becomes nil.
 func Realize(seq sabre.Seq) *sabre.List {
 	var vals []sabre.Value

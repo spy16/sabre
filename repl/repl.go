@@ -1,3 +1,5 @@
+// Package repl provides a REPL implementation and options to expose Sabre
+// features through a read-eval-print-loop.
 package repl
 
 import (

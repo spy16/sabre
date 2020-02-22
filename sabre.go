@@ -1,3 +1,5 @@
+// Package sabre provides data structures, reader for reading LISP source
+// into data structures and functions for evluating forms against a context.
 package sabre
 
 import (

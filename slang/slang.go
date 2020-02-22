@@ -1,3 +1,6 @@
+// Package slang (short for Sabre lang) provides a tiny LISP dialect built
+// using  factilities provided by Sabre. See New() for  initializing Slang
+// and using it.
 package slang
 
 import (
@@ -92,7 +95,7 @@ func (slang *Slang) Resolve(symbol string) (sabre.Value, error) {
 	return slang.resolveAny(symbol, *nsSym, nsSym.WithNS("core"))
 }
 
-// BindGo is similar to Bind but handles convertion of Go value 'v' to
+// BindGo is similar to Bind but handles conversion of Go value 'v' to
 // sabre Value type.
 func (slang *Slang) BindGo(symbol string, v interface{}) error {
 	return slang.Bind(symbol, sabre.ValueOf(v))
