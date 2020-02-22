@@ -48,3 +48,10 @@
             (throw "args must be a vector, not " (type args)))
         (let* [f (concat `(fn* ~name ~args) body)]
             (eval `(def ~name ~f))))))
+
+(def last (fn* last [coll]
+    (let* [v   (first coll)
+          rem (next coll)]
+        (if (nil? rem)
+            v
+            (last (next coll))))))

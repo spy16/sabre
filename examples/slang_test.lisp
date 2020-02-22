@@ -1,3 +1,7 @@
+; unicode characters and smileys
+(def 🧠 "The Brain!")
+(assert (= 🧠 "The Brain!"))
+
 ; basic functions
 (assert (= 3 (eval '(int (+ 1 2)))))
 (assert (true? true))
@@ -57,15 +61,20 @@
 (assert (not (vector? nil)))
 (assert (= (type [])(type [1 2 3])))
 (assert (symbol? 'hello))
+(assert (= '(1 2 3 4 5 6) (concat [1 2 3] '(4 5 6))))
+(assert (= 10 (-> 5 (+ 5) (int))))
+(assert (= "hello" (-> 0 ["hello" 1 2 #{}])))
 
 ; simple function definition
 (def dec (fn* [i] (int (- i 1))))
+(assert (= 9 (dec 10)))
 
 ; simple recursive function with variadic args
 (def down-range (fn* down-range [start & args]
     (if (> start 0)
         (cons start (down-range (int (dec start))))
         [0])))
+(assert (= '(5 4 3 2 1 0) (down-range 5)))
 
 ; complex recursive function
 (def reverse (fn* reverse [coll]
@@ -73,25 +82,40 @@
         (throw "argument must be a sequence"))
     (if (nil? (next coll))
         [(first coll)]
-        (let* [f   (first coll)
-            reverse (reverse (next coll))]
-            (conj reverse f)))))
+        (let* [first-value   (first coll)
+               reversed      (reverse (next coll))]
+            (conj reversed first-value)))))
+(assert (= '(5 4 3 2 1) (reverse '(1 2 3 4 5))))
+
+(def fib (fn* fib [n]
+  (if (> n 1)  ; if n=0 or n=1 return n
+    (+ (fib (- n 1)) (fib (- n 2)))
+    n)))
+(assert (= 2584.00000 (fib 18)))
 
 ; multi arity function
 (def greet (fn* greet
     ([] "Hello!")
     ([name] (str "Hello " name "!"))
     ([prefix name] (str prefix " " name "!"))))
-
-(assert (= 9 (dec 10)))
-(assert (= '(5 4 3 2 1 0) (down-range 5)))
-(assert (= '(5 4 3 2 1) (reverse '(1 2 3 4 5))))
 (assert (= "Hello!" (greet)))
 (assert (= "Hello Bob!" (greet "Bob")))
 (assert (= "Hi Bob!" (greet 'Hi 'Bob)))
 
-
-(def defn (fn* defn [name args & body]
+; tests for special forms
+(def nested-special-forms (fn* defn [name args & body]
     `(def ~name (fn* ~args (do (quote ~body))))))
 
-(assert (= '(def hello (fn* [arg] (do (quote (arg))))) (defn 'hello '[arg] 'arg)))
+(assert (= '(def hello (fn* [arg] (do (quote (arg)))))
+           (nested-special-forms 'hello '[arg] 'arg)))
+
+(assert (= "Hello Bob!"
+            (let* [name "Bob"]
+                (str "Hello " name "!"))))
+
+(def sum-through-let (let* [numbers [1 2 3 4 5]]
+                        (do (println "Numbers: " numbers)
+                            (let* [sum (apply-seq + numbers)]
+                                (println "Sum of numbers: " numbers)
+                                sum))))
+(assert (= (+ 1 2 3 4 5) sum-through-let))
