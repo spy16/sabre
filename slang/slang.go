@@ -171,17 +171,17 @@ func (s nsSymbol) WithNS(ns string) nsSymbol {
 // BindAll binds all core functions into the given scope.
 func BindAll(scope sabre.Scope) error {
 	core := map[string]sabre.Value{
-		"core/->": sabre.Fn{
+		"core/->": &sabre.Fn{
 			Args:     []string{"exprs"},
 			Func:     ThreadFirst,
 			Variadic: true,
 		},
-		"core/->>": sabre.Fn{
+		"core/->>": &sabre.Fn{
 			Args:     []string{"exprs"},
 			Func:     ThreadLast,
 			Variadic: true,
 		},
-		"core/assert": sabre.Fn{
+		"core/assert": &sabre.Fn{
 			Func:     Assert,
 			Args:     []string{"expr", "err?"},
 			Variadic: true,

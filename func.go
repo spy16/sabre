@@ -41,7 +41,7 @@ func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
 			return nil, err
 		}
 
-		return v.Eval(scope)
+		return Eval(scope, v)
 	}
 
 	argVals, err := evalValueList(scope, args)
@@ -63,7 +63,7 @@ func (multiFn MultiFn) selectMethod(args []Value) (Fn, error) {
 		len(args), multiFn.Name)
 }
 
-func (multiFn MultiFn) validate() error {
+func (multiFn *MultiFn) validate() error {
 	return nil
 }
 
@@ -76,7 +76,7 @@ type Fn struct {
 }
 
 // Eval returns the function itself.
-func (fn Fn) Eval(_ Scope) (Value, error) {
+func (fn *Fn) Eval(_ Scope) (Value, error) {
 	return fn, nil
 }
 
@@ -95,7 +95,7 @@ func (fn Fn) String() string {
 }
 
 // Invoke executes the function with given arguments.
-func (fn Fn) Invoke(scope Scope, args ...Value) (Value, error) {
+func (fn *Fn) Invoke(scope Scope, args ...Value) (Value, error) {
 	if fn.Func != nil {
 		return fn.Func(scope, args)
 	}
@@ -119,7 +119,7 @@ func (fn Fn) Invoke(scope Scope, args ...Value) (Value, error) {
 		return Nil{}, nil
 	}
 
-	return fn.Body.Eval(fnScope)
+	return Eval(fnScope, fn.Body)
 }
 
 func (fn Fn) matchArity(args []Value) bool {

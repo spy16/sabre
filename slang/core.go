@@ -67,7 +67,7 @@ func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 		return nil, err
 	}
 
-	test, err := args[0].Eval(scope)
+	test, err := sabre.Eval(scope, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +80,7 @@ func Assert(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
 		return nil, fmt.Errorf("assertion failed: '%s'", args[0])
 	}
 
-	msg, err := args[1].Eval(scope)
+	msg, err := sabre.Eval(scope, args[1])
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +132,7 @@ func threadCall(scope sabre.Scope, args []sabre.Value, last bool) (sabre.Value, 
 		return nil, errors.New("at-least 1 argument required")
 	}
 
-	res, err := args[0].Eval(scope)
+	res, err := sabre.Eval(scope, args[0])
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func threadCall(scope sabre.Scope, args []sabre.Value, last bool) (sabre.Value, 
 			} else {
 				f.Values = append([]sabre.Value{f.Values[0], res}, f.Values[1:]...)
 			}
-			res, err = f.Eval(scope)
+			res, err = sabre.Eval(scope, f)
 
 		case sabre.Invokable:
 			res, err = f.Invoke(scope, res)

@@ -48,9 +48,11 @@ func main() {
 		}
 	}
 
-	result, err = sl.ReadEvalStr(*executeStr)
-	if err != nil {
-		fatalf("error: %v\n", err)
+	if *executeStr != "" {
+		result, err = sl.ReadEvalStr(*executeStr)
+		if err != nil {
+			fatalf("error: %v\n", err)
+		}
 	}
 
 	if *noREPL {

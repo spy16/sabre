@@ -11,10 +11,6 @@ import (
 type List struct {
 	Values
 	Position
-
-	// special is set in case if the list represents invocation of
-	// a special form such as def, fn* etc.
-	special func(scope Scope) (Value, error)
 }
 
 // Eval performs an invocation.
@@ -23,53 +19,23 @@ func (lf *List) Eval(scope Scope) (Value, error) {
 		return &List{}, nil
 	}
 
-	if lf.special != nil {
-		return lf.special(scope)
-	}
-
 	target, err := lf.Values[0].Eval(scope)
 	if err != nil {
 		return nil, err
 	}
 
-	fn, ok := target.(Invokable)
+	invokable, ok := target.(Invokable)
 	if !ok {
-		return nil, fmt.Errorf("cannot invoke value of type '%s'", reflect.TypeOf(target))
+		return nil, fmt.Errorf(
+			"cannot invoke value of type '%s'", reflect.TypeOf(target),
+		)
 	}
 
-	return fn.Invoke(scope, lf.Values[1:]...)
+	return invokable.Invoke(scope, lf.Values[1:]...)
 }
 
 func (lf List) String() string {
 	return containerString(lf.Values, "(", ")", " ")
-}
-
-func (lf *List) parseSpecial(scope Scope) error {
-	if lf.Size() == 0 {
-		return nil
-	}
-
-	special := getSpecial(lf.Values[0])
-	if special == nil {
-		return analyzeSeq(scope, lf)
-	}
-
-	expr, err := special(scope, lf.Values[1:])
-	if err != nil {
-		return err
-	}
-
-	lf.special = expr
-	return nil
-}
-
-func getSpecial(v Value) specialForm {
-	sym, isSymbol := v.(Symbol)
-	if !isSymbol {
-		return nil
-	}
-
-	return specialForms[sym.Value]
 }
 
 // Vector represents a list of values. Unlike List type, evaluation of
