@@ -21,6 +21,13 @@ type Invokable interface {
 	Invoke(scope Scope, args ...Value) (Value, error)
 }
 
+// Meta can be implemented by Value types to support adding metadata.
+type Meta interface {
+	Value
+	SetMeta(m map[Keyword]Value)
+	GetMeta() map[Keyword]Value
+}
+
 // Seq implementations represent a sequence/list of values.
 type Seq interface {
 	Value

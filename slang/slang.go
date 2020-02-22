@@ -205,10 +205,11 @@ func BindAll(scope sabre.Scope) error {
 		"core/throw":     sabre.ValueOf(Throw),
 
 		// Sequence functions
-		"core/next":  sabre.ValueOf(Next),
-		"core/first": sabre.ValueOf(First),
-		"core/cons":  sabre.ValueOf(Cons),
-		"core/conj":  sabre.ValueOf(Conj),
+		"core/next":   sabre.ValueOf(Next),
+		"core/first":  sabre.ValueOf(First),
+		"core/cons":   sabre.ValueOf(Cons),
+		"core/conj":   sabre.ValueOf(Conj),
+		"core/concat": sabre.ValueOf(Concat),
 
 		// Type system functions
 		"core/str": sabre.ValueOf(MakeString),

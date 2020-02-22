@@ -20,6 +20,13 @@ func ApplySeq(scope sabre.Scope, fn sabre.Invokable, seq sabre.Seq) (sabre.Value
 	return fn.Invoke(scope, Realize(seq).Values...)
 }
 
+// Concat concatenates s1 and s2 and returns a new sequence.
+func Concat(s1, s2 sabre.Seq) sabre.Seq {
+	vals := Realize(s1)
+	vals.Values = append(vals.Values, Realize(s2).Values...)
+	return vals
+}
+
 // Realize realizes a sequence by continuosly calling First() and Next()
 // until the sequence becomes nil.
 func Realize(seq sabre.Seq) *sabre.List {
@@ -30,7 +37,6 @@ func Realize(seq sabre.Seq) *sabre.List {
 		if v == nil {
 			break
 		}
-
 		vals = append(vals, v)
 		seq = seq.Next()
 	}

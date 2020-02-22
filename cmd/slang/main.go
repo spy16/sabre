@@ -46,6 +46,7 @@ func main() {
 		if err != nil {
 			fatalf("error: %v\n", err)
 		}
+		sl.SwitchNS(sabre.Symbol{Value: "user"})
 	}
 
 	if *executeStr != "" {
