@@ -109,7 +109,7 @@ func (repl *REPL) Write(b []byte) (int, error) {
 
 func (repl *REPL) print(res sabre.Value, err error) error {
 	if err != nil {
-		_, err = fmt.Fprintf(repl, "%v\n", err)
+		_, err = fmt.Fprintf(repl, "%+v\n", err)
 		return err
 	}
 
