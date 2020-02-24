@@ -70,7 +70,7 @@ func (slang *Slang) Bind(symbol string, v sabre.Value) error {
 	}
 
 	if slang.checkNS && nsSym.NS != slang.currentNS {
-		return fmt.Errorf("cannot to bind outside current namespace")
+		return fmt.Errorf("cannot bind outside current namespace")
 	}
 
 	slang.bindings[*nsSym] = v
@@ -199,6 +199,9 @@ func BindAll(scope sabre.Scope) error {
 		"core/let*":         sabre.Let,
 		"core/quote":        sabre.SimpleQuote,
 		"core/syntax-quote": sabre.SyntaxQuote,
+		"core/.": &sabre.Fn{
+			Func: sabre.Dot,
+		},
 
 		"core/eval":      sabre.ValueOf(sabre.Eval),
 		"core/type":      sabre.ValueOf(TypeOf),

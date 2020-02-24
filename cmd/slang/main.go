@@ -26,6 +26,14 @@ var (
 	noREPL      = flag.Bool("norepl", false, "Don't start REPL after executing file and string")
 )
 
+type temp struct {
+	Name string
+}
+
+func (temp *temp) Foo() {
+	fmt.Println("foo called")
+}
+
 func main() {
 	flag.Parse()
 
