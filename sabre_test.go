@@ -7,6 +7,34 @@ import (
 	"github.com/spy16/sabre"
 )
 
+const sampleProgram = `
+(def v [1 2 3])
+(def pi 3.1412)
+(def echo (fn* [arg] arg))
+(echo pi)
+
+(def int-num 10)
+(def float-num 10.1234)
+(def list '(nil 1 []))
+(def vector ["hello" nil])
+(def set #{1 2 3})
+(def empty-set #{})
+
+(def complex-calc (let* [sample '(1 2 3 4 [])]
+					((. First sample))))
+
+(assert (= int-num 10)
+		(= float-num 10.1234)
+		(= pi 3.1412)
+		(= list '(nil 1 []))
+		(= vector ["hello" nil])
+		(= empty-set #{})
+		(= echo (fn* [arg] arg))
+		(= complex-calc 1))
+
+(echo pi)
+`
+
 func BenchmarkEval(b *testing.B) {
 	scope := sabre.NewScope(nil)
 	_ = scope.BindGo("inc", func(a int) int {
@@ -80,12 +108,6 @@ func TestEval(t *testing.T) {
 		},
 		{
 			name: "Program",
-			getScope: func() sabre.Scope {
-				scope := sabre.NewScope(nil)
-				scope.Bind("def", sabre.Def)
-				scope.Bind("fn*", sabre.Lambda)
-				return scope
-			},
 			src:  sampleProgram,
 			want: sabre.Float64(3.1412),
 		},
@@ -93,10 +115,13 @@ func TestEval(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
-			var scope sabre.Scope
+			scope := sabre.Scope(sabre.New())
 			if tt.getScope != nil {
 				scope = tt.getScope()
 			}
+
+			scope.Bind("=", sabre.ValueOf(sabre.Compare))
+			scope.Bind("assert", &sabre.Fn{Func: assert(t)})
 
 			got, err := sabre.ReadEvalStr(scope, tt.src)
 			if (err != nil) != tt.wantErr {
@@ -110,12 +135,32 @@ func TestEval(t *testing.T) {
 	}
 }
 
-const sampleProgram = `
-(def v [1 2 3])
+func assert(t *testing.T) func(sabre.Scope, []sabre.Value) (sabre.Value, error) {
+	return func(scope sabre.Scope, exprs []sabre.Value) (sabre.Value, error) {
+		var res sabre.Value
+		var err error
 
-(def pi 3.1412)
+		for _, expr := range exprs {
+			res, err = expr.Eval(scope)
+			if err != nil {
+				t.Errorf("%s: %s", expr, err)
+			}
 
-(def echo (fn* [arg] arg))
+			if !isTruthy(res) {
+				t.Errorf("assertion failed: %s (result=%v)", expr, res)
+			}
+		}
 
-(echo pi)
-`
+		return res, err
+	}
+}
+
+func isTruthy(v sabre.Value) bool {
+	if v == nil || v == (sabre.Nil{}) {
+		return false
+	}
+	if b, ok := v.(sabre.Bool); ok {
+		return bool(b)
+	}
+	return true
+}

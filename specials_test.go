@@ -19,11 +19,7 @@ const src = `
 `
 
 func TestSpecials(t *testing.T) {
-	scope := sabre.NewScope(nil)
-	scope.Bind("def", sabre.Def)
-	scope.Bind("let*", sabre.Let)
-	scope.Bind("fn*", sabre.Lambda)
-	scope.BindGo(".", sabre.Dot)
+	scope := sabre.New()
 
 	expected := sabre.MultiFn{
 		Name:    "hello",
@@ -117,10 +113,7 @@ func TestDot(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
-			scope := sabre.NewScope(nil)
-			scope.Bind(".", &sabre.Fn{
-				Func: sabre.Dot,
-			})
+			scope := sabre.New()
 			scope.BindGo("foo", &Foo{
 				Name: "Bob",
 			})

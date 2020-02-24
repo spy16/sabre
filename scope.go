@@ -1,13 +1,39 @@
 package sabre
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 )
 
-// NewScope returns an instance of MapScope with no bindings. If includeCore
-// is true, core functions like def, fn, eval etc. will be bound in the new
-// scope.
+// ErrResolving is returned when a scope implementation fails to resolve
+// a binding for given symbol.
+var ErrResolving = errors.New("unable to resolve symbol")
+
+// New initializes a new scope with all the core bindings.
+func New() *MapScope {
+	scope := &MapScope{
+		parent:   nil,
+		mu:       new(sync.RWMutex),
+		bindings: map[string]Value{},
+	}
+
+	scope.Bind("quote", SimpleQuote)
+	scope.Bind("syntax-quote", SyntaxQuote)
+
+	scope.Bind("fn*", Lambda)
+	scope.Bind("macro*", Macro)
+	scope.Bind("let*", Let)
+	scope.Bind("if", If)
+	scope.Bind("do", Do)
+	scope.Bind("def", Def)
+	scope.Bind(".", &Fn{Func: Dot})
+
+	return scope
+}
+
+// NewScope returns an instance of MapScope with no bindings. If you need
+// builtin special forms, pass result of New() as argument.
 func NewScope(parent Scope) *MapScope {
 	scope := &MapScope{
 		parent:   parent,
@@ -26,9 +52,7 @@ type MapScope struct {
 }
 
 // Parent returns the parent scope of this scope.
-func (scope *MapScope) Parent() Scope {
-	return scope.parent
-}
+func (scope *MapScope) Parent() Scope { return scope.parent }
 
 // Bind adds the given value to the scope and binds the symbol to it.
 func (scope *MapScope) Bind(symbol string, v Value) error {
@@ -40,7 +64,7 @@ func (scope *MapScope) Bind(symbol string, v Value) error {
 }
 
 // Resolve finds the value bound to the given symbol and returns it if
-// found in this scope or parent scope if any.
+// found in this scope or parent scope if any. Returns error otherwise.
 func (scope *MapScope) Resolve(symbol string) (Value, error) {
 	scope.mu.RLock()
 	defer scope.mu.RUnlock()
@@ -51,14 +75,14 @@ func (scope *MapScope) Resolve(symbol string) (Value, error) {
 			return scope.parent.Resolve(symbol)
 		}
 
-		return nil, fmt.Errorf("unable to resolve symbol: %v", symbol)
+		return nil, fmt.Errorf("%w: %v", ErrResolving, symbol)
 	}
 
 	return v, nil
 }
 
 // BindGo is similar to Bind but handles conversion of Go value 'v' to
-// sabre Value type.
+// sabre Value type. See `ValueOf()`
 func (scope *MapScope) BindGo(symbol string, v interface{}) error {
 	return scope.Bind(symbol, ValueOf(v))
 }

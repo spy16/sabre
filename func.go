@@ -66,6 +66,31 @@ func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
 	return fn.Invoke(scope, argVals...)
 }
 
+// Compare returns true if 'v' is also a MultiFn and all methods are
+// equivalent.
+func (multiFn MultiFn) Compare(v Value) bool {
+	other, ok := v.(MultiFn)
+	if !ok {
+		return false
+	}
+
+	sameHeader := (multiFn.Name == other.Name) &&
+		(multiFn.IsMacro == other.IsMacro) &&
+		(len(multiFn.Methods) == len(other.Methods))
+	if !sameHeader {
+		return false
+	}
+
+	for i, fn1 := range multiFn.Methods {
+		fn2 := other.Methods[i]
+		if !fn1.Compare(&fn2) {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (multiFn MultiFn) selectMethod(args []Value) (Fn, error) {
 	for _, fn := range multiFn.Methods {
 		if fn.matchArity(args) {
@@ -134,6 +159,24 @@ func (fn *Fn) Invoke(scope Scope, args ...Value) (Value, error) {
 	}
 
 	return Eval(fnScope, fn.Body)
+}
+
+// Compare returns true if 'other' is also a function and has the same
+// signature and body.
+func (fn *Fn) Compare(v Value) bool {
+	other, ok := v.(*Fn)
+	if !ok || other == nil {
+		return false
+	}
+
+	if !reflect.DeepEqual(fn.Args, other.Args) {
+		return false
+	}
+
+	bothVariadic := (fn.Variadic == other.Variadic)
+	noFunc := (fn.Func == nil && other.Func == nil)
+
+	return bothVariadic && noFunc && Compare(fn.Body, other.Body)
 }
 
 func (fn Fn) matchArity(args []Value) bool {

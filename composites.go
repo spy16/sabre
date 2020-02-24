@@ -21,11 +21,12 @@ func (lf *List) Eval(scope Scope) (Value, error) {
 		return &List{}, nil
 	}
 
-	if lf.special != nil {
-		return lf.special.Invoke(scope, lf.Values[1:]...)
+	err := lf.parse(scope)
+	if err != nil {
+		return nil, err
 	}
 
-	if err := lf.parse(scope); err == nil && lf.special != nil {
+	if lf.special != nil {
 		return lf.special.Invoke(scope, lf.Values[1:]...)
 	}
 
@@ -176,6 +177,27 @@ func (mod Module) Eval(scope Scope) (Value, error) {
 	}
 
 	return res[len(res)-1], nil
+}
+
+// Compare returns true if the 'v' is also a module and all forms in the
+// module are equivalent.
+func (mod Module) Compare(v Value) bool {
+	other, ok := v.(Module)
+	if !ok {
+		return false
+	}
+
+	if len(mod) != len(other) {
+		return false
+	}
+
+	for i := range mod {
+		if !Compare(mod[i], other[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func (mod Module) String() string { return containerString(mod, "", "\n", "\n") }
