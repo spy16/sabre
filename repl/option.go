@@ -96,7 +96,6 @@ func WithReaderFactory(factory ReaderFactory) Option {
 // WithPrinter sets the print function for the REPL.  It is useful for customizing
 // how different types should be rendered into human-readable character streams.
 func WithPrinter(f func(io.Writer, interface{}) error) Option {
-
 	if f == nil {
 		f = func(w io.Writer, v interface{}) (err error) {
 			switch v.(type) {
