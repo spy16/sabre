@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.3.1 (2020-02-24)
+
+* Move `Slang` to separate [repository](https://github.com/spy16/slang)
+* Add support for member access using special `.` (`sabre.Dot`) function
+
 ## v0.3.0 (2020-02-22)
 
 * Add support for macros through `macro*` special form.

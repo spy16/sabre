@@ -4,27 +4,35 @@
 
 Sabre is highly customizable, embeddable LISP engine for Go.
 
+Check out [Slang](https://github.com/spy16/slang) for a tiny LISP written using *Sabre*.
+
 ## Features
 
 * Highly Customizable reader/parser through a read table (Inspired by Clojure) (See [Reader](#reader))
 * Built-in data types: nil, bool, string, number, character, keyword, symbol, list, vector, set, module
 * Multiple number formats supported: decimal, octal, hexadecimal, radix and scientific notations.
-* Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π`, `🧠` etc.)
+* Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π` etc.)
+  and `🧠`, `🏃` etc. (yes, smileys too).
 * Character Literals with support for:
   1. simple literals  (e.g., `\a` for `a`)
   2. special literals (e.g., `\newline`, `\tab` etc.)
   3. unicode literals (e.g., `\u00A5` for `¥` etc.)
-* Clojure style built-in special forms: `λ` or `fn*`, `def`, `if`, `do`, `throw`, `let*`
-* Simple interface `sabre.Value` (and optional `sabre.Invokable`) for adding custom
-  data types. (See [Evaluation](#evaluation))
-* *Slang* (Short for Sabre Lang): A tiny reference LISP dialect built using Sabre.
-  * Contains an Interpreter with REPL.
-  * Some basic standard functions.
+* Clojure style built-in special forms: `fn*`, `def`, `if`, `do`, `throw`, `let*`
+* Simple interface `sabre.Value` and optional `sabre.Invokable`, `sabre.Seq` interfaces for
+  adding custom data types. (See [Evaluation](#evaluation))
+* A macro system.
 
 > Please note that Sabre is _NOT_ an implementation of a particular LISP dialect. It provides
 > pieces that can be used to build a LISP dialect or can be used as a scripting layer.
 
 ## Usage
+
+What can you use it for?
+
+1. Embedded script engine to provide dynamic behavior without requiring re-compilation
+   of your application.
+2. Business rule engine by exposing very specific & composable rule functions.
+3. To build your own LISP dialect.
 
 > Sabre requires Go 1.13 or higher.
 
@@ -42,11 +50,9 @@ import "github.com/spy16/sabre"
 
 func main() {
     scope := sabre.NewScope(nil)
-    scope.BindGo("inc", func(v int) int {
-      return v+1
-    })
+    _ = scope.BindGo("inc", func(v int) int { return v+1 })
 
-    result, _:= sabre.ReadEvalStr(scope, "(inc 10)")
+    result, _ := sabre.ReadEvalStr(scope, "(inc 10)")
     fmt.Printf("Result: %v\n", result) // should print "Result: 11"
 }
 ```
@@ -54,7 +60,7 @@ func main() {
 ### Expose through a REPL
 
 Sabre comes with a tiny `repl` package that is very flexible and easy to setup
-to expose your LISP setup through a read-eval-print-loop.
+to expose your LISP through a read-eval-print-loop.
 
 ```go
 package main
@@ -68,9 +74,7 @@ import (
 
 func main() {
   scope := sabre.NewScope(nil)
-  scope.BindGo("inc", func(v int) int {
-    return v+1
-  })
+  scope.BindGo("inc", func(v int) int { return v+1 })
 
   repl.New(scope,
     repl.WithBanner("Welcome to my own LISP!"),
@@ -83,17 +87,8 @@ func main() {
 ### Standalone
 
 Sabre has a small reference LISP dialect named ***Slang*** (short for *Sabre Lang*) for
-which a standalone binary is available.
-
-1. Install Slang into `GOBIN` path: `go get -u -v github.com/spy16/sabre/cmd/slang`
-2. Run:
-   1. `slang` for REPL
-   2. `slang -e "(+ 1 2 3)"` for executing string
-   3. `slang -f "examples/simple.lisp"` for executing file
-
-> If you specify both `-f` and `-e` flags, file will be executed first and then the
-> string will be executed in the same scope and you will be dropped into REPL. If
-> REPL not needed, use `-norepl` option.
+which a standalone binary is available. Check out [Slang](https://github.com/spy16/slang)
+for instructions on installing *Slang*.
 
 ## Extending
 
@@ -136,11 +131,5 @@ access using `([1 2 3] 0)` (returns `1`)
 
 ## TODO
 
-* [x] Executor
-* [x] Special Forms
-* [X] REPL
-* [X] Slang - A tiny LISP like language built using Sabre.
-* [x] Standard Functions
-* [ ] Macros
 * [ ] Optimizations
 * [ ] Code Generation?

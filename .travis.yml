@@ -2,12 +2,6 @@ language: go
 go: '1.13'
 env:
 - GO111MODULE=on
-script: make clean test-verbose build
-deploy:
-  - provider: script
-    skip_cleanup: true
-    script: curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --skip-validate
-    on:
-      tags: true
+script: make clean test-verbose
 notifications:
   email: false
