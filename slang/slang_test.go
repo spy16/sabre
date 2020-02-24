@@ -11,7 +11,10 @@ import (
 	"github.com/spy16/sabre/slang"
 )
 
-const testDir = "../examples/"
+const (
+	testDir = "./lib"
+	libDir  = "./lib"
+)
 
 var _ sabre.Scope = (*slang.Slang)(nil)
 
@@ -102,7 +105,7 @@ func TestSlang(t *testing.T) {
 	}
 
 	for _, fi := range files {
-		if !strings.HasSuffix(fi.Name(), ".lisp") {
+		if !strings.HasSuffix(fi.Name(), "_test.lisp") {
 			continue
 		}
 
@@ -131,15 +134,26 @@ func testFile(t *testing.T, file string) {
 }
 
 func initSlang() (*slang.Slang, error) {
-	fh, err := os.Open(filepath.Join(testDir, "core.lisp"))
+	di, err := ioutil.ReadDir(testDir)
 	if err != nil {
 		return nil, err
 	}
-	defer fh.Close()
 
 	sl := slang.New()
-	if _, err := sl.ReadEval(fh); err != nil {
-		return nil, err
+	for _, fi := range di {
+		if strings.HasSuffix(fi.Name(), "_test.lisp") {
+			continue
+		}
+
+		fh, err := os.Open(filepath.Join(testDir, fi.Name()))
+		if err != nil {
+			return nil, err
+		}
+		defer fh.Close()
+
+		if _, err := sl.ReadEval(fh); err != nil {
+			return nil, err
+		}
 	}
 
 	return sl, nil

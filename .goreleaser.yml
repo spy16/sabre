@@ -42,6 +42,7 @@ archives:
       - LICENSE*
       - README.md
       - CHANGELOG*
+      - slang/lib/
 
 checksum:
   name_template: 'checksums.txt'
