@@ -11,6 +11,7 @@ import (
 type List struct {
 	Values
 	Position
+
 	special *Fn
 }
 
@@ -24,10 +25,8 @@ func (lf *List) Eval(scope Scope) (Value, error) {
 		return lf.special.Invoke(scope, lf.Values[1:]...)
 	}
 
-	if err := lf.parse(scope); err == nil {
-		if lf.special != nil {
-			return lf.special.Invoke(scope, lf.Values[1:]...)
-		}
+	if err := lf.parse(scope); err == nil && lf.special != nil {
+		return lf.special.Invoke(scope, lf.Values[1:]...)
 	}
 
 	target, err := Eval(scope, lf.Values[0])

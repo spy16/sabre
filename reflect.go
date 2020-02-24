@@ -12,7 +12,8 @@ var scopeType = reflect.TypeOf((*Scope)(nil)).Elem()
 // like string, rune, int, float are converted to the right sabre Value
 // types. Functions are converted to the wrapper Fn type. Value of type
 // 'reflect.Type' will be wrapped as 'Type' which enables initializing
-// a value of that type when invoked.
+// a value of that type when invoked. All other types will be wrapped
+// using 'Any' type.
 func ValueOf(v interface{}) Value {
 	if v == nil {
 		return Nil{}
@@ -298,7 +299,11 @@ func isAssignable(from, to reflect.Type) bool {
 func reflectValues(args []Value) []reflect.Value {
 	var rvs []reflect.Value
 	for _, arg := range args {
-		rvs = append(rvs, reflect.ValueOf(arg))
+		if any, ok := arg.(Any); ok {
+			rvs = append(rvs, any.R)
+		} else {
+			rvs = append(rvs, reflect.ValueOf(arg))
+		}
 	}
 	return rvs
 }
