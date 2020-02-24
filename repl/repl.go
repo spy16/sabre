@@ -50,6 +50,8 @@ type REPL struct {
 	banner      string
 	prompt      string
 	multiPrompt string
+
+	printer func(io.Writer, interface{}) error
 }
 
 // Input implementation is used by REPL to read user-input. See WithInput()
@@ -87,10 +89,9 @@ func (repl *REPL) Loop(ctx context.Context) error {
 func (repl *REPL) readEvalPrint() error {
 	form, err := repl.read()
 	if err != nil {
-		switch e := err.(type) {
+		switch err.(type) {
 		case sabre.ReadError, sabre.EvalError:
-			repl.print(nil, e)
-
+			repl.print(err)
 		default:
 			return err
 		}
@@ -100,21 +101,20 @@ func (repl *REPL) readEvalPrint() error {
 		return nil
 	}
 
-	return repl.print(sabre.Eval(repl.scope, form))
+	v, err := sabre.Eval(repl.scope, form)
+	if err != nil {
+		return repl.print(err)
+	}
+
+	return repl.print(v)
 }
 
 func (repl *REPL) Write(b []byte) (int, error) {
 	return repl.output.Write(b)
 }
 
-func (repl *REPL) print(res sabre.Value, err error) error {
-	if err != nil {
-		_, err = fmt.Fprintf(repl, "%+v\n", err)
-		return err
-	}
-
-	_, err = fmt.Fprintf(repl, "%s\n", res)
-	return err
+func (repl *REPL) print(v interface{}) error {
+	return repl.printer(repl.output, v)
 }
 
 func (repl *REPL) read() (sabre.Value, error) {

@@ -2,6 +2,7 @@ package repl
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -92,11 +93,34 @@ func WithReaderFactory(factory ReaderFactory) Option {
 	}
 }
 
+// WithPrinter sets the print function for the REPL.  It is useful for customizing
+// how different types should be rendered into human-readable character streams.
+func WithPrinter(f func(io.Writer, interface{}) error) Option {
+
+	if f == nil {
+		f = func(w io.Writer, v interface{}) (err error) {
+			switch v.(type) {
+			case error:
+				_, err = fmt.Fprintf(w, "%+v\n", err)
+			default:
+				_, err = fmt.Fprintf(w, "%s\n", v)
+			}
+
+			return
+		}
+	}
+
+	return func(repl *REPL) {
+		repl.printer = f
+	}
+}
+
 func withDefaults(opts []Option) []Option {
 	return append([]Option{
 		WithInput(nil, nil),
-		WithOutput(os.Stdout),
+		WithOutput(nil),
 		WithReaderFactory(nil),
+		WithPrinter(nil),
 	}, opts...)
 }
 
