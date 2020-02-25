@@ -8,6 +8,8 @@ import (
 	"github.com/spy16/sabre"
 )
 
+var _ sabre.Seq = sabre.String("")
+
 func TestBool_Eval(t *testing.T) {
 	executeEvalTests(t, []evalTestCase{
 		{

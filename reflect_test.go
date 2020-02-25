@@ -51,9 +51,14 @@ func TestValueOf(t *testing.T) {
 			want: Nil{},
 		},
 		{
+			name: "ReflectType",
+			v:    reflect.TypeOf(10),
+			want: Type{T: reflect.TypeOf(10)},
+		},
+		{
 			name: "Any",
 			v:    anyVal,
-			want: Any{R: anyValRV},
+			want: Any{V: anyValRV},
 		},
 	}
 

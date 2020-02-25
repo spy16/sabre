@@ -82,7 +82,7 @@ func Dot(scope Scope, args []Value) (Value, error) {
 
 	rv := reflect.ValueOf(target)
 	if any, ok := target.(Any); ok {
-		rv = any.R
+		rv = any.V
 	}
 
 	if _, found := rv.Type().MethodByName(name); found {

@@ -281,12 +281,8 @@ func (rd *Reader) readOne() (Value, error) {
 
 	if r == dispatchTrigger {
 		f, err := rd.execDispatch()
-		if err != nil {
-			return nil, err
-		}
-
-		if f != nil {
-			return f, nil
+		if f != nil || err != nil {
+			return f, err
 		}
 	}
 
@@ -307,7 +303,8 @@ func (rd *Reader) execDispatch() (Value, error) {
 
 	r2, err := rd.NextRune()
 	if err != nil {
-		return nil, nil // ignore the error
+		// ignore the error and let readOne handle it.
+		return nil, nil
 	}
 
 	dispatchMacro, found := rd.dispatch[r2]
@@ -753,11 +750,6 @@ func (err ReadError) Error() string {
 	)
 }
 
-type positionAttr interface {
-	Value
-	GetPos() (file string, line, col int)
-}
-
 // Position represents the positional information about a value read
 // by reader.
 type Position struct {
@@ -771,6 +763,13 @@ func (pi Position) GetPos() (file string, line, col int) {
 	return pi.File, pi.Line, pi.Column
 }
 
+// SetPos sets the position information.
+func (pi *Position) SetPos(file string, line, col int) {
+	pi.File = file
+	pi.Line = line
+	pi.Column = col
+}
+
 func (pi Position) String() string {
 	if pi.File == "" {
 		pi.File = "<unknown>"
@@ -780,28 +779,21 @@ func (pi Position) String() string {
 }
 
 func setPosition(form Value, pos Position) Value {
-	switch v := form.(type) {
-	case *List:
-		v.Position = pos
-		return v
-
-	case Set:
-		v.Position = pos
-		return v
-
-	case Vector:
-		v.Position = pos
-
-	case Symbol:
-		v.Position = pos
-		return v
+	p, canSet := form.(interface {
+		SetPos(file string, line, col int)
+	})
+	if !canSet {
+		return form
 	}
 
+	p.SetPos(pos.File, pos.Line, pos.Column)
 	return form
 }
 
 func getPosition(form Value) Position {
-	p, hasPosition := form.(positionAttr)
+	p, hasPosition := form.(interface {
+		GetPos() (file string, line, col int)
+	})
 	if !hasPosition {
 		return Position{}
 	}

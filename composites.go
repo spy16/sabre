@@ -202,21 +202,6 @@ func (mod Module) Compare(v Value) bool {
 
 func (mod Module) String() string { return containerString(mod, "", "\n", "\n") }
 
-func evalValueList(scope Scope, vals []Value) ([]Value, error) {
-	var result []Value
-
-	for _, arg := range vals {
-		v, err := arg.Eval(scope)
-		if err != nil {
-			return nil, newEvalErr(arg, err)
-		}
-
-		result = append(result, v)
-	}
-
-	return result, nil
-}
-
 func containerString(vals []Value, begin, end, sep string) string {
 	parts := make([]string, len(vals))
 	for i, expr := range vals {

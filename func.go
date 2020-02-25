@@ -38,8 +38,8 @@ func (multiFn MultiFn) String() string {
 		sb.WriteString("[" + strings.Trim(fn.String(), "()") + "] ")
 	}
 
-	s := "(" + strings.TrimSpace(multiFn.Name+" "+strings.TrimSpace(sb.String())) + ")"
-	return s
+	s := multiFn.Name + " " + strings.TrimSpace(sb.String())
+	return "(" + strings.TrimSpace(s) + ")"
 }
 
 // Invoke dispatches the call to a method based on number of arguments.
@@ -103,6 +103,7 @@ func (multiFn MultiFn) selectMethod(args []Value) (Fn, error) {
 }
 
 func (multiFn *MultiFn) validate() error {
+	// TODO: implement this to validate ambiguous method arities.
 	return nil
 }
 
@@ -115,23 +116,7 @@ type Fn struct {
 }
 
 // Eval returns the function itself.
-func (fn *Fn) Eval(_ Scope) (Value, error) {
-	return fn, nil
-}
-
-func (fn Fn) String() string {
-	var sb strings.Builder
-
-	for i, arg := range fn.Args {
-		if i == len(fn.Args)-1 && fn.Variadic {
-			sb.WriteString(" & " + arg)
-		} else {
-			sb.WriteString(arg + " ")
-		}
-	}
-
-	return "(" + strings.TrimSpace(sb.String()) + ")"
-}
+func (fn *Fn) Eval(_ Scope) (Value, error) { return fn, nil }
 
 // Invoke executes the function with given arguments.
 func (fn *Fn) Invoke(scope Scope, args ...Value) (Value, error) {
@@ -177,6 +162,20 @@ func (fn *Fn) Compare(v Value) bool {
 	noFunc := (fn.Func == nil && other.Func == nil)
 
 	return bothVariadic && noFunc && Compare(fn.Body, other.Body)
+}
+
+func (fn Fn) String() string {
+	var sb strings.Builder
+
+	for i, arg := range fn.Args {
+		if i == len(fn.Args)-1 && fn.Variadic {
+			sb.WriteString(" & " + arg)
+		} else {
+			sb.WriteString(arg + " ")
+		}
+	}
+
+	return "(" + strings.TrimSpace(sb.String()) + ")"
 }
 
 func (fn Fn) matchArity(args []Value) bool {

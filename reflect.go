@@ -24,7 +24,7 @@ func ValueOf(v interface{}) Value {
 	}
 
 	if rt, ok := v.(reflect.Type); ok {
-		return Type{R: rt}
+		return Type{T: rt}
 	}
 
 	rv := reflect.ValueOf(v)
@@ -50,39 +50,31 @@ func ValueOf(v interface{}) Value {
 
 	default:
 		// TODO: handle array & slice as list/vector.
-		return Any{R: rv}
+		return Any{V: rv}
 	}
 }
 
 // Any can be used to wrap arbitrary Go value into Sabre scope.
-type Any struct {
-	R reflect.Value
-}
+type Any struct{ V reflect.Value }
 
 // Eval returns itself.
 func (any Any) Eval(_ Scope) (Value, error) { return any, nil }
 
-func (any Any) String() string { return fmt.Sprintf("Any{%v}", any.R) }
+func (any Any) String() string { return fmt.Sprintf("Any{%v}", any.V) }
 
 // Type represents the type value of a given value. Type also implements
 // Value type.
-type Type struct {
-	R reflect.Type
-}
+type Type struct{ T reflect.Type }
 
 // Eval returns the type value itself.
-func (t Type) Eval(_ Scope) (Value, error) {
-	return t, nil
-}
+func (t Type) Eval(_ Scope) (Value, error) { return t, nil }
 
-func (t Type) String() string {
-	return fmt.Sprintf("%v", t.R)
-}
+func (t Type) String() string { return fmt.Sprintf("%v", t.T) }
 
 // Invoke creates zero value of the given type.
 func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
-	if isKind(t.R, reflect.Interface, reflect.Chan, reflect.Func) {
-		return nil, fmt.Errorf("type '%s' cannot be initialized", t.R)
+	if isKind(t.T, reflect.Interface, reflect.Chan, reflect.Func) {
+		return nil, fmt.Errorf("type '%s' cannot be initialized", t.T)
 	}
 
 	argVals, err := evalValueList(scope, args)
@@ -90,7 +82,7 @@ func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
 		return nil, err
 	}
 
-	switch t.R {
+	switch t.T {
 	case reflect.TypeOf((*List)(nil)):
 		return &List{Values: argVals}, nil
 
@@ -101,12 +93,12 @@ func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
 		return Set{Values: Values(argVals).Uniq()}, nil
 	}
 
-	likeSeq := isKind(t.R, reflect.Slice, reflect.Array)
+	likeSeq := isKind(t.T, reflect.Slice, reflect.Array)
 	if likeSeq {
 		return Values(argVals), nil
 	}
 
-	return ValueOf(reflect.New(t.R).Elem().Interface()), nil
+	return ValueOf(reflect.New(t.T).Elem().Interface()), nil
 }
 
 // reflectFn creates a wrapper Fn for the given Go function value using
@@ -300,7 +292,7 @@ func reflectValues(args []Value) []reflect.Value {
 	var rvs []reflect.Value
 	for _, arg := range args {
 		if any, ok := arg.(Any); ok {
-			rvs = append(rvs, any.R)
+			rvs = append(rvs, any.V)
 		} else {
 			rvs = append(rvs, reflect.ValueOf(arg))
 		}

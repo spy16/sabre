@@ -121,7 +121,7 @@ func TestEval(t *testing.T) {
 			}
 
 			scope.Bind("=", sabre.ValueOf(sabre.Compare))
-			scope.Bind("assert", &sabre.Fn{Func: assert(t)})
+			scope.Bind("assert", &sabre.Fn{Func: asserter(t)})
 
 			got, err := sabre.ReadEvalStr(scope, tt.src)
 			if (err != nil) != tt.wantErr {
@@ -135,7 +135,7 @@ func TestEval(t *testing.T) {
 	}
 }
 
-func assert(t *testing.T) func(sabre.Scope, []sabre.Value) (sabre.Value, error) {
+func asserter(t *testing.T) func(sabre.Scope, []sabre.Value) (sabre.Value, error) {
 	return func(scope sabre.Scope, exprs []sabre.Value) (sabre.Value, error) {
 		var res sabre.Value
 		var err error

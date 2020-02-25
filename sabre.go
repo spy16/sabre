@@ -50,6 +50,8 @@ type Scope interface {
 func newEvalErr(v Value, err error) EvalError {
 	if ee, ok := err.(EvalError); ok {
 		return ee
+	} else if ee, ok := err.(*EvalError); ok && ee != nil {
+		return *ee
 	}
 
 	return EvalError{
@@ -67,9 +69,7 @@ type EvalError struct {
 }
 
 // Unwrap returns the underlying cause of this error.
-func (ee EvalError) Unwrap() error {
-	return ee.Cause
-}
+func (ee EvalError) Unwrap() error { return ee.Cause }
 
 func (ee EvalError) Error() string {
 	return fmt.Sprintf("eval-error in '%s' (at line %d:%d): %v",
