@@ -3,7 +3,7 @@
 ## v0.3.1 (2020-02-24)
 
 * Move `Slang` to separate [repository](https://github.com/spy16/slang)
-* Add support for member access using special `.` (`sabre.Dot`) function
+* Add support for member access using qualified symbols (i.e., `foo.Bar.Baz`).
 
 ## v0.3.0 (2020-02-22)
 
