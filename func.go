@@ -6,6 +6,28 @@ import (
 	"strings"
 )
 
+// MacroExpand expands the macro invocation form.
+func MacroExpand(scope Scope, form Value) (Value, bool, error) {
+	list, ok := form.(*List)
+	if !ok || list.Size() == 0 {
+		return form, false, nil
+	}
+
+	symbol, ok := list.First().(Symbol)
+	if !ok {
+		return form, false, nil
+	}
+
+	target, err := symbol.resolveValue(scope)
+	if err != nil || !isMacro(target) {
+		return form, false, nil
+	}
+
+	mfn := target.(MultiFn)
+	v, err := mfn.Expand(scope, list.Values[1:])
+	return v, true, err
+}
+
 // MultiFn represents a multi-arity function or macro definition.
 type MultiFn struct {
 	Name    string

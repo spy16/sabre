@@ -50,6 +50,18 @@ func (lf *List) parse(scope Scope) error {
 		return nil
 	}
 
+	form, expanded, err := MacroExpand(scope, lf)
+	if err != nil {
+		return err
+	}
+
+	if expanded {
+		lf.Values = Values{
+			Symbol{Value: "do"},
+			form,
+		}
+	}
+
 	sym, isSymbol := lf.Values[0].(Symbol)
 	if !isSymbol {
 		return analyzeSeq(scope, lf.Values)

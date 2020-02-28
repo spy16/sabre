@@ -336,6 +336,9 @@ func recursiveQuote(scope Scope, f Value) (Value, error) {
 		quoted, err := quoteSeq(scope, v.Values)
 		return Vector{Values: quoted}, err
 
+	case String:
+		return f, nil
+
 	case Seq:
 		return quoteSeq(scope, v)
 

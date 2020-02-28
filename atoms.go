@@ -109,6 +109,37 @@ type Symbol struct {
 // symbol is in fully qualified form (i.e., separated by '.'), eval does
 // recursive member access.
 func (sym Symbol) Eval(scope Scope) (Value, error) {
+	target, err := sym.resolveValue(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	if isMacro(target) {
+		return nil, fmt.Errorf("can't take value of macro '%s'", sym.Value)
+	}
+
+	return target, nil
+}
+
+func isMacro(target Value) bool {
+	multiFn, ok := target.(MultiFn)
+	return ok && multiFn.IsMacro
+}
+
+// Compare compares this symbol to the given value. Returns true if
+// the given value is a symbol with same data.
+func (sym Symbol) Compare(v Value) bool {
+	other, ok := v.(Symbol)
+	if !ok {
+		return false
+	}
+
+	return other.Value == sym.Value
+}
+
+func (sym Symbol) String() string { return sym.Value }
+
+func (sym Symbol) resolveValue(scope Scope) (Value, error) {
 	fields := strings.Split(sym.Value, ".")
 
 	if sym.Value == "." {
@@ -139,16 +170,3 @@ func (sym Symbol) Eval(scope Scope) (Value, error) {
 
 	return ValueOf(rv.Interface()), nil
 }
-
-// Compare compares this symbol to the given value. Returns true if
-// the given value is a symbol with same data.
-func (sym Symbol) Compare(v Value) bool {
-	other, ok := v.(Symbol)
-	if !ok {
-		return false
-	}
-
-	return other.Value == sym.Value
-}
-
-func (sym Symbol) String() string { return sym.Value }

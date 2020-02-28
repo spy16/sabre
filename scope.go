@@ -18,6 +18,11 @@ func New() *MapScope {
 		bindings: map[string]Value{},
 	}
 
+	scope.Bind("macroexpand", ValueOf(func(scope Scope, v Value) (Value, error) {
+		f, _, err := MacroExpand(scope, v)
+		return f, err
+	}))
+
 	scope.Bind("quote", SimpleQuote)
 	scope.Bind("syntax-quote", SyntaxQuote)
 
