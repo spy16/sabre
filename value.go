@@ -80,14 +80,18 @@ func (vals Values) Next() Seq {
 	if len(vals) <= 1 {
 		return nil
 	}
-	return Values(vals[1:])
+	return &List{Values: Values(vals[1:])}
 }
 
 // Cons returns a new sequence where 'v' is prepended to the values.
-func (vals Values) Cons(v Value) Seq { return append(Values{v}, vals...) }
+func (vals Values) Cons(v Value) Seq {
+	return &List{Values: append(Values{v}, vals...)}
+}
 
 // Conj returns a new sequence where 'v' is appended to the values.
-func (vals Values) Conj(args ...Value) Seq { return append(vals, args...) }
+func (vals Values) Conj(args ...Value) Seq {
+	return &List{Values: append(vals, args...)}
+}
 
 // Size returns the number of items in the list.
 func (vals Values) Size() int { return len(vals) }

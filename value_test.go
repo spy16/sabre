@@ -69,7 +69,7 @@ func TestValues_Next(t *testing.T) {
 		{
 			name: "MultiItem",
 			vals: []sabre.Value{sabre.Int64(10), sabre.String("hello"), sabre.Bool(true)},
-			want: sabre.Values{sabre.String("hello"), sabre.Bool(true)},
+			want: &sabre.List{Values: sabre.Values{sabre.String("hello"), sabre.Bool(true)}},
 		},
 	}
 
@@ -91,7 +91,7 @@ func TestValues_Cons(t *testing.T) {
 		name string
 		vals []sabre.Value
 		item sabre.Value
-		want sabre.Seq
+		want sabre.Values
 	}{
 		{
 			name: "Nil",
@@ -123,7 +123,7 @@ func TestValues_Cons(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := sabre.Values(tt.vals).Cons(tt.item)
 
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(got, &sabre.List{Values: tt.want}) {
 				t.Errorf("Next() want=%#v, got=%#v", tt.want, got)
 			}
 		})
