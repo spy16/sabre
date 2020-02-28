@@ -55,57 +55,39 @@ func TestDot(t *testing.T) {
 	}{
 		{
 			name: "StringFieldAccess",
-			src:  "(. Name foo)",
+			src:  "foo.Name",
 			want: sabre.String("Bob"),
 		},
 		{
 			name: "BoolFieldAccess",
-			src:  "(. Enabled foo)",
+			src:  "foo.Enabled",
 			want: sabre.Bool(false),
 		},
 		{
 			name: "MethodAccess",
-			src:  `((. Bar foo) "Baz")`,
+			src:  `(foo.Bar "Baz")`,
 			want: sabre.String("Bar(\"Baz\")"),
 		},
 		{
 			name: "MethodAccessPtr",
-			src:  `((. BarPtr foo) "Bob")`,
+			src:  `(foo.BarPtr "Bob")`,
 			want: sabre.String("BarPtr(\"Bob\")"),
 		},
 		{
-			name:    "InvalidNumberOfArgs",
-			src:     `(. BarPtr)`,
-			want:    nil,
-			wantErr: true,
-		},
-		{
 			name:    "EvalFailed",
-			src:     `(. BarPtr blah)`,
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "NonSymbolArgument",
-			src:     `(. "BarPtr" foo)`,
+			src:     `blah.BarPtr`,
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "NonExistentMember",
-			src:     `(. Baz foo)`,
+			src:     `foo.Baz`,
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "PrivateMember",
-			src:     `(. privateMember foo)`,
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "InvalidGoSymbol",
-			src:     `(. baz-$-foo# foo)`,
+			src:     `foo.privateMember`,
 			want:    nil,
 			wantErr: true,
 		},
@@ -136,8 +118,9 @@ func TestDot(t *testing.T) {
 
 // Foo is a dummy type for member access tests.
 type Foo struct {
-	Name    string
-	Enabled bool
+	Name          string
+	Enabled       bool
+	privateMember bool
 }
 
 func (foo *Foo) BarPtr(arg string) string {

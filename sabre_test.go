@@ -21,7 +21,7 @@ const sampleProgram = `
 (def empty-set #{})
 
 (def complex-calc (let* [sample '(1 2 3 4 [])]
-					((. First sample))))
+					(sample.First)))
 
 (assert (= int-num 10)
 		(= float-num 10.1234)

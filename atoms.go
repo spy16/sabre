@@ -2,6 +2,8 @@ package sabre
 
 import (
 	"fmt"
+	"reflect"
+	"strings"
 )
 
 var nilValue = Nil{}
@@ -48,6 +50,8 @@ type String string
 // Eval simply returns itself since Strings evaluate to themselves.
 func (se String) Eval(_ Scope) (Value, error) { return se, nil }
 
+func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
+
 // First returns the first character if string is not empty, nil otherwise.
 func (se String) First() Value {
 	if len(se) == 0 {
@@ -69,8 +73,6 @@ func (se String) Cons(v Value) Seq { return se.chars().Cons(v) }
 // the new sequence.
 func (se String) Conj(vals ...Value) Seq { return se.chars().Conj(vals...) }
 
-func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
-
 func (se String) chars() Values {
 	var vals Values
 	for _, r := range se {
@@ -81,7 +83,7 @@ func (se String) chars() Values {
 
 // Character represents a character literal.  For example, \a, \b, \1, \∂ etc
 // are valid character literals. In addition, special literals like \newline,
-// \space etc are supported.
+// \space etc are supported by the reader.
 type Character rune
 
 // Eval simply returns itself since Chracters evaluate to themselves.
@@ -103,9 +105,39 @@ type Symbol struct {
 	Value string
 }
 
-// Eval returns the value bound to this symbol in current context.
+// Eval returns the value bound to this symbol in current context. If the
+// symbol is in fully qualified form (i.e., separated by '.'), eval does
+// recursive member access.
 func (sym Symbol) Eval(scope Scope) (Value, error) {
-	return scope.Resolve(sym.Value)
+	fields := strings.Split(sym.Value, ".")
+
+	if sym.Value == "." {
+		fields = []string{"."}
+	}
+
+	target, err := scope.Resolve(fields[0])
+	if len(fields) == 1 || err != nil {
+		return target, err
+	}
+
+	rv := reflect.ValueOf(target)
+	for i := 1; i < len(fields); i++ {
+		if rv.Type() == reflect.TypeOf(Any{}) {
+			rv = rv.Interface().(Any).V
+		}
+
+		rv, err = accessMember(rv, fields[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if isKind(rv.Type(), reflect.Chan, reflect.Array,
+		reflect.Func, reflect.Ptr) && rv.IsNil() {
+		return Nil{}, nil
+	}
+
+	return ValueOf(rv.Interface()), nil
 }
 
 // Compare compares this symbol to the given value. Returns true if

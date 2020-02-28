@@ -27,7 +27,6 @@ func New() *MapScope {
 	scope.Bind("if", If)
 	scope.Bind("do", Do)
 	scope.Bind("def", Def)
-	scope.Bind(".", &Fn{Func: Dot})
 
 	return scope
 }
@@ -35,13 +34,11 @@ func New() *MapScope {
 // NewScope returns an instance of MapScope with no bindings. If you need
 // builtin special forms, pass result of New() as argument.
 func NewScope(parent Scope) *MapScope {
-	scope := &MapScope{
+	return &MapScope{
 		parent:   parent,
 		mu:       new(sync.RWMutex),
 		bindings: map[string]Value{},
 	}
-
-	return scope
 }
 
 // MapScope implements Scope using a Go native hash-map.

@@ -61,46 +61,6 @@ var (
 	}
 )
 
-// Dot operator provides a way to access members of an object exposed into
-// sabre scope using (. member-name object) form.
-func Dot(scope Scope, args []Value) (Value, error) {
-	if err := verifyArgCount([]int{2}, args); err != nil {
-		return nil, err
-	}
-
-	target, err := Eval(scope, args[1])
-	if err != nil {
-		return nil, err
-	}
-
-	member, ok := args[0].(Symbol)
-	if !ok {
-		return nil, fmt.Errorf("first argument must be symbol, not '%s'",
-			reflect.TypeOf(args[0]))
-	}
-	name := member.Value
-
-	rv := reflect.ValueOf(target)
-	if any, ok := target.(Any); ok {
-		rv = any.V
-	}
-
-	if _, found := rv.Type().MethodByName(name); found {
-		return ValueOf(rv.MethodByName(name).Interface()), nil
-	}
-
-	if rv.Kind() == reflect.Ptr {
-		rv = rv.Elem()
-	}
-
-	if _, found := rv.Type().FieldByName(name); found {
-		return ValueOf(rv.FieldByName(name).Interface()), nil
-	}
-
-	return nil, fmt.Errorf("value of type '%s' has no member named '%s'",
-		rv.Type(), member)
-}
-
 func fnParser(isMacro bool) func(scope Scope, forms []Value) (*Fn, error) {
 	return func(scope Scope, forms []Value) (*Fn, error) {
 		if len(forms) < 1 {
@@ -484,4 +444,25 @@ func makeFn(scope Scope, spec []Value) (*Fn, error) {
 type binding struct {
 	Name string
 	Expr Value
+}
+
+func accessMember(target reflect.Value, member string) (reflect.Value, error) {
+	if member[0] >= 'a' && member[0] <= 'z' {
+		return reflect.Value{}, fmt.Errorf("cannot access private member")
+	}
+
+	if _, found := target.Type().MethodByName(member); found {
+		return target.MethodByName(member), nil
+	}
+
+	if target.Kind() == reflect.Ptr {
+		target = target.Elem()
+	}
+
+	if _, found := target.Type().FieldByName(member); found {
+		return target.FieldByName(member), nil
+	}
+
+	return reflect.Value{}, fmt.Errorf("value of type '%s' has no member named '%s'",
+		target.Type(), member)
 }

@@ -100,7 +100,8 @@ func WithPrinter(f func(io.Writer, interface{}) error) Option {
 		f = func(w io.Writer, v interface{}) (err error) {
 			switch v.(type) {
 			case error:
-				_, err = fmt.Fprintf(w, "%+v\n", err)
+				_, err = fmt.Fprintf(w, "%+v\n", v)
+
 			default:
 				_, err = fmt.Fprintf(w, "%s\n", v)
 			}

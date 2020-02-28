@@ -6,7 +6,10 @@ import (
 	"strings"
 )
 
-var scopeType = reflect.TypeOf((*Scope)(nil)).Elem()
+var (
+	scopeType = reflect.TypeOf((*Scope)(nil)).Elem()
+	errorType = reflect.TypeOf((*error)(nil)).Elem()
+)
 
 // ValueOf converts a Go value to sabre Value type. Primitive Go values
 // like string, rune, int, float are converted to the right sabre Value
@@ -135,7 +138,7 @@ func wrapFunc(rv reflect.Value) *funcWrapper {
 
 	passScope := (minArgs > 0) && (rt.In(0) == scopeType)
 	lastOutIdx := rt.NumOut() - 1
-	returnsErr := lastOutIdx >= 0 && rt.Out(lastOutIdx).Name() == "error"
+	returnsErr := lastOutIdx >= 0 && rt.Out(lastOutIdx) == errorType
 	if returnsErr {
 		lastOutIdx-- // ignore error value from return values
 	}
