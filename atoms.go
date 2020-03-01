@@ -176,7 +176,7 @@ func resolveSpecial(scope Scope, v Value) (*SpecialForm, error) {
 
 	v, err := sym.resolveValue(scope)
 	if err != nil {
-		return nil, err
+		return nil, nil
 	}
 
 	sf, ok := v.(SpecialForm)

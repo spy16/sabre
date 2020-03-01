@@ -276,3 +276,34 @@ func TestVector_Invoke(t *testing.T) {
 		})
 	}
 }
+
+func TestHashMap_Eval(t *testing.T) {
+	executeEvalTests(t, []evalTestCase{
+		{
+			name: "Simple",
+			value: &sabre.HashMap{
+				Data: map[sabre.Value]sabre.Value{
+					sabre.Keyword("name"): sabre.String("Bob"),
+				},
+			},
+			want: &sabre.HashMap{
+				Data: map[sabre.Value]sabre.Value{
+					sabre.Keyword("name"): sabre.String("Bob"),
+				},
+			},
+		},
+	})
+}
+
+func TestHashMap_String(t *testing.T) {
+	executeStringTestCase(t, []stringTestCase{
+		{
+			value: &sabre.HashMap{
+				Data: map[sabre.Value]sabre.Value{
+					sabre.Keyword("name"): sabre.String("Bob"),
+				},
+			},
+			want: `{:name "Bob"}`,
+		},
+	})
+}

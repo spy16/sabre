@@ -163,6 +163,41 @@ func (set Set) valid() bool {
 	return true
 }
 
+// HashMap represents a container for key-value pairs.
+type HashMap struct {
+	Position
+	Data map[Value]Value
+}
+
+// Eval evaluates all keys and values and returns a new HashMap containing
+// the evaluated values.
+func (hm *HashMap) Eval(scope Scope) (Value, error) {
+	res := &HashMap{Data: map[Value]Value{}}
+	for k, v := range hm.Data {
+		key, err := k.Eval(scope)
+		if err != nil {
+			return nil, err
+		}
+
+		val, err := v.Eval(scope)
+		if err != nil {
+			return nil, err
+		}
+
+		res.Data[key] = val
+	}
+
+	return res, nil
+}
+
+func (hm *HashMap) String() string {
+	var fields []Value
+	for k, v := range hm.Data {
+		fields = append(fields, k, v)
+	}
+	return containerString(fields, "{", "}", " ")
+}
+
 // Module represents a group of forms. Evaluating a module leads to evaluation
 // of each form in order and result will be the result of last evaluation.
 type Module []Value

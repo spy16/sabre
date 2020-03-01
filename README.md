@@ -9,7 +9,8 @@ Check out [Slang](https://github.com/spy16/slang) for a tiny LISP written using 
 ## Features
 
 * Highly Customizable reader/parser through a read table (Inspired by Clojure) (See [Reader](#reader))
-* Built-in data types: nil, bool, string, number, character, keyword, symbol, list, vector, set, module
+* Built-in data types: nil, bool, string, number, character, keyword, symbol, list, vector, set,
+  hash-map and module.
 * Multiple number formats supported: decimal, octal, hexadecimal, radix and scientific notations.
 * Full unicode support. Symbols can include unicode characters (Example: `find-δ`, `π` etc.)
   and `🧠`, `🏃` etc. (yes, smileys too).
@@ -114,6 +115,7 @@ following forms:
   Evaluating a list leads to an invocation.
 * Vectors: Vectors are zero or more forms contained within brackets. (e.g., `[]`, `[1 2 3]`)
 * Sets: Set is a container for zero or more unique forms. (e.g. `#{1 2 3}`)
+* HashMaps: HashMap is a container for key-value pairs (e.g., `{:name "Bob" :age 10}`)
 
 Reader can be extended to add new syntactical features by adding _reader macros_
 to the _read table_. _Reader Macros_ are implementations of `sabre.ReaderMacro`
@@ -132,8 +134,8 @@ is implemented using reader macros_.
     fields are recursively resolved as members. (For example, `foo.Bar.Baz`: `foo`
     is resolved from scope, `Bar` should be member of value of `foo`. And `Baz`
     should be member of value resolved for `foo.Bar`)
-* Evaluating `Vector` & `Set` simply yields new vector and set whose values are
-  evaluated values contained in the original vector and set.
+* Evaluating `HashMap`, `Vector` & `Set` simply yields new hashmap, vector and set
+  whose values are evaluated values contained in the original hashmaap, vector and set.
 * Evaluating `Module` evaluates all the forms in the module and returns the result
   of last evaluation. Any error stops the evaluation process.
 * Empty `List` is returned as is.

@@ -479,6 +479,34 @@ func readList(rd *Reader, _ rune) (Value, error) {
 	}, nil
 }
 
+func readHashMap(rd *Reader, _ rune) (Value, error) {
+	pi := rd.Position()
+	forms, err := readContainer(rd, '{', '}', "hash-map")
+	if err != nil {
+		return nil, err
+	}
+
+	if len(forms)%2 != 0 {
+		return nil, errors.New("expecting even number of forms within {}")
+	}
+
+	hm := &HashMap{
+		Position: pi,
+		Data:     map[Value]Value{},
+	}
+
+	for i := 0; i < len(forms); i += 2 {
+		if !isHashable(forms[i]) {
+			return nil, fmt.Errorf("value of type '%s' is not hashable",
+				reflect.TypeOf(forms[i]))
+		}
+
+		hm.Data[forms[i]] = forms[i+1]
+	}
+
+	return hm, nil
+}
+
 func readVector(rd *Reader, _ rune) (Value, error) {
 	pi := rd.Position()
 
@@ -694,6 +722,8 @@ func defaultReadTable() map[rune]ReaderMacro {
 		')':  unmatchedDelimiter,
 		'[':  readVector,
 		']':  unmatchedDelimiter,
+		'{':  readHashMap,
+		'}':  unmatchedDelimiter,
 	}
 }
 
@@ -701,6 +731,16 @@ func defaultDispatchTable() map[rune]ReaderMacro {
 	return map[rune]ReaderMacro{
 		'{': readSet,
 		'}': unmatchedDelimiter,
+	}
+}
+
+func isHashable(v Value) bool {
+	switch v.(type) {
+	case String, Int64, Float64, Nil, Character, Keyword:
+		return true
+
+	default:
+		return false
 	}
 }
 

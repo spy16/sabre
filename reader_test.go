@@ -895,6 +895,33 @@ func TestReader_One_Set(t *testing.T) {
 	})
 }
 
+func TestReader_One_HashMap(t *testing.T) {
+	executeReaderTests(t, []readerTestCase{
+		{
+			name: "SimpleKeywordMap",
+			src: `{:age 10
+				   :name "Bob"}`,
+			want: &sabre.HashMap{
+				Position: sabre.Position{File: "<string>", Line: 1, Column: 1},
+				Data: map[sabre.Value]sabre.Value{
+					sabre.Keyword("age"):  sabre.Int64(10),
+					sabre.Keyword("name"): sabre.String("Bob"),
+				},
+			},
+		},
+		{
+			name:    "NonHashableKey",
+			src:     `{[] 10}`,
+			wantErr: true,
+		},
+		{
+			name:    "OddNumberOfForms",
+			src:     "{:hello 10 :age}",
+			wantErr: true,
+		},
+	})
+}
+
 type readerTestCase struct {
 	name    string
 	src     string
