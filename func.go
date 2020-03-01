@@ -304,3 +304,8 @@ func toArgNames(vals []Value) ([]string, error) {
 
 	return names, nil
 }
+
+func isMacro(target Value) bool {
+	multiFn, ok := target.(MultiFn)
+	return ok && multiFn.IsMacro
+}

@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.3.3 (2020-03-01)
+
+* Prevent special forms being passed as value at `Symbol.Eval` level.
+* Add checks for ambiguous arity detection in `MultiFn`.
+
+## v0.3.2 (2020-02-28)
+
+* Expand macro-expansions in place during 'List.parse()'
+* Add `MacroExpand` public function
+* Prevent macros being passed as value at `Symbole.Eval` level.
+* All `Values` operations return `&List{}` as result instead of `Values`.
+
 ## v0.3.1 (2020-02-24)
 
 * Move `Slang` to separate [repository](https://github.com/spy16/slang)

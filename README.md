@@ -122,14 +122,29 @@ is implemented using reader macros_.
 
 ### Evaluation
 
-Eval logic for standard data types is fixed. But custom `sabre.Value` types can be
-implemented to customize evaluation logic.
-
-In addition, `sabre.Value` types can also implement `sabre.Invokable` interface to
-enable invocation. For example `Vector` uses this to enable Clojure style element
-access using `([1 2 3] 0)` (returns `1`)
-
-## TODO
-
-* [ ] Optimizations
-* [ ] Code Generation?
+* `Keyword`, `String`, `Int`, `Float`, `Character`, `Bool`, `nil`, `MultiFn`,
+  `Fn`, `Type` and `Any` evaluate to themselves.
+* `Symbol` is resolved as follows:
+  * If symbol has no `.`, symbol is directly used to lookup in current `Scope`
+    to find the value.
+  * If symbol is qualified (i.e., contains `.`), symbol is split using `.` as
+    delimiter and first field is resolved as per previous rule and rest of the
+    fields are recursively resolved as members. (For example, `foo.Bar.Baz`: `foo`
+    is resolved from scope, `Bar` should be member of value of `foo`. And `Baz`
+    should be member of value resolved for `foo.Bar`)
+* Evaluating `Vector` & `Set` simply yields new vector and set whose values are
+  evaluated values contained in the original vector and set.
+* Evaluating `Module` evaluates all the forms in the module and returns the result
+  of last evaluation. Any error stops the evaluation process.
+* Empty `List` is returned as is.
+* Non empty `List` is an invocation and evaluated using following rules:
+  * If the first argument resolves to a special-form (`SpecialForm` Go type),
+    it is invoked and return value is cached in the list. This return value
+    is used for evaluating the list.
+  * If the first argument resolves to a Macro, macro is invoked with the rest
+    of the list as arguments and return value replaces the list with `(do retval)`
+    form.
+  * If first value resolves to an `Invokable` value, `Invoke()` is called. Functions
+    are implemented using `MultiFn` which implements `Invokable`. `Vector` also implements
+    `Invokable` and provides index access.
+  * It is an error.

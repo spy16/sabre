@@ -186,8 +186,3 @@ func resolveSpecial(scope Scope, v Value) (*SpecialForm, error) {
 
 	return &sf, nil
 }
-
-func isMacro(target Value) bool {
-	multiFn, ok := target.(MultiFn)
-	return ok && multiFn.IsMacro
-}
