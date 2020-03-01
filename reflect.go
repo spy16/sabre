@@ -11,12 +11,12 @@ var (
 	errorType = reflect.TypeOf((*error)(nil)).Elem()
 )
 
-// ValueOf converts a Go value to sabre Value type. Primitive Go values
-// like string, rune, int, float are converted to the right sabre Value
-// types. Functions are converted to the wrapper Fn type. Value of type
-// 'reflect.Type' will be wrapped as 'Type' which enables initializing
-// a value of that type when invoked. All other types will be wrapped
-// using 'Any' type.
+// ValueOf converts a Go value to sabre Value type. If 'v' is already a Value
+// type, it is returned as is. Primitive Go values like string, rune, int, float,
+// bool are converted to the right sabre Value types. Functions are converted to
+// the wrapper 'Fn' type. Value of type 'reflect.Type' will be wrapped as 'Type'
+// which enables initializing a value of that type when invoked. All other types
+// will be wrapped using 'Any' type.
 func ValueOf(v interface{}) Value {
 	if v == nil {
 		return Nil{}
