@@ -36,23 +36,7 @@ type MultiFn struct {
 }
 
 // Eval returns the multiFn definition itself.
-func (multiFn MultiFn) Eval(_ Scope) (Value, error) {
-	return multiFn, nil
-}
-
-// Expand executes the macro body and returns the result of the expansion.
-func (multiFn MultiFn) Expand(scope Scope, args []Value) (Value, error) {
-	fn, err := multiFn.selectMethod(args)
-	if err != nil {
-		return nil, err
-	}
-
-	if !multiFn.IsMacro {
-		return &fn, nil
-	}
-
-	return fn.Invoke(scope, args...)
-}
+func (multiFn MultiFn) Eval(_ Scope) (Value, error) { return multiFn, nil }
 
 func (multiFn MultiFn) String() string {
 	var sb strings.Builder
@@ -86,6 +70,20 @@ func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
 	}
 
 	return fn.Invoke(scope, argVals...)
+}
+
+// Expand executes the macro body and returns the result of the expansion.
+func (multiFn MultiFn) Expand(scope Scope, args []Value) (Value, error) {
+	fn, err := multiFn.selectMethod(args)
+	if err != nil {
+		return nil, err
+	}
+
+	if !multiFn.IsMacro {
+		return &fn, nil
+	}
+
+	return fn.Invoke(scope, args...)
 }
 
 // Compare returns true if 'v' is also a MultiFn and all methods are
@@ -125,7 +123,36 @@ func (multiFn MultiFn) selectMethod(args []Value) (Fn, error) {
 }
 
 func (multiFn *MultiFn) validate() error {
-	// TODO: implement this to validate ambiguous method arities.
+	variadicAt := -1
+	variadicArity := 0
+
+	for idx, method := range multiFn.Methods {
+		if method.Variadic {
+			if variadicAt >= 0 {
+				return fmt.Errorf("can't have multiple variadic overloads")
+			}
+			variadicAt = idx
+			variadicArity = len(method.Args)
+		}
+	}
+
+	fixedArities := map[int]struct{}{}
+	for idx, method := range multiFn.Methods {
+		if method.Variadic {
+			continue
+		}
+
+		arity := method.minArity()
+		if variadicAt >= 0 && idx != variadicAt && arity >= variadicArity {
+			return fmt.Errorf("can't have fixed arity overload with more params than variadic")
+		}
+
+		if _, exists := fixedArities[arity]; exists {
+			return fmt.Errorf("ambiguous arities defined for '%s'", multiFn.Name)
+		}
+		fixedArities[arity] = struct{}{}
+	}
+
 	return nil
 }
 
@@ -139,6 +166,20 @@ type Fn struct {
 
 // Eval returns the function itself.
 func (fn *Fn) Eval(_ Scope) (Value, error) { return fn, nil }
+
+func (fn Fn) String() string {
+	var sb strings.Builder
+
+	for i, arg := range fn.Args {
+		if i == len(fn.Args)-1 && fn.Variadic {
+			sb.WriteString(" & " + arg)
+		} else {
+			sb.WriteString(arg + " ")
+		}
+	}
+
+	return "(" + strings.TrimSpace(sb.String()) + ")"
+}
 
 // Invoke executes the function with given arguments.
 func (fn *Fn) Invoke(scope Scope, args ...Value) (Value, error) {
@@ -186,27 +227,18 @@ func (fn *Fn) Compare(v Value) bool {
 	return bothVariadic && noFunc && Compare(fn.Body, other.Body)
 }
 
-func (fn Fn) String() string {
-	var sb strings.Builder
-
-	for i, arg := range fn.Args {
-		if i == len(fn.Args)-1 && fn.Variadic {
-			sb.WriteString(" & " + arg)
-		} else {
-			sb.WriteString(arg + " ")
-		}
+func (fn Fn) minArity() int {
+	if len(fn.Args) > 0 && fn.Variadic {
+		return len(fn.Args) - 1
 	}
-
-	return "(" + strings.TrimSpace(sb.String()) + ")"
+	return len(fn.Args)
 }
 
 func (fn Fn) matchArity(args []Value) bool {
 	argc := len(args)
-
 	if fn.Variadic {
 		return argc >= len(fn.Args)-1
 	}
-
 	return argc == len(fn.Args)
 }
 
