@@ -97,6 +97,33 @@ func (kw Keyword) Eval(_ Scope) (Value, error) { return kw, nil }
 
 func (kw Keyword) String() string { return fmt.Sprintf(":%s", string(kw)) }
 
+// Invoke enables keyword lookup for maps.
+func (kw Keyword) Invoke(scope Scope, args ...Value) (Value, error) {
+	if err := verifyArgCount([]int{1, 2}, args); err != nil {
+		return nil, err
+	}
+
+	argVals, err := evalValueList(scope, args)
+	if err != nil {
+		return nil, err
+	}
+
+	hm, ok := argVals[0].(*HashMap)
+	if !ok {
+		return Nil{}, nil
+	}
+
+	v, found := hm.Data[kw]
+	if !found {
+		if len(argVals) == 1 {
+			return Nil{}, nil
+		}
+
+		return argVals[1], nil
+	}
+	return v, nil
+}
+
 // Symbol represents a name given to a value in memory.
 type Symbol struct {
 	Position
