@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/repl"
 )
 
 const program = `
@@ -16,10 +18,7 @@ func main() {
 	scope.BindGo("sum", sum)
 	scope.BindGo("printf", fmt.Printf)
 
-	_, err := sabre.ReadEvalStr(scope, program)
-	if err != nil {
-		panic(err)
-	}
+	repl.New(scope).Loop(context.Background())
 }
 
 func sum(nums ...float64) float64 {

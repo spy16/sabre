@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-var nilValue = Nil{}
-
 // Nil represents a nil value.
 type Nil struct{}
 
@@ -55,7 +53,7 @@ func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
 // First returns the first character if string is not empty, nil otherwise.
 func (se String) First() Value {
 	if len(se) == 0 {
-		return nilValue
+		return Nil{}
 	}
 
 	return Character(se[0])
@@ -114,16 +112,15 @@ func (sym Symbol) Eval(scope Scope) (Value, error) {
 		return nil, err
 	}
 
+	if _, isSpecial := target.(SpecialForm); isSpecial {
+		return nil, fmt.Errorf("can't take value of special form '%s'", sym.Value)
+	}
+
 	if isMacro(target) {
 		return nil, fmt.Errorf("can't take value of macro '%s'", sym.Value)
 	}
 
 	return target, nil
-}
-
-func isMacro(target Value) bool {
-	multiFn, ok := target.(MultiFn)
-	return ok && multiFn.IsMacro
 }
 
 // Compare compares this symbol to the given value. Returns true if
@@ -169,4 +166,28 @@ func (sym Symbol) resolveValue(scope Scope) (Value, error) {
 	}
 
 	return ValueOf(rv.Interface()), nil
+}
+
+func resolveSpecial(scope Scope, v Value) (*SpecialForm, error) {
+	sym, isSymbol := v.(Symbol)
+	if !isSymbol {
+		return nil, nil
+	}
+
+	v, err := sym.resolveValue(scope)
+	if err != nil {
+		return nil, err
+	}
+
+	sf, ok := v.(SpecialForm)
+	if !ok {
+		return nil, nil
+	}
+
+	return &sf, nil
+}
+
+func isMacro(target Value) bool {
+	multiFn, ok := target.(MultiFn)
+	return ok && multiFn.IsMacro
 }

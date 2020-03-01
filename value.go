@@ -41,7 +41,7 @@ type Seq interface {
 // it as `v1.Compare(v2)`.
 func Compare(v1, v2 Value) bool {
 	if (v1 == nil && v2 == nil) ||
-		(v1 == nilValue && v2 == nilValue) {
+		(v1 == (Nil{}) && v2 == (Nil{})) {
 		return true
 	}
 

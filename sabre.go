@@ -12,7 +12,7 @@ import (
 // of evaluation.
 func Eval(scope Scope, form Value) (Value, error) {
 	if form == nil {
-		return nilValue, nil
+		return Nil{}, nil
 	}
 
 	v, err := form.Eval(scope)

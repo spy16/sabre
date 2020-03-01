@@ -18,7 +18,7 @@ type List struct {
 // Eval performs an invocation.
 func (lf *List) Eval(scope Scope) (Value, error) {
 	if lf.Size() == 0 {
-		return &List{}, nil
+		return lf, nil
 	}
 
 	err := lf.parse(scope)
@@ -45,6 +45,10 @@ func (lf *List) Eval(scope Scope) (Value, error) {
 	return invokable.Invoke(scope, lf.Values[1:]...)
 }
 
+func (lf List) String() string {
+	return containerString(lf.Values, "(", ")", " ")
+}
+
 func (lf *List) parse(scope Scope) error {
 	if lf.Size() == 0 {
 		return nil
@@ -62,32 +66,19 @@ func (lf *List) parse(scope Scope) error {
 		}
 	}
 
-	sym, isSymbol := lf.Values[0].(Symbol)
-	if !isSymbol {
+	special, err := resolveSpecial(scope, lf.First())
+	if err != nil {
+		return err
+	} else if special == nil {
 		return analyzeSeq(scope, lf.Values)
 	}
 
-	v, err := scope.Resolve(sym.Value)
+	fn, err := special.Parse(scope, lf.Values[1:])
 	if err != nil {
-		return nil
-	}
-
-	sf, ok := v.(SpecialForm)
-	if !ok {
-		return analyzeSeq(scope, lf.Values)
-	}
-
-	fn, err := sf.Parse(scope, lf.Values[1:])
-	if err != nil {
-		return fmt.Errorf("%s: %v", sf.Name, err)
+		return fmt.Errorf("%s: %v", special.Name, err)
 	}
 	lf.special = fn
-
 	return nil
-}
-
-func (lf List) String() string {
-	return containerString(lf.Values, "(", ")", " ")
 }
 
 // Vector represents a list of values. Unlike List type, evaluation of

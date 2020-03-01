@@ -417,7 +417,7 @@ func rootScope(scope Scope) Scope {
 }
 
 func isTruthy(v Value) bool {
-	if v == nilValue {
+	if v == (Nil{}) {
 		return false
 	}
 	if b, ok := v.(Bool); ok {

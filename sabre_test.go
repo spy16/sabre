@@ -86,7 +86,10 @@ func TestEval(t *testing.T) {
 		{
 			name: "MultiForm",
 			src:  `123 [] ()`,
-			want: &sabre.List{},
+			want: &sabre.List{
+				Values:   sabre.Values(nil),
+				Position: sabre.Position{File: "<string>", Line: 1, Column: 8},
+			},
 		},
 		{
 			name: "WithFunctionCalls",
@@ -129,7 +132,7 @@ func TestEval(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Eval() got = %v, want %v", got, tt.want)
+				t.Errorf("Eval() got = %#v, want %#v", got, tt.want)
 			}
 		})
 	}
