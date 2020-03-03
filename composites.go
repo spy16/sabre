@@ -198,6 +198,49 @@ func (hm *HashMap) String() string {
 	return containerString(fields, "{", "}", " ")
 }
 
+// Get returns the value associated with the given key if found.
+// Returns def otherwise.
+func (hm *HashMap) Get(key Value, def Value) Value {
+	if !isHashable(key) {
+		return def
+	}
+
+	v, found := hm.Data[key]
+	if !found {
+		return def
+	}
+
+	return v
+}
+
+// Set sets/updates the value associated with the given key.
+func (hm *HashMap) Set(key, val Value) error {
+	if !isHashable(key) {
+		return fmt.Errorf("value of type '%s' is not hashable", key)
+	}
+
+	hm.Data[key] = val
+	return nil
+}
+
+// Keys returns all the keys in the hashmap.
+func (hm *HashMap) Keys() Values {
+	var res []Value
+	for k := range hm.Data {
+		res = append(res, k)
+	}
+	return res
+}
+
+// Values returns all the values in the hashmap.
+func (hm *HashMap) Values() Values {
+	var res []Value
+	for _, v := range hm.Data {
+		res = append(res, v)
+	}
+	return res
+}
+
 // Module represents a group of forms. Evaluating a module leads to evaluation
 // of each form in order and result will be the result of last evaluation.
 type Module []Value

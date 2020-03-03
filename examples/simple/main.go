@@ -18,7 +18,9 @@ func main() {
 	scope.BindGo("sum", sum)
 	scope.BindGo("printf", fmt.Printf)
 
-	repl.New(scope).Loop(context.Background())
+	repl.New(scope,
+		repl.WithPrompts("=>", ">"),
+	).Loop(context.Background())
 }
 
 func sum(nums ...float64) float64 {

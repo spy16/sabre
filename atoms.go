@@ -113,15 +113,12 @@ func (kw Keyword) Invoke(scope Scope, args ...Value) (Value, error) {
 		return Nil{}, nil
 	}
 
-	v, found := hm.Data[kw]
-	if !found {
-		if len(argVals) == 1 {
-			return Nil{}, nil
-		}
-
-		return argVals[1], nil
+	def := Value(Nil{})
+	if len(argVals) == 2 {
+		def = argVals[1]
 	}
-	return v, nil
+
+	return hm.Get(kw, def), nil
 }
 
 // Symbol represents a name given to a value in memory.
