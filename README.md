@@ -67,7 +67,7 @@ to expose your LISP through a read-eval-print-loop.
 package main
 
 import (
-  "log"
+  "context"
 
   "github.com/spy16/sabre"
   "github.com/spy16/sabre/repl"
