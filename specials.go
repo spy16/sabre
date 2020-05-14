@@ -48,6 +48,12 @@ var (
 		Parse: parseIf,
 	}
 
+	// Case implements case flow using (case key (case-key case-action)*) form
+	Case = SpecialForm{
+		Name:  "case",
+		Parse: parseCase,
+	}
+
 	// SimpleQuote prevents a form from being evaluated.
 	SimpleQuote = SpecialForm{
 		Name:  "quote",
@@ -231,6 +237,39 @@ func parseIf(scope Scope, args []Value) (*Fn, error) {
 
 			// handle 'if true' flow.
 			return args[1].Eval(scope)
+		},
+	}, nil
+}
+
+func parseCase(scope Scope, args []Value) (*Fn, error) {
+	if len(args) < 2 {
+		return nil, fmt.Errorf("Wrong number of arguments to case: %d < 2", len(args))
+	}
+
+	if err := analyzeSeq(scope, Values(args)); err != nil {
+		return nil, err
+	}
+
+	return &Fn{
+		Func: func(scope Scope, args []Value) (Value, error) {
+			key, err := args[0].Eval(scope)
+			if err != nil {
+				return nil, err
+			}
+
+			for _, alt := range args[1:] {
+				s := alt.(Seq)
+
+				v, err := s.First().Eval(scope)
+				if err != nil {
+					return nil, err
+				}
+				if Compare(key, v) {
+					return s.Next().Eval(scope)
+				}
+			}
+
+			return nil, nil
 		},
 	}, nil
 }
