@@ -252,11 +252,6 @@ func parseCase(scope Scope, args []Value) (*Fn, error) {
 
 	return &Fn{
 		Func: func(scope Scope, args []Value) (Value, error) {
-			key, err := args[0].Eval(scope)
-			if err != nil {
-				return nil, err
-			}
-
 			for _, alt := range args[1:] {
 				s := alt.(Seq)
 
@@ -264,7 +259,7 @@ func parseCase(scope Scope, args []Value) (*Fn, error) {
 				if err != nil {
 					return nil, err
 				}
-				if Compare(key, v) {
+				if Compare(args[0], v) {
 					return s.Next().Eval(scope)
 				}
 			}
