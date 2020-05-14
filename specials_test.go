@@ -18,6 +18,11 @@ const src = `
 	([arg & rest] rest)))
 `
 
+const case1 = `
+(def x 1)
+(case x (1 "one")(2 "two"))
+`
+
 func TestSpecials(t *testing.T) {
 	scope := sabre.New()
 
@@ -36,6 +41,20 @@ func TestSpecials(t *testing.T) {
 	}
 
 	res, err := sabre.ReadEvalStr(scope, src)
+	if err != nil {
+		t.Errorf("Eval() unexpected error: %v", err)
+	}
+	if reflect.DeepEqual(res, expected) {
+		t.Errorf("Eval() expected=%v, got=%v", expected, res)
+	}
+}
+
+func TestCase(t *testing.T) {
+	scope := sabre.New()
+
+	expected := "one"
+
+	res, err := sabre.ReadEvalStr(scope, case1)
 	if err != nil {
 		t.Errorf("Eval() unexpected error: %v", err)
 	}
