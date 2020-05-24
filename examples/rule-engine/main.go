@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/core"
 )
 
 func main() {
@@ -25,28 +26,32 @@ func main() {
 
 func runDiscountingRule(rule string, user string) (bool, error) {
 	// Define a scope with no bindings. (not even special forms)
-	scope := sabre.NewScope(nil)
+	scope := sabre.New()
+
+	bindGo := func(sym string, v interface{}) {
+		_ = scope.Bind(sym, sabre.ValueOf(v))
+	}
 
 	// Define and expose your rules which ideally should have no
 	// side effects.
-	scope.BindGo("and", and)
-	scope.BindGo("or", or)
-	scope.BindGo("regular-user?", isRegularUser)
-	scope.BindGo("minimum-cart-price?", isMinCartPrice)
-	scope.BindGo("not-blacklisted?", isNotBlacklisted)
+	bindGo("and", and)
+	bindGo("or", or)
+	bindGo("regular-user?", isRegularUser)
+	bindGo("minimum-cart-price?", isMinCartPrice)
+	bindGo("not-blacklisted?", isNotBlacklisted)
 
 	// Bind current user name
-	scope.BindGo("current-user", user)
+	bindGo("current-user", user)
 
 	shouldDiscount, err := sabre.ReadEvalStr(scope, rule)
 	return isTruthy(shouldDiscount), err
 }
 
-func isTruthy(v sabre.Value) bool {
-	if v == nil || v == (sabre.Nil{}) {
+func isTruthy(v core.Value) bool {
+	if v == nil || v == (core.Nil{}) {
 		return false
 	}
-	if b, ok := v.(sabre.Bool); ok {
+	if b, ok := v.(core.Bool); ok {
 		return bool(b)
 	}
 	return true

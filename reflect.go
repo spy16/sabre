@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/spy16/sabre/core"
 )
 
 var (
-	scopeType = reflect.TypeOf((*Scope)(nil)).Elem()
+	scopeType = reflect.TypeOf((*core.Env)(nil)).Elem()
 	errorType = reflect.TypeOf((*error)(nil)).Elem()
 )
 
@@ -17,12 +19,12 @@ var (
 // the wrapper 'Fn' type. Value of type 'reflect.Type' will be wrapped as 'Type'
 // which enables initializing a value of that type when invoked. All other types
 // will be wrapped using 'Any' type.
-func ValueOf(v interface{}) Value {
+func ValueOf(v interface{}) core.Value {
 	if v == nil {
-		return Nil{}
+		return core.Nil{}
 	}
 
-	if val, isValue := v.(Value); isValue {
+	if val, isValue := v.(core.Value); isValue {
 		return val
 	}
 
@@ -37,19 +39,19 @@ func ValueOf(v interface{}) Value {
 		return reflectFn(rv)
 
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return Int64(rv.Int())
+		return core.Int64(rv.Int())
 
 	case reflect.Float32, reflect.Float64:
-		return Float64(rv.Float())
+		return core.Float64(rv.Float())
 
 	case reflect.String:
-		return String(rv.String())
+		return core.String(rv.String())
 
 	case reflect.Uint8:
-		return Character(rv.Uint())
+		return core.Character(rv.Uint())
 
 	case reflect.Bool:
-		return Bool(rv.Bool())
+		return core.Bool(rv.Bool())
 
 	default:
 		// TODO: handle array & slice as list/vector.
@@ -60,45 +62,42 @@ func ValueOf(v interface{}) Value {
 // Any can be used to wrap arbitrary Go value into Sabre scope.
 type Any struct{ V reflect.Value }
 
-// Eval returns itself.
-func (any Any) Eval(_ Scope) (Value, error) { return any, nil }
-
-func (any Any) String() string { return fmt.Sprintf("Any{%v}", any.V) }
+// Source returns a string version of the value.
+func (any Any) Source() string { return fmt.Sprintf("Any{%v}", any.V) }
 
 // Type represents the type value of a given value. Type also implements
-// Value type.
+// Value and Invokable. Invoking type creates zero value of the wrapped
+// type.
 type Type struct{ T reflect.Type }
 
-// Eval returns the type value itself.
-func (t Type) Eval(_ Scope) (Value, error) { return t, nil }
-
-func (t Type) String() string { return fmt.Sprintf("%v", t.T) }
+// Source returns the string version of the value.
+func (t Type) Source() string { return fmt.Sprintf("%v", t.T) }
 
 // Invoke creates zero value of the given type.
-func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
+func (t Type) Invoke(env core.Env, args ...core.Value) (core.Value, error) {
 	if isKind(t.T, reflect.Interface, reflect.Chan, reflect.Func) {
 		return nil, fmt.Errorf("type '%s' cannot be initialized", t.T)
 	}
 
-	argVals, err := evalValueList(scope, args)
+	argVals, err := core.EvalAll(env, args)
 	if err != nil {
 		return nil, err
 	}
 
 	switch t.T {
-	case reflect.TypeOf((*List)(nil)):
-		return &List{Values: argVals}, nil
+	case reflect.TypeOf((*core.List)(nil)):
+		return &core.List{Values: argVals}, nil
 
-	case reflect.TypeOf(Vector{}):
-		return Vector{Values: argVals}, nil
+	case reflect.TypeOf(core.Vector{}):
+		return core.Vector{Values: argVals}, nil
 
-	case reflect.TypeOf(Set{}):
-		return Set{Values: Values(argVals).Uniq()}, nil
+	case reflect.TypeOf(core.Set{}):
+		return core.Set{Values: core.Values(argVals).Uniq()}, nil
 	}
 
 	likeSeq := isKind(t.T, reflect.Slice, reflect.Array)
 	if likeSeq {
-		return Values(argVals), nil
+		return core.Values(argVals), nil
 	}
 
 	return ValueOf(reflect.New(t.T).Elem().Interface()), nil
@@ -106,24 +105,24 @@ func (t Type) Invoke(scope Scope, args ...Value) (Value, error) {
 
 // reflectFn creates a wrapper Fn for the given Go function value using
 // reflection.
-func reflectFn(rv reflect.Value) *Fn {
+func reflectFn(rv reflect.Value) *core.Fn {
 	fw := wrapFunc(rv)
-	return &Fn{
+	return &core.Fn{
 		Args:     fw.argNames(),
 		Variadic: rv.Type().IsVariadic(),
-		Func: func(scope Scope, args []Value) (_ Value, err error) {
+		Func: func(env core.Env, args []core.Value) (_ core.Value, err error) {
 			defer func() {
 				if v := recover(); v != nil {
 					err = fmt.Errorf("panic: %v", v)
 				}
 			}()
 
-			args, err = evalValueList(scope, args)
+			args, err = core.EvalAll(env, args)
 			if err != nil {
 				return nil, err
 			}
 
-			return fw.Call(scope, args...)
+			return fw.Call(env, args...)
 		},
 	}
 }
@@ -162,10 +161,10 @@ type funcWrapper struct {
 	lastOutIdx int
 }
 
-func (fw *funcWrapper) Call(scope Scope, vals ...Value) (Value, error) {
+func (fw *funcWrapper) Call(env core.Env, vals ...core.Value) (core.Value, error) {
 	args := reflectValues(vals)
 	if fw.passScope {
-		args = append([]reflect.Value{reflect.ValueOf(scope)}, args...)
+		args = append([]reflect.Value{reflect.ValueOf(env)}, args...)
 	}
 
 	if err := fw.checkArgCount(len(args)); err != nil {
@@ -240,9 +239,9 @@ func (fw *funcWrapper) checkArgCount(count int) error {
 	return nil
 }
 
-func (fw *funcWrapper) wrapReturns(vals ...reflect.Value) (Value, error) {
+func (fw *funcWrapper) wrapReturns(vals ...reflect.Value) (core.Value, error) {
 	if fw.rt.NumOut() == 0 {
-		return Nil{}, nil
+		return core.Nil{}, nil
 	}
 
 	if fw.returnsErr {
@@ -252,7 +251,7 @@ func (fw *funcWrapper) wrapReturns(vals ...reflect.Value) (Value, error) {
 		}
 
 		if fw.rt.NumOut() == 1 {
-			return Nil{}, nil
+			return core.Nil{}, nil
 		}
 	}
 
@@ -261,7 +260,7 @@ func (fw *funcWrapper) wrapReturns(vals ...reflect.Value) (Value, error) {
 		return wrapped[0], nil
 	}
 
-	return Values(wrapped), nil
+	return core.Values(wrapped), nil
 }
 
 func convertArgsTo(expected reflect.Type, args ...reflect.Value) ([]reflect.Value, error) {
@@ -291,7 +290,7 @@ func isAssignable(from, to reflect.Type) bool {
 		(to.Kind() == reflect.Interface && from.Implements(to))
 }
 
-func reflectValues(args []Value) []reflect.Value {
+func reflectValues(args []core.Value) []reflect.Value {
 	var rvs []reflect.Value
 	for _, arg := range args {
 		if any, ok := arg.(Any); ok {
@@ -303,8 +302,8 @@ func reflectValues(args []Value) []reflect.Value {
 	return rvs
 }
 
-func sabreValues(rvs []reflect.Value) []Value {
-	var vals []Value
+func sabreValues(rvs []reflect.Value) []core.Value {
+	var vals []core.Value
 	for _, arg := range rvs {
 		vals = append(vals, ValueOf(arg.Interface()))
 	}

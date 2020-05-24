@@ -10,10 +10,10 @@ import (
 func main() {
 	// Setup the environment available for your scripts. NewScope(nil)
 	// starts with no bindings.
-	scope := sabre.NewScope(nil)
-	scope.BindGo("api", &API{name: "foo"})
-	scope.BindGo("console-print", printToConsole)
-	scope.BindGo("value-of-pi", valueOfPi)
+	scope := sabre.New()
+	scope.Bind("api", sabre.ValueOf(&API{name: "foo"}))
+	scope.Bind("console-print", sabre.ValueOf(printToConsole))
+	scope.Bind("value-of-pi", sabre.ValueOf(valueOfPi))
 
 	// userProgram can be read from a file, command-line, a network socket
 	// etc. and can contain calls that return/simply have side effects.

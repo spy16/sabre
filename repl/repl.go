@@ -9,19 +9,20 @@ import (
 	"io"
 	"strings"
 
-	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/core"
+	"github.com/spy16/sabre/reader"
 )
 
 // New returns a new instance of REPL with given sabre Scope. Option values
 // can be used to configure REPL input, output etc.
-func New(scope sabre.Scope, opts ...Option) *REPL {
+func New(env core.Env, opts ...Option) *REPL {
 	repl := &REPL{
-		scope:            scope,
-		currentNamespace: func() string { return "" },
+		env:   env,
+		curNS: func() string { return "" },
 	}
 
-	if ns, ok := scope.(NamespacedScope); ok {
-		repl.currentNamespace = ns.CurrentNS
+	if ns, ok := env.(NamespacedScope); ok {
+		repl.curNS = ns.CurrentNS
 	}
 
 	for _, option := range withDefaults(opts) {
@@ -40,12 +41,12 @@ type NamespacedScope interface {
 
 // REPL implements a read-eval-print loop for a generic Runtime.
 type REPL struct {
-	scope            sabre.Scope
-	input            Input
-	output           io.Writer
-	mapInputErr      ErrMapper
-	currentNamespace func() string
-	factory          ReaderFactory
+	env         core.Env
+	input       Input
+	output      io.Writer
+	mapInputErr ErrMapper
+	curNS       func() string
+	factory     ReaderFactory
 
 	banner      string
 	prompt      string
@@ -67,7 +68,7 @@ func (repl *REPL) Loop(ctx context.Context) error {
 	repl.printBanner()
 	repl.setPrompt(false)
 
-	if repl.scope == nil {
+	if repl.env == nil {
 		return errors.New("scope is not set")
 	}
 
@@ -90,7 +91,7 @@ func (repl *REPL) readEvalPrint() error {
 	form, err := repl.read()
 	if err != nil {
 		switch err.(type) {
-		case sabre.ReadError, sabre.EvalError:
+		case reader.Error, core.EvalError:
 			repl.print(err)
 		default:
 			return err
@@ -101,7 +102,7 @@ func (repl *REPL) readEvalPrint() error {
 		return nil
 	}
 
-	v, err := sabre.Eval(repl.scope, form)
+	v, err := repl.env.Eval(form)
 	if err != nil {
 		return repl.print(err)
 	}
@@ -117,7 +118,7 @@ func (repl *REPL) print(v interface{}) error {
 	return repl.printer(repl.output, v)
 }
 
-func (repl *REPL) read() (sabre.Value, error) {
+func (repl *REPL) read() (core.Value, error) {
 	var src string
 	lineNo := 1
 
@@ -141,7 +142,7 @@ func (repl *REPL) read() (sabre.Value, error) {
 
 		form, err := rd.All()
 		if err != nil {
-			if errors.Is(err, sabre.ErrEOF) {
+			if errors.Is(err, reader.ErrEOF) {
 				lineNo++
 				continue
 			}
@@ -158,7 +159,7 @@ func (repl *REPL) setPrompt(multiline bool) {
 		return
 	}
 
-	nsPrefix := repl.currentNamespace()
+	nsPrefix := repl.curNS()
 	prompt := repl.prompt
 
 	if multiline {
