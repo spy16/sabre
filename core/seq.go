@@ -1,27 +1,9 @@
-package sabre
-
-import "reflect"
-
-// Value represents data/forms in sabre. This includes those emitted by
-// Reader, values obtained as result of an evaluation etc.
-type Value interface {
-	// String should return the LISP representation of the value.
-	String() string
-	// Eval should evaluate this value against the scope and return
-	// the resultant value or an evaluation error.
-	Eval(scope Scope) (Value, error)
-}
-
-// Invokable represents any value that supports invocation. Vector, Fn
-// etc support invocation.
-type Invokable interface {
-	Value
-	Invoke(scope Scope, args ...Value) (Value, error)
-}
+package core
 
 // Seq implementations represent a sequence/list of values.
 type Seq interface {
 	Value
+
 	// First should return first value of the sequence or nil if the
 	// sequence is empty.
 	First() Value
@@ -36,34 +18,8 @@ type Seq interface {
 	Conj(vals ...Value) Seq
 }
 
-// Compare compares two values in an identity independent manner. If
-// v1 has `Compare(Value) bool` method, the comparison is delegated to
-// it as `v1.Compare(v2)`.
-func Compare(v1, v2 Value) bool {
-	if (v1 == nil && v2 == nil) ||
-		(v1 == (Nil{}) && v2 == (Nil{})) {
-		return true
-	}
-
-	if cmp, ok := v1.(comparable); ok {
-		return cmp.Compare(v2)
-	}
-
-	return reflect.DeepEqual(v1, v2)
-}
-
-// comparable can be implemented by Value types to support comparison.
-// See Compare().
-type comparable interface {
-	Value
-	Compare(other Value) bool
-}
-
 // Values represents a list of values and implements the Seq interface.
 type Values []Value
-
-// Eval returns itself.
-func (vals Values) Eval(_ Scope) (Value, error) { return vals, nil }
 
 // First returns the first value in the list if the list is not empty.
 // Returns Nil{} otherwise.
@@ -80,21 +36,26 @@ func (vals Values) Next() Seq {
 	if len(vals) <= 1 {
 		return nil
 	}
-	return &List{Values: Values(vals[1:])}
+	return Values(vals[1:])
 }
 
 // Cons returns a new sequence where 'v' is prepended to the values.
 func (vals Values) Cons(v Value) Seq {
-	return &List{Values: append(Values{v}, vals...)}
+	return append(Values{v}, vals...)
 }
 
 // Conj returns a new sequence where 'v' is appended to the values.
 func (vals Values) Conj(args ...Value) Seq {
-	return &List{Values: append(vals, args...)}
+	return append(vals, args...)
 }
 
 // Size returns the number of items in the list.
 func (vals Values) Size() int { return len(vals) }
+
+// Source returns list representation of the value list.
+func (vals Values) Source() string {
+	return containerString(vals, "(", ")", " ")
+}
 
 // Compare compares the values in this sequence to the other sequence.
 // other sequence will be realized for comparison.
@@ -135,7 +96,7 @@ func (vals Values) Uniq() []Value {
 
 	hashSet := map[string]struct{}{}
 	for _, v := range vals {
-		src := v.String()
+		src := v.Source()
 		if _, found := hashSet[src]; !found {
 			hashSet[src] = struct{}{}
 			result = append(result, v)
@@ -143,23 +104,4 @@ func (vals Values) Uniq() []Value {
 	}
 
 	return result
-}
-
-func (vals Values) String() string {
-	return containerString(vals, "(", ")", " ")
-}
-
-func evalValueList(scope Scope, vals []Value) ([]Value, error) {
-	var result []Value
-
-	for _, arg := range vals {
-		v, err := arg.Eval(scope)
-		if err != nil {
-			return nil, newEvalErr(arg, err)
-		}
-
-		result = append(result, v)
-	}
-
-	return result, nil
 }

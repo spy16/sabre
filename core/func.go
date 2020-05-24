@@ -1,4 +1,4 @@
-package sabre
+package core
 
 import (
 	"fmt"
@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// MacroExpand expands the macro invocation form.
-func MacroExpand(scope Scope, form Value) (Value, bool, error) {
+// Expand expands the macro invocation form.
+func Expand(env Env, form Value) (Value, bool, error) {
 	list, ok := form.(*List)
 	if !ok || list.Size() == 0 {
 		return form, false, nil
@@ -18,13 +18,13 @@ func MacroExpand(scope Scope, form Value) (Value, bool, error) {
 		return form, false, nil
 	}
 
-	target, err := symbol.resolveValue(scope)
+	target, err := env.Eval(symbol)
 	if err != nil || !isMacro(target) {
 		return form, false, nil
 	}
 
 	mfn := target.(MultiFn)
-	v, err := mfn.Expand(scope, list.Values[1:])
+	v, err := mfn.Expand(env, list.Values[1:])
 	return v, true, err
 }
 
@@ -35,13 +35,11 @@ type MultiFn struct {
 	Methods []Fn
 }
 
-// Eval returns the multiFn definition itself.
-func (multiFn MultiFn) Eval(_ Scope) (Value, error) { return multiFn, nil }
-
-func (multiFn MultiFn) String() string {
+// Source returns source representation of the multi-fn definition.
+func (multiFn MultiFn) Source() string {
 	var sb strings.Builder
 	for _, fn := range multiFn.Methods {
-		sb.WriteString("[" + strings.Trim(fn.String(), "()") + "] ")
+		sb.WriteString("[" + strings.Trim(fn.Source(), "()") + "] ")
 	}
 
 	s := multiFn.Name + " " + strings.TrimSpace(sb.String())
@@ -49,14 +47,14 @@ func (multiFn MultiFn) String() string {
 }
 
 // Invoke dispatches the call to a method based on number of arguments.
-func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
+func (multiFn MultiFn) Invoke(env Env, args ...Value) (Value, error) {
 	if multiFn.IsMacro {
-		form, err := multiFn.Expand(scope, args)
+		form, err := multiFn.Expand(env, args)
 		if err != nil {
 			return nil, err
 		}
 
-		return form.Eval(scope)
+		return env.Eval(form)
 	}
 
 	fn, err := multiFn.selectMethod(args)
@@ -64,16 +62,16 @@ func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
 		return nil, err
 	}
 
-	argVals, err := evalValueList(scope, args)
+	argVals, err := EvalAll(env, args)
 	if err != nil {
 		return nil, err
 	}
 
-	return fn.Invoke(scope, argVals...)
+	return fn.Invoke(env, argVals...)
 }
 
 // Expand executes the macro body and returns the result of the expansion.
-func (multiFn MultiFn) Expand(scope Scope, args []Value) (Value, error) {
+func (multiFn MultiFn) Expand(env Env, args []Value) (Value, error) {
 	fn, err := multiFn.selectMethod(args)
 	if err != nil {
 		return nil, err
@@ -83,7 +81,7 @@ func (multiFn MultiFn) Expand(scope Scope, args []Value) (Value, error) {
 		return &fn, nil
 	}
 
-	return fn.Invoke(scope, args...)
+	return fn.Invoke(env, args...)
 }
 
 // Compare returns true if 'v' is also a MultiFn and all methods are
@@ -161,13 +159,11 @@ type Fn struct {
 	Args     []string
 	Variadic bool
 	Body     Value
-	Func     func(scope Scope, args []Value) (Value, error)
+	Func     func(env Env, args []Value) (Value, error)
 }
 
-// Eval returns the function itself.
-func (fn *Fn) Eval(_ Scope) (Value, error) { return fn, nil }
-
-func (fn Fn) String() string {
+// Source returns the literal representation of the function.
+func (fn Fn) Source() string {
 	var sb strings.Builder
 
 	for i, arg := range fn.Args {
@@ -182,12 +178,12 @@ func (fn Fn) String() string {
 }
 
 // Invoke executes the function with given arguments.
-func (fn *Fn) Invoke(scope Scope, args ...Value) (Value, error) {
+func (fn *Fn) Invoke(env Env, args ...Value) (Value, error) {
 	if fn.Func != nil {
-		return fn.Func(scope, args)
+		return fn.Func(env, args)
 	}
 
-	fnScope := NewScope(scope)
+	fnEnv := New(env)
 
 	for idx := range fn.Args {
 		var argVal Value
@@ -199,14 +195,14 @@ func (fn *Fn) Invoke(scope Scope, args ...Value) (Value, error) {
 			argVal = args[idx]
 		}
 
-		_ = fnScope.Bind(fn.Args[idx], argVal)
+		_ = fnEnv.Bind(fn.Args[idx], argVal)
 	}
 
 	if fn.Body == nil {
 		return Nil{}, nil
 	}
 
-	return Eval(fnScope, fn.Body)
+	return env.Eval(fn.Body)
 }
 
 // Compare returns true if 'other' is also a function and has the same

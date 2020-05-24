@@ -4,6 +4,8 @@ import (
 	"errors"
 	"reflect"
 	"testing"
+
+	"github.com/spy16/sabre/core"
 )
 
 var simpleFn = func() {}
@@ -18,37 +20,37 @@ func TestValueOf(t *testing.T) {
 	table := []struct {
 		name string
 		v    interface{}
-		want Value
+		want core.Value
 	}{
 		{
 			name: "int64",
 			v:    int64(10),
-			want: Int64(10),
+			want: core.Int64(10),
 		},
 		{
 			name: "float",
 			v:    float32(10.),
-			want: Float64(10.),
+			want: core.Float64(10.),
 		},
 		{
 			name: "uint8",
 			v:    uint8('a'),
-			want: Character('a'),
+			want: core.Character('a'),
 		},
 		{
 			name: "bool",
 			v:    true,
-			want: Bool(true),
+			want: core.Bool(true),
 		},
 		{
 			name: "Value",
-			v:    Int64(10),
-			want: Int64(10),
+			v:    core.Int64(10),
+			want: core.Int64(10),
 		},
 		{
 			name: "Nil",
 			v:    nil,
-			want: Nil{},
+			want: core.Nil{},
 		},
 		{
 			name: "ReflectType",
@@ -76,33 +78,35 @@ func Test_strictFn_Invoke(t *testing.T) {
 	t.Parallel()
 
 	table := []struct {
-		name     string
-		getScope func() Scope
-		v        interface{}
-		args     []Value
-		want     Value
-		wantErr  bool
+		name    string
+		getEnv  func() core.Env
+		v       interface{}
+		args    []core.Value
+		want    core.Value
+		wantErr bool
 	}{
 		{
-			name: "WithScopeArgNoBinding",
-			getScope: func() Scope {
-				sc := NewScope(nil)
-				sc.Bind("hello", Int64(10))
-				return sc
+			name: "WithEnvArgNoBinding",
+			getEnv: func() core.Env {
+				env := New()
+				env.Bind("hello", core.Int64(10))
+				return env
 			},
-			v:       func(sc Scope) (Value, error) { return sc.Resolve("hello") },
-			want:    Int64(10),
+			v: func(env core.Env) (core.Value, error) {
+				return env.Eval(core.Symbol{Value: "hello"})
+			},
+			want:    core.Int64(10),
 			wantErr: false,
 		},
 		{
 			name: "SimpleNoArgNoReturn",
 			v:    func() {},
-			want: Nil{},
+			want: core.Nil{},
 		},
 		{
 			name: "SimpleNoArg",
 			v:    func() int { return 10 },
-			want: Int64(10),
+			want: core.Int64(10),
 		},
 		{
 			name:    "NoArgSingleErrorReturn",
@@ -112,26 +116,31 @@ func Test_strictFn_Invoke(t *testing.T) {
 		{
 			name:    "NoArgSingleReturnNilError",
 			v:       func() error { return nil },
-			want:    Nil{},
+			want:    core.Nil{},
 			wantErr: false,
 		},
 		{
 			name: "SimpleNoReturn",
-			v:    func(arg Int64) {},
-			args: []Value{Int64(10)},
-			want: Nil{},
+			v:    func(arg core.Int64) {},
+			args: []core.Value{core.Int64(10)},
+			want: core.Nil{},
 		},
 		{
 			name: "SimpleSingleReturn",
-			v:    func(arg Int64) int64 { return 10 },
-			args: []Value{Int64(10)},
-			want: Int64(10),
+			v:    func(arg core.Int64) int64 { return 10 },
+			args: []core.Value{core.Int64(10)},
+			want: core.Int64(10),
 		},
 		{
 			name: "MultiReturn",
-			v:    func(arg Int64) (int64, string) { return 10, "hello" },
-			args: []Value{Int64(10)},
-			want: Values([]Value{Int64(10), String("hello")}),
+			v: func(arg core.Int64) (int64, string) {
+				return 10, "hello"
+			},
+			args: []core.Value{core.Int64(10)},
+			want: core.Values([]core.Value{
+				core.Int64(10),
+				core.String("hello"),
+			}),
 		},
 		{
 			name:    "NoArgMultiReturnWithError",
@@ -141,56 +150,59 @@ func Test_strictFn_Invoke(t *testing.T) {
 		{
 			name: "NoArgMultiReturnWithoutError",
 			v:    func() (int, error) { return 10, nil },
-			want: Int64(10),
+			want: core.Int64(10),
 		},
 		{
 			name: "PureVariadicNoCallArgs",
-			v: func(args ...Int64) int64 {
+			v: func(args ...core.Int64) int64 {
 				sum := int64(0)
 				for _, arg := range args {
 					sum += int64(arg)
 				}
 				return sum
 			},
-			want: Int64(0),
+			want: core.Int64(0),
 		},
 		{
 			name: "PureVariadicWithCallArgs",
-			v: func(args ...Int64) int64 {
+			v: func(args ...core.Int64) int64 {
 				sum := int64(0)
 				for _, arg := range args {
 					sum += int64(arg)
 				}
 				return sum
 			},
-			args: []Value{Int64(1), Int64(10)},
-			want: Int64(11),
+			args: []core.Value{
+				core.Int64(1),
+				core.Int64(10),
+			},
+			want: core.Int64(11),
 		},
 		{
 			name:    "ArityErrorNonVariadic",
 			v:       func() {},
-			args:    []Value{Int64(10)},
+			args:    []core.Value{core.Int64(10)},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "ArityErrorWithVariadic",
 			v:       func(first string, args ...int) {},
-			args:    []Value{},
+			args:    []core.Value{},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "ArgTypeMismatchNonVariadic",
 			v:       func(a int) {},
-			args:    []Value{String("hello")},
+			args:    []core.Value{core.String("hello")},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "ArgTypeMismatchVariadic",
 			v:       func(args ...int) {},
-			args:    []Value{String("hello")},
+			args:    []core.Value{core.String("hello")},
 			want:    nil,
 			wantErr: true,
 		},
@@ -198,13 +210,13 @@ func Test_strictFn_Invoke(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.getScope == nil {
-				tt.getScope = func() Scope { return NewScope(nil) }
+			if tt.getEnv == nil {
+				tt.getEnv = func() core.Env { return New() }
 			}
 
 			fn := reflectFn(reflect.ValueOf(tt.v))
 
-			got, err := fn.Invoke(tt.getScope(), tt.args...)
+			got, err := fn.Invoke(tt.getEnv(), tt.args...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Invoke() error = %v, wantErr %v", err, tt.wantErr)
 				return

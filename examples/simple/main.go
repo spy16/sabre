@@ -15,8 +15,8 @@ const program = `
 
 func main() {
 	scope := sabre.New()
-	scope.BindGo("sum", sum)
-	scope.BindGo("printf", fmt.Printf)
+	scope.Bind("sum", sabre.ValueOf(sum))
+	scope.Bind("printf", sabre.ValueOf(fmt.Printf))
 
 	repl.New(scope,
 		repl.WithPrompts("=>", ">"),
