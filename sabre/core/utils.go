@@ -16,6 +16,12 @@ func Compare(v1, v2 Value) bool {
 		return true
 	}
 
+	s1, isV1Seq := v1.(Seq)
+	s2, isV2Seq := v2.(Seq)
+	if isV1Seq && isV2Seq {
+		return compareSeq(s1, s2)
+	}
+
 	if cmp, ok := v1.(Comparable); ok {
 		return cmp.Compare(v2)
 	}
@@ -89,11 +95,6 @@ func VerifyArgCount(arities []int, argCount int) error {
 	return nil
 }
 
-func isNil(v Value) bool {
-	_, isNil := v.(Nil)
-	return v == nil || isNil
-}
-
 // GoFunc provides a simple Go native function based invokable value.
 type GoFunc func(env Env, args ...Value) (Value, error)
 
@@ -107,4 +108,25 @@ func (fn GoFunc) String() string {
 // Invoke simply dispatches the invocation request to the wrapped function.
 func (fn GoFunc) Invoke(env Env, args ...Value) (Value, error) {
 	return fn(env, args...)
+}
+
+func compareSeq(s1, s2 Seq) bool {
+	if s1.Count() != s2.Count() {
+		return false
+	}
+
+	for s1 != nil && s2 != nil {
+		if !Compare(s1.First(), s2.First()) {
+			return false
+		}
+		s1 = s1.Next()
+		s2 = s2.Next()
+	}
+
+	return true
+}
+
+func isNil(v Value) bool {
+	_, isNil := v.(Nil)
+	return v == nil || isNil
 }

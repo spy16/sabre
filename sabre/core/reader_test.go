@@ -49,8 +49,7 @@ func TestReader_SetMacro(t *testing.T) {
 		rd := NewReader(strings.NewReader("~hello"))
 		rd.SetMacro('~', nil, false) // remove unquote operator
 
-		var want Value
-		want = Symbol{
+		want := Symbol{
 			Value: "~hello",
 			Position: Position{
 				File:   "<string>",
@@ -58,6 +57,25 @@ func TestReader_SetMacro(t *testing.T) {
 				Column: 1,
 			},
 		}
+
+		got, err := rd.One()
+		if err != nil {
+			t.Errorf("unexpected error: %#v", err)
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got = %+v, want = %+v", got, want)
+		}
+	})
+
+	t.Run("DispatchMacro", func(t *testing.T) {
+		rd := NewReader(strings.NewReader("#$123"))
+		// `#$` returns string "USD"
+		rd.SetMacro('$', func(rd *Reader, init rune) (Value, error) {
+			return String("USD"), nil
+		}, true) // remove unquote operator
+
+		want := String("USD")
 
 		got, err := rd.One()
 		if err != nil {

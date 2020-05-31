@@ -6,9 +6,8 @@ import (
 )
 
 var (
-	_ Value      = (*List)(nil)
-	_ Seq        = (*List)(nil)
-	_ Comparable = (*List)(nil)
+	_ Value = (*List)(nil)
+	_ Seq   = (*List)(nil)
 )
 
 // List represents a list of values. List can be backed by any Seq implementation.
@@ -47,27 +46,6 @@ func (sl *List) Eval(env Env) (Value, error) {
 
 func (sl List) String() string {
 	return SeqString(&sl, "(", ")", " ")
-}
-
-// Compare checks if the other value is a list and if it is, compares each item
-// in the list. Returns true if all match.
-func (sl *List) Compare(other Value) bool {
-	otherList, ok := other.(*List)
-	if !ok || sl.Count() != otherList.Count() {
-		return false
-	}
-
-	var prev Value
-	isSame := true
-	ForEach(sl, func(item Value) bool {
-		if prev == nil {
-			return false
-		}
-		isSame = isSame && Compare(prev, item)
-		return !isSame
-	})
-
-	return isSame
 }
 
 // Count returns the number of items in the list.

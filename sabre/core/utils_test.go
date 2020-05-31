@@ -50,6 +50,56 @@ func TestCompare(t *testing.T) {
 			v2:   core.Symbol{Value: "hello"},
 			want: true,
 		},
+		{
+			v1:   core.Keyword("specimen"),
+			v2:   core.String("specimen"),
+			want: false,
+		},
+		{
+			v1:   core.String("specimen"),
+			v2:   core.Keyword("specimen"),
+			want: false,
+		},
+		{
+			v1: &core.List{Items: []core.Value{
+				core.Float64(10.3),
+				core.String("sample"),
+			}},
+			v2: &core.List{Items: []core.Value{
+				core.Float64(10.3),
+				core.String("sample"),
+			}},
+			want: true,
+		},
+		{
+			v1: &core.List{Items: []core.Value{
+				core.Float64(10.3),
+				core.String("sample"),
+			}},
+			v2: &core.List{Items: []core.Value{
+				core.Float64(10.3),
+			}},
+			want: false,
+		},
+		{
+			v1: &core.List{Items: []core.Value{
+				core.Float64(10.3),
+				core.String("sample"),
+			}},
+			v2: &core.List{Items: []core.Value{
+				core.Float64(10.3),
+				core.Keyword("sample"),
+			}},
+			want: false,
+		},
+		{
+			v1: &core.List{Items: []core.Value{
+				core.Float64(10.3),
+				core.String("sample"),
+			}},
+			v2:   core.Nil{},
+			want: false,
+		},
 	}
 
 	for _, tt := range table {
