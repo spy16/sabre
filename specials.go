@@ -448,24 +448,3 @@ type binding struct {
 	Name string
 	Expr Value
 }
-
-func accessMember(target reflect.Value, member string) (reflect.Value, error) {
-	if member[0] >= 'a' && member[0] <= 'z' {
-		return reflect.Value{}, fmt.Errorf("cannot access private member")
-	}
-
-	if _, found := target.Type().MethodByName(member); found {
-		return target.MethodByName(member), nil
-	}
-
-	if target.Kind() == reflect.Ptr {
-		target = target.Elem()
-	}
-
-	if _, found := target.Type().FieldByName(member); found {
-		return target.FieldByName(member), nil
-	}
-
-	return reflect.Value{}, fmt.Errorf("value of type '%s' has no member named '%s'",
-		target.Type(), member)
-}
