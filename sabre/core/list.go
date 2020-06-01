@@ -10,9 +10,8 @@ var (
 	_ Seq   = (*List)(nil)
 )
 
-// List represents a list of values. List can be backed by any Seq implementation.
-// Evaluating a list leads to invocation of result of evaluation of first entry in
-// the list.
+// List represents a list of values. List is backed by a native Go slice. Eval
+// leads to invocation of result of evaluation of first entry in the list.
 type List struct {
 	Position
 	Items []Value
@@ -44,9 +43,7 @@ func (sl *List) Eval(env Env) (Value, error) {
 	return target.Invoke(env, args...)
 }
 
-func (sl List) String() string {
-	return SeqString(&sl, "(", ")", " ")
-}
+func (sl List) String() string { return SeqString(&sl, "(", ")", " ") }
 
 // Count returns the number of items in the list.
 func (sl *List) Count() int { return len(sl.Items) }

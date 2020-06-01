@@ -5,9 +5,22 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 )
 
-var _ Invokable = GoFunc(nil)
+var (
+	_ Value     = GoFunc(nil)
+	_ Invokable = GoFunc(nil)
+)
+
+// New returns an empty Env with given parent env. Returned env does not support
+// qualified symbol resolution.
+func New(parent Env) Env {
+	return &mapEnv{
+		scope:  map[string]Value{},
+		parent: parent,
+	}
+}
 
 // Compare compares two values in an identity independent manner. If v1 implements
 // `Comparable` interface then the comparison is delegated to the Compare() method.
@@ -79,16 +92,25 @@ func VerifyArgCount(arities []int, argCount int) error {
 	switch len(arities) {
 	case 1:
 		if argCount != arities[0] {
-			return fmt.Errorf("call requires exactly %d argument(s), got %d", arities[0], argCount)
+			return fmt.Errorf(
+				"call requires exactly %d argument(s), got %d",
+				arities[0], argCount,
+			)
 		}
 
 	case 2:
 		c1, c2 := arities[0], arities[1]
 		if argCount != c1 && argCount != c2 {
-			return fmt.Errorf("call requires %d or %d argument(s), got %d", c1, c2, argCount)
+			return fmt.Errorf(
+				"call requires %d or %d argument(s), got %d", c1, c2, argCount)
 		}
 
 	default:
+		for i := 0; i < len(arities); i++ {
+			if arities[i] == argCount {
+				return nil
+			}
+		}
 		return fmt.Errorf("wrong number of arguments (%d) passed", argCount)
 	}
 
@@ -101,9 +123,7 @@ type GoFunc func(env Env, args ...Value) (Value, error)
 // Eval simply returns itself.
 func (fn GoFunc) Eval(_ Env) (Value, error) { return fn, nil }
 
-func (fn GoFunc) String() string {
-	return fmt.Sprintf("GoFunc{}")
-}
+func (fn GoFunc) String() string { return fmt.Sprintf("GoFunc{}") }
 
 // Invoke simply dispatches the invocation request to the wrapped function.
 func (fn GoFunc) Invoke(env Env, args ...Value) (Value, error) {
@@ -130,3 +150,54 @@ func isNil(v Value) bool {
 	_, isNil := v.(Nil)
 	return v == nil || isNil
 }
+
+type mapEnv struct {
+	mu     sync.RWMutex
+	scope  map[string]Value
+	parent Env
+}
+
+func (env *mapEnv) Eval(form Value) (Value, error) {
+	if isNil(form) {
+		return Nil{}, nil
+	}
+
+	v, err := form.Eval(env)
+	if err != nil {
+		e := NewErr(false, getPosition(form), err)
+		e.Form = form
+		return nil, e
+	}
+
+	if v == nil {
+		return Nil{}, nil
+	}
+
+	return v, nil
+}
+
+func (env *mapEnv) Bind(symbol string, v Value) error {
+	env.mu.Lock()
+	defer env.mu.Unlock()
+
+	env.scope[symbol] = v
+	return nil
+}
+
+func (env *mapEnv) Resolve(symbol string) (Value, error) {
+	env.mu.RLock()
+	defer env.mu.RUnlock()
+
+	v, found := env.scope[symbol]
+	if !found {
+		if env.parent == nil {
+			return nil, ErrNotFound
+		}
+
+		return env.parent.Resolve(symbol)
+	}
+
+	return v, nil
+}
+
+func (env *mapEnv) Parent() Env { return env.parent }

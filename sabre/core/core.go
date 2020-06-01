@@ -27,8 +27,14 @@ var (
 // bindings created by the execution.
 type Env interface {
 	Eval(form Value) (Value, error)
+
+	// Bind binds the value to the symbol.
 	Bind(symbol string, v Value) error
+
+	// Resolve returns the value bound for the the given symbol.
 	Resolve(symbol string) (Value, error)
+
+	// Parent returns the parent of this environment.
 	Parent() Env
 }
 
@@ -47,6 +53,9 @@ type Value interface {
 // entry in a list. For example, Keyword uses this to enable lookups in maps.
 type Invokable interface {
 	Value
+
+	// Invoke is called when this value appears as first item in a list. Remaining
+	// items of the list will be passed un-evaluated as arguments.
 	Invoke(env Env, args ...Value) (Value, error)
 }
 
@@ -120,9 +129,16 @@ type Map interface {
 type Set interface {
 	Value
 
+	// Count returns number of items in the set.
 	Count() int
+
+	// Keys returns the items/keys in the set.
 	Keys() Seq
+
+	// HasKey returns true if the key is present in the set.
 	HasKey(key Value) bool
+
+	// Conj returns a new set with the vals conjoined.
 	Conj(vals ...Value) (Set, error)
 }
 
