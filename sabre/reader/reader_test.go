@@ -218,34 +218,20 @@ func TestReader_One(t *testing.T) {
 		{
 			name: "UnQuote",
 			src:  "~(x 3)",
-			want: &runtime.SliceList{
-				Items: []runtime.Value{
-					runtime.Symbol{Value: "unquote"},
-					&runtime.SliceList{
-						Items: []runtime.Value{
-							runtime.Symbol{
-								Value: "x",
-								Position: runtime.Position{
-									File:   "<string>",
-									Line:   1,
-									Column: 3,
-								},
-							},
-							runtime.Int64(3),
-						},
+			want: runtime.NewSeq(
+				runtime.Symbol{Value: "unquote"},
+				runtime.NewSeq(
+					runtime.Symbol{
+						Value: "x",
 						Position: runtime.Position{
 							File:   "<string>",
 							Line:   1,
-							Column: 2,
+							Column: 3,
 						},
 					},
-				},
-				Position: runtime.Position{
-					File:   "<string>",
-					Column: 1,
-					Line:   1,
-				},
-			},
+					runtime.Int64(3),
+				),
+			),
 		},
 	})
 }
@@ -572,81 +558,51 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "EmptyList",
 			src:  `()`,
-			want: &runtime.SliceList{
-				Items: nil,
-				Position: runtime.Position{
-					File:   "<string>",
-					Line:   1,
-					Column: 1,
-				},
-			},
+			want: runtime.NewSeq(),
 		},
 		{
 			name: "ListWithOneEntry",
 			src:  `(help)`,
-			want: &runtime.SliceList{
-				Items: []runtime.Value{
-					runtime.Symbol{
-						Value: "help",
-						Position: runtime.Position{
-							File:   "<string>",
-							Line:   1,
-							Column: 2,
-						},
-					},
-				},
+			want: runtime.NewSeq(runtime.Symbol{
+				Value: "help",
 				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
-					Column: 1,
+					Column: 2,
 				},
-			},
+			}),
 		},
 		{
 			name: "ListWithMultipleEntry",
 			src:  `(+ 0xF 3.1413)`,
-			want: &runtime.SliceList{
-				Items: []runtime.Value{
-					runtime.Symbol{
-						Value: "+",
-						Position: runtime.Position{
-							File:   "<string>",
-							Line:   1,
-							Column: 2,
-						},
+			want: runtime.NewSeq(
+				runtime.Symbol{
+					Value: "+",
+					Position: runtime.Position{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
 					},
-					runtime.Int64(15),
-					runtime.Float64(3.1413),
 				},
-				Position: runtime.Position{
-					File:   "<string>",
-					Line:   1,
-					Column: 1,
-				},
-			},
+				runtime.Int64(15),
+				runtime.Float64(3.1413),
+			),
 		},
 		{
 			name: "ListWithCommaSeparator",
 			src:  `(+,0xF,3.1413)`,
-			want: &runtime.SliceList{
-				Items: []runtime.Value{
-					runtime.Symbol{
-						Value: "+",
-						Position: runtime.Position{
-							File:   "<string>",
-							Line:   1,
-							Column: 2,
-						},
+			want: runtime.NewSeq(
+				runtime.Symbol{
+					Value: "+",
+					Position: runtime.Position{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
 					},
-					runtime.Int64(15),
-					runtime.Float64(3.1413),
 				},
-				Position: runtime.Position{
-					File:   "<string>",
-					Line:   1,
-					Column: 1,
-				},
-			},
+				runtime.Int64(15),
+				runtime.Float64(3.1413),
+			),
 		},
 		{
 			name: "MultiLine",
@@ -654,25 +610,18 @@ func TestReader_One_List(t *testing.T) {
                       0xF
                       3.1413
 					)`,
-			want: &runtime.SliceList{
-				Items: []runtime.Value{
-					runtime.Symbol{
-						Value: "+",
-						Position: runtime.Position{
-							File:   "<string>",
-							Line:   1,
-							Column: 2,
-						},
+			want: runtime.NewSeq(
+				runtime.Symbol{
+					Value: "+",
+					Position: runtime.Position{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
 					},
-					runtime.Int64(15),
-					runtime.Float64(3.1413),
 				},
-				Position: runtime.Position{
-					File:   "<string>",
-					Line:   1,
-					Column: 1,
-				},
-			},
+				runtime.Int64(15),
+				runtime.Float64(3.1413),
+			),
 		},
 		{
 			name: "MultiLineWithComments",
@@ -680,25 +629,18 @@ func TestReader_One_List(t *testing.T) {
                       0xF    ; hex representation of 15
                       3.1413 ; value of math constant pi
                   )`,
-			want: &runtime.SliceList{
-				Items: []runtime.Value{
-					runtime.Symbol{
-						Value: "+",
-						Position: runtime.Position{
-							File:   "<string>",
-							Line:   1,
-							Column: 2,
-						},
+			want: runtime.NewSeq(
+				runtime.Symbol{
+					Value: "+",
+					Position: runtime.Position{
+						File:   "<string>",
+						Line:   1,
+						Column: 2,
 					},
-					runtime.Int64(15),
-					runtime.Float64(3.1413),
 				},
-				Position: runtime.Position{
-					File:   "<string>",
-					Line:   1,
-					Column: 1,
-				},
-			},
+				runtime.Int64(15),
+				runtime.Float64(3.1413),
+			),
 		},
 		{
 			name:    "UnexpectedEOF",

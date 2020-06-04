@@ -29,7 +29,7 @@ func TestKeyword_Invoke(t *testing.T) {
 		},
 		{
 			title:  "NotMap",
-			args:   []runtime.Value{&runtime.SliceList{}},
+			args:   []runtime.Value{runtime.Seq(nil)},
 			getEnv: func() runtime.Runtime { return runtime.New(nil) },
 			want:   runtime.Nil{},
 		},

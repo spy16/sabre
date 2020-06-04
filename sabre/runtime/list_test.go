@@ -12,37 +12,27 @@ func TestList_Eval(t *testing.T) {
 	runEvalTests(t, []evalTestCase{
 		{
 			title: "EmptyList",
-			form: &runtime.SliceList{
-				Items: []runtime.Value{},
-			},
-			want: &runtime.SliceList{
-				Items: []runtime.Value{},
-			},
+			form:  runtime.NewSeq(),
+			want:  runtime.NewSeq(),
 		},
 		{
-			title:  "FirstEvalFailure",
-			getEnv: func() runtime.Runtime { return runtime.New(nil) },
-			form: &runtime.SliceList{Items: []runtime.Value{
-				runtime.Symbol{Value: "non-existent"},
-			}},
+			title:   "FirstEvalFailure",
+			getEnv:  func() runtime.Runtime { return runtime.New(nil) },
+			form:    runtime.NewSeq(runtime.Symbol{Value: "non-existent"}),
+			wantErr: true,
+		},
+		{
+			title:   "NonInvokable",
+			getEnv:  func() runtime.Runtime { return runtime.New(nil) },
+			form:    runtime.NewSeq(runtime.Int64(0)),
 			wantErr: true,
 		},
 		{
 			title:  "NonInvokable",
 			getEnv: func() runtime.Runtime { return runtime.New(nil) },
-			form: &runtime.SliceList{Items: []runtime.Value{
-				runtime.Int64(0),
-			}},
-			wantErr: true,
-		},
-		{
-			title:  "NonInvokable",
-			getEnv: func() runtime.Runtime { return runtime.New(nil) },
-			form: &runtime.SliceList{Items: []runtime.Value{
-				runtime.GoFunc(func(env runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
-					return runtime.String("called"), nil
-				}),
-			}},
+			form: runtime.NewSeq(runtime.GoFunc(func(env runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
+				return runtime.String("called"), nil
+			})),
 			want:    runtime.String("called"),
 			wantErr: false,
 		},
@@ -50,13 +40,12 @@ func TestList_Eval(t *testing.T) {
 }
 
 func TestList_String(t *testing.T) {
-	l := &runtime.SliceList{
-		Items: []runtime.Value{
-			runtime.Bool(true),
-			runtime.Int64(10),
-			runtime.Float64(3.1412),
-		},
-	}
+	l := runtime.NewSeq(
+		runtime.Bool(true),
+		runtime.Int64(10),
+		runtime.Float64(3.1412),
+	)
+
 	want := `(true 10 3.141200)`
 	got := l.String()
 

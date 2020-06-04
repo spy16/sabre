@@ -124,6 +124,7 @@ func (rd *Reader) All() ([]runtime.Value, error) {
 // obtained using Position().
 func (rd *Reader) One() (runtime.Value, error) {
 	for {
+		// pi := rd.Position()
 		form, err := rd.readOne()
 		if err != nil {
 			if err == ErrSkip {
@@ -131,6 +132,7 @@ func (rd *Reader) One() (runtime.Value, error) {
 			}
 			return nil, rd.annotateErr(err)
 		}
+		// setPosition(form, pi)
 		return form, nil
 	}
 }

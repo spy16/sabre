@@ -225,21 +225,15 @@ func readCharacter(rd *Reader, _ rune) (runtime.Value, error) {
 func readList(rd *Reader, _ rune) (runtime.Value, error) {
 	const listEnd = ')'
 
-	pi := rd.Position()
 	forms, err := rd.Container(listEnd, "list")
 	if err != nil {
 		return nil, err
 	}
-
-	return &runtime.SliceList{
-		Position: pi,
-		Items:    forms,
-	}, nil
+	return runtime.NewSeq(forms...), nil
 }
 
 func quoteFormReader(expandFunc string) Macro {
 	return func(rd *Reader, _ rune) (runtime.Value, error) {
-		pi := rd.Position()
 		expr, err := rd.One()
 		if err != nil {
 			if err == io.EOF {
@@ -250,12 +244,9 @@ func quoteFormReader(expandFunc string) Macro {
 			return nil, err
 		}
 
-		return &runtime.SliceList{
-			Position: pi,
-			Items: []runtime.Value{
-				runtime.Symbol{Value: expandFunc},
-				expr,
-			},
-		}, nil
+		return runtime.NewSeq(
+			runtime.Symbol{Value: expandFunc},
+			expr,
+		), nil
 	}
 }

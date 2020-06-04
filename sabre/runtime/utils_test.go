@@ -120,42 +120,42 @@ func TestCompare(t *testing.T) {
 			want: false,
 		},
 		{
-			v1: &runtime.SliceList{Items: []runtime.Value{
+			v1: runtime.NewSeq(
 				runtime.Float64(10.3),
 				runtime.String("sample"),
-			}},
-			v2: &runtime.SliceList{Items: []runtime.Value{
+			),
+			v2: runtime.NewSeq(
 				runtime.Float64(10.3),
 				runtime.String("sample"),
-			}},
+			),
 			want: true,
 		},
 		{
-			v1: &runtime.SliceList{Items: []runtime.Value{
+			v1: runtime.NewSeq(
 				runtime.Float64(10.3),
 				runtime.String("sample"),
-			}},
-			v2: &runtime.SliceList{Items: []runtime.Value{
+			),
+			v2: runtime.NewSeq(
 				runtime.Float64(10.3),
-			}},
+			),
 			want: false,
 		},
 		{
-			v1: &runtime.SliceList{Items: []runtime.Value{
+			v1: runtime.NewSeq(
 				runtime.Float64(10.3),
 				runtime.String("sample"),
-			}},
-			v2: &runtime.SliceList{Items: []runtime.Value{
+			),
+			v2: runtime.NewSeq(
 				runtime.Float64(10.3),
 				runtime.Keyword("sample"),
-			}},
+			),
 			want: false,
 		},
 		{
-			v1: &runtime.SliceList{Items: []runtime.Value{
+			v1: runtime.NewSeq(
 				runtime.Float64(10.3),
 				runtime.String("sample"),
-			}},
+			),
 			v2:   runtime.Nil{},
 			want: false,
 		},

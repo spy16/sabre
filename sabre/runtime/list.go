@@ -6,25 +6,37 @@ import (
 )
 
 var (
-	_ Value = (*SliceList)(nil)
-	_ Seq   = (*SliceList)(nil)
+	_ Value = (*linkedList)(nil)
+	_ Seq   = (*linkedList)(nil)
 )
 
-// SliceList represents a list of values. SliceList is backed by a native Go slice. Eval
-// leads to invocation of result of evaluation of first entry in the list.
-type SliceList struct {
+// NewSeq returns a new sequence containing given values.
+func NewSeq(items ...Value) Seq {
+	lst := Seq(&linkedList{
+		count: len(items),
+	})
+	for i := len(items) - 1; i >= 0; i-- {
+		lst = lst.Cons(items[i])
+	}
+	return lst
+}
+
+// linkedList implements Seq using an immutable linked-list.
+type linkedList struct {
 	Position
-	Items []Value
+	value Value
+	next  *linkedList
+	count int
 }
 
 // Eval evaluates the first item in the list and invokes the resultant value with
 // rest of the list as arguments.
-func (sl *SliceList) Eval(env Runtime) (Value, error) {
+func (sl *linkedList) Eval(rt Runtime) (Value, error) {
 	if sl.Count() == 0 {
 		return sl, nil
 	}
 
-	v, err := env.Eval(sl.First())
+	v, err := rt.Eval(sl.First())
 	if err != nil {
 		return nil, err
 	}
@@ -35,42 +47,65 @@ func (sl *SliceList) Eval(env Runtime) (Value, error) {
 	}
 
 	var args []Value
-	ForEach(sl, func(item Value) bool {
+	ForEach(sl.next, func(item Value) bool {
 		args = append(args, item)
 		return false
 	})
 
-	return target.Invoke(env, args...)
+	return target.Invoke(rt, args...)
 }
 
-func (sl SliceList) String() string { return SeqString(&sl, "(", ")", " ") }
+func (sl *linkedList) String() string { return SeqString(sl, "(", ")", " ") }
 
-// Count returns the number of items in the list.
-func (sl *SliceList) Count() int { return len(sl.Items) }
+// Cons returns a new list with 'v' added as head and current list as tail.
+func (sl *linkedList) Cons(v Value) Seq {
+	newSeq := &linkedList{
+		value: v,
+		next:  sl,
+		count: 1,
+	}
 
-// Cons returns a new list with the given item added to the front.
-func (sl *SliceList) Cons(v Value) Seq {
-	return &SliceList{Items: append([]Value{v}, sl.Items...)}
+	if sl != nil {
+		newSeq.count = sl.count + 1
+		newSeq.Position = sl.Position
+	}
+
+	return newSeq
 }
 
-// Conj returns a new list with the given vals appended.
-func (sl *SliceList) Conj(vals ...Value) Seq {
-	return &SliceList{Items: append(sl.Items, vals...)}
+// Conj returns a new list with all the items added at the head of the list.
+func (sl *linkedList) Conj(items ...Value) Seq {
+	if sl == nil {
+		sl = &linkedList{}
+	}
+
+	res := Seq(sl)
+	for _, item := range items {
+		res = res.Cons(item)
+	}
+	return res
 }
 
-// First returns the first item in the list or nil if list is empty.
-func (sl *SliceList) First() Value {
-	if len(sl.Items) == 0 {
+// First returns the head or first item of the list.
+func (sl *linkedList) First() Value {
+	if sl == nil {
 		return nil
 	}
-	return sl.Items[0]
+	return sl.value
 }
 
-// Next returns a list containing all but first item in the list. Returns
-// nil if the list is empty.
-func (sl *SliceList) Next() Seq {
-	if len(sl.Items) == 0 {
+// Next returns the tail of the list.
+func (sl *linkedList) Next() Seq {
+	if sl == nil {
 		return nil
 	}
-	return &SliceList{Items: append([]Value(nil), sl.Items[1:]...)}
+	return sl.next
+}
+
+// Count returns the number of the list.
+func (sl *linkedList) Count() int {
+	if sl == nil {
+		return 0
+	}
+	return sl.count
 }
