@@ -1,4 +1,4 @@
-package core
+package reader
 
 import (
 	"bytes"
@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/spy16/sabre/sabre/runtime"
 )
 
 func TestNew(t *testing.T) {
@@ -34,7 +36,7 @@ func TestNew(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			rd := NewReader(tt.r)
+			rd := New(tt.r)
 			if rd == nil {
 				t.Errorf("New() should return instance of Reader, got nil")
 			} else if rd.File != tt.fileName {
@@ -46,12 +48,12 @@ func TestNew(t *testing.T) {
 
 func TestReader_SetMacro(t *testing.T) {
 	t.Run("UnsetDefaultMacro", func(t *testing.T) {
-		rd := NewReader(strings.NewReader("~hello"))
-		rd.SetMacro('~', nil, false) // remove unquote operator
+		rd := New(strings.NewReader("~hello"))
+		rd.SetMacro('~', false, nil) // remove unquote operator
 
-		want := Symbol{
+		want := runtime.Symbol{
 			Value: "~hello",
-			Position: Position{
+			Position: runtime.Position{
 				File:   "<string>",
 				Line:   1,
 				Column: 1,
@@ -69,13 +71,13 @@ func TestReader_SetMacro(t *testing.T) {
 	})
 
 	t.Run("DispatchMacro", func(t *testing.T) {
-		rd := NewReader(strings.NewReader("#$123"))
+		rd := New(strings.NewReader("#$123"))
 		// `#$` returns string "USD"
-		rd.SetMacro('$', func(rd *Reader, init rune) (Value, error) {
-			return String("USD"), nil
-		}, true) // remove unquote operator
+		rd.SetMacro('$', true, func(rd *Reader, init rune) (runtime.Value, error) {
+			return runtime.String("USD"), nil
+		}) // remove unquote operator
 
-		want := String("USD")
+		want := runtime.String("USD")
 
 		got, err := rd.One()
 		if err != nil {
@@ -88,8 +90,8 @@ func TestReader_SetMacro(t *testing.T) {
 	})
 
 	t.Run("CustomMacro", func(t *testing.T) {
-		rd := NewReader(strings.NewReader("~hello"))
-		rd.SetMacro('~', func(rd *Reader, _ rune) (Value, error) {
+		rd := New(strings.NewReader("~hello"))
+		rd.SetMacro('~', false, func(rd *Reader, _ rune) (runtime.Value, error) {
 			var ru []rune
 			for {
 				r, err := rd.NextRune()
@@ -106,11 +108,10 @@ func TestReader_SetMacro(t *testing.T) {
 				ru = append(ru, r)
 			}
 
-			return String(ru), nil
-		}, false) // override unquote operator
+			return runtime.String(ru), nil
+		}) // override unquote operator
 
-		var want Value
-		want = String("hello")
+		want := runtime.String("hello")
 
 		got, err := rd.One()
 		if err != nil {
@@ -127,29 +128,29 @@ func TestReader_All(t *testing.T) {
 	tests := []struct {
 		name    string
 		src     string
-		want    []Value
+		want    []runtime.Value
 		wantErr bool
 	}{
 		{
 			name: "ValidLiteralSample",
 			src:  `123 "Hello\tWorld" 12.34 -0xF +010 true nil 0b1010 \a :hello`,
-			want: []Value{
-				Int64(123),
-				String("Hello\tWorld"),
-				Float64(12.34),
-				Int64(-15),
-				Int64(8),
-				Bool(true),
-				Nil{},
-				Int64(10),
-				Char('a'),
-				Keyword("hello"),
+			want: []runtime.Value{
+				runtime.Int64(123),
+				runtime.String("Hello\tWorld"),
+				runtime.Float64(12.34),
+				runtime.Int64(-15),
+				runtime.Int64(8),
+				runtime.Bool(true),
+				runtime.Nil{},
+				runtime.Int64(10),
+				runtime.Char('a'),
+				runtime.Keyword("hello"),
 			},
 		},
 		{
 			name: "WithComment",
 			src:  `:valid-keyword ; comment should return errSkip`,
-			want: []Value{Keyword("valid-keyword")},
+			want: []runtime.Value{runtime.Keyword("valid-keyword")},
 		},
 		{
 			name:    "UnterminatedString",
@@ -159,7 +160,7 @@ func TestReader_All(t *testing.T) {
 		{
 			name: "CommentFollowedByForm",
 			src:  `; comment should return errSkip` + "\n" + `:valid-keyword`,
-			want: []Value{Keyword("valid-keyword")},
+			want: []runtime.Value{runtime.Keyword("valid-keyword")},
 		},
 		{
 			name:    "UnterminatedList",
@@ -184,7 +185,7 @@ func TestReader_All(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewReader(strings.NewReader(tt.src)).All()
+			got, err := New(strings.NewReader(tt.src)).All()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("All() error = %#v, wantErr %#v", err, tt.wantErr)
 				return
@@ -217,29 +218,29 @@ func TestReader_One(t *testing.T) {
 		{
 			name: "UnQuote",
 			src:  "~(x 3)",
-			want: &List{
-				Items: []Value{
-					Symbol{Value: "unquote"},
-					&List{
-						Items: []Value{
-							Symbol{
+			want: &runtime.SliceList{
+				Items: []runtime.Value{
+					runtime.Symbol{Value: "unquote"},
+					&runtime.SliceList{
+						Items: []runtime.Value{
+							runtime.Symbol{
 								Value: "x",
-								Position: Position{
+								Position: runtime.Position{
 									File:   "<string>",
 									Line:   1,
 									Column: 3,
 								},
 							},
-							Int64(3),
+							runtime.Int64(3),
 						},
-						Position: Position{
+						Position: runtime.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
 				},
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Column: 1,
 					Line:   1,
@@ -254,97 +255,97 @@ func TestReader_One_Number(t *testing.T) {
 		{
 			name: "NumberWithLeadingSpaces",
 			src:  "    +1234",
-			want: Int64(1234),
+			want: runtime.Int64(1234),
 		},
 		{
 			name: "PositiveInt",
 			src:  "+1245",
-			want: Int64(1245),
+			want: runtime.Int64(1245),
 		},
 		{
 			name: "NegativeInt",
 			src:  "-234",
-			want: Int64(-234),
+			want: runtime.Int64(-234),
 		},
 		{
 			name: "PositiveFloat",
 			src:  "+1.334",
-			want: Float64(1.334),
+			want: runtime.Float64(1.334),
 		},
 		{
 			name: "NegativeFloat",
 			src:  "-1.334",
-			want: Float64(-1.334),
+			want: runtime.Float64(-1.334),
 		},
 		{
 			name: "PositiveHex",
 			src:  "0x124",
-			want: Int64(0x124),
+			want: runtime.Int64(0x124),
 		},
 		{
 			name: "NegativeHex",
 			src:  "-0x124",
-			want: Int64(-0x124),
+			want: runtime.Int64(-0x124),
 		},
 		{
 			name: "PositiveOctal",
 			src:  "0123",
-			want: Int64(0123),
+			want: runtime.Int64(0123),
 		},
 		{
 			name: "NegativeOctal",
 			src:  "-0123",
-			want: Int64(-0123),
+			want: runtime.Int64(-0123),
 		},
 		{
 			name: "PositiveBinary",
 			src:  "0b10",
-			want: Int64(2),
+			want: runtime.Int64(2),
 		},
 		{
 			name: "NegativeBinary",
 			src:  "-0b10",
-			want: Int64(-2),
+			want: runtime.Int64(-2),
 		},
 		{
 			name: "PositiveBase2Radix",
 			src:  "2r10",
-			want: Int64(2),
+			want: runtime.Int64(2),
 		},
 		{
 			name: "NegativeBase2Radix",
 			src:  "-2r10",
-			want: Int64(-2),
+			want: runtime.Int64(-2),
 		},
 		{
 			name: "PositiveBase4Radix",
 			src:  "4r123",
-			want: Int64(27),
+			want: runtime.Int64(27),
 		},
 		{
 			name: "NegativeBase4Radix",
 			src:  "-4r123",
-			want: Int64(-27),
+			want: runtime.Int64(-27),
 		},
 		{
 			name: "ScientificSimple",
 			src:  "1e10",
-			want: Float64(1e10),
+			want: runtime.Float64(1e10),
 		},
 		{
 			name: "ScientificNegativeExponent",
 			src:  "1e-10",
-			want: Float64(1e-10),
+			want: runtime.Float64(1e-10),
 		},
 		{
 			name: "ScientificWithDecimal",
 			src:  "1.5e10",
-			want: Float64(1.5e+10),
+			want: runtime.Float64(1.5e+10),
 		},
 		{
 			name:    "FloatStartingWith0",
 			src:     "012.3",
-			want:    Float64(012.3),
+			want:    runtime.Float64(012.3),
 			wantErr: false,
 		},
 		{
@@ -410,17 +411,17 @@ func TestReader_One_String(t *testing.T) {
 		{
 			name: "SimpleString",
 			src:  `"hello"`,
-			want: String("hello"),
+			want: runtime.String("hello"),
 		},
 		{
 			name: "EscapeQuote",
 			src:  `"double quote is \""`,
-			want: String(`double quote is "`),
+			want: runtime.String(`double quote is "`),
 		},
 		{
 			name: "EscapeSlash",
 			src:  `"hello\\world"`,
-			want: String(`hello\world`),
+			want: runtime.String(`hello\world`),
 		},
 		{
 			name:    "UnexpectedEOF",
@@ -445,27 +446,27 @@ func TestReader_One_Keyword(t *testing.T) {
 		{
 			name: "SimpleASCII",
 			src:  `:test`,
-			want: Keyword("test"),
+			want: runtime.Keyword("test"),
 		},
 		{
 			name: "LeadingTrailingSpaces",
 			src:  "          :test          ",
-			want: Keyword("test"),
+			want: runtime.Keyword("test"),
 		},
 		{
 			name: "SimpleUnicode",
 			src:  `:∂`,
-			want: Keyword("∂"),
+			want: runtime.Keyword("∂"),
 		},
 		{
 			name: "WithSpecialChars",
 			src:  `:this-is-valid?`,
-			want: Keyword("this-is-valid?"),
+			want: runtime.Keyword("this-is-valid?"),
 		},
 		{
 			name: "FollowedByMacroChar",
 			src:  `:this-is-valid'hello`,
-			want: Keyword("this-is-valid"),
+			want: runtime.Keyword("this-is-valid"),
 		},
 	})
 }
@@ -475,32 +476,32 @@ func TestReader_One_Character(t *testing.T) {
 		{
 			name: "ASCIILetter",
 			src:  `\a`,
-			want: Char('a'),
+			want: runtime.Char('a'),
 		},
 		{
 			name: "ASCIIDigit",
 			src:  `\1`,
-			want: Char('1'),
+			want: runtime.Char('1'),
 		},
 		{
 			name: "Unicode",
 			src:  `\∂`,
-			want: Char('∂'),
+			want: runtime.Char('∂'),
 		},
 		{
 			name: "Newline",
 			src:  `\newline`,
-			want: Char('\n'),
+			want: runtime.Char('\n'),
 		},
 		{
 			name: "FormFeed",
 			src:  `\formfeed`,
-			want: Char('\f'),
+			want: runtime.Char('\f'),
 		},
 		{
 			name: "Unicode",
 			src:  `\u00AE`,
-			want: Char('®'),
+			want: runtime.Char('®'),
 		},
 		{
 			name:    "InvalidUnicode",
@@ -530,9 +531,9 @@ func TestReader_One_Symbol(t *testing.T) {
 		{
 			name: "SimpleASCII",
 			src:  `hello`,
-			want: Symbol{
+			want: runtime.Symbol{
 				Value: "hello",
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -542,9 +543,9 @@ func TestReader_One_Symbol(t *testing.T) {
 		{
 			name: "Unicode",
 			src:  `find-∂`,
-			want: Symbol{
+			want: runtime.Symbol{
 				Value: "find-∂",
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -554,9 +555,9 @@ func TestReader_One_Symbol(t *testing.T) {
 		{
 			name: "SingleChar",
 			src:  `+`,
-			want: Symbol{
+			want: runtime.Symbol{
 				Value: "+",
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -571,9 +572,9 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "EmptyList",
 			src:  `()`,
-			want: &List{
+			want: &runtime.SliceList{
 				Items: nil,
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -583,18 +584,18 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "ListWithOneEntry",
 			src:  `(help)`,
-			want: &List{
-				Items: []Value{
-					Symbol{
+			want: &runtime.SliceList{
+				Items: []runtime.Value{
+					runtime.Symbol{
 						Value: "help",
-						Position: Position{
+						Position: runtime.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
 				},
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -604,20 +605,20 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "ListWithMultipleEntry",
 			src:  `(+ 0xF 3.1413)`,
-			want: &List{
-				Items: []Value{
-					Symbol{
+			want: &runtime.SliceList{
+				Items: []runtime.Value{
+					runtime.Symbol{
 						Value: "+",
-						Position: Position{
+						Position: runtime.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
-					Int64(15),
-					Float64(3.1413),
+					runtime.Int64(15),
+					runtime.Float64(3.1413),
 				},
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -627,20 +628,20 @@ func TestReader_One_List(t *testing.T) {
 		{
 			name: "ListWithCommaSeparator",
 			src:  `(+,0xF,3.1413)`,
-			want: &List{
-				Items: []Value{
-					Symbol{
+			want: &runtime.SliceList{
+				Items: []runtime.Value{
+					runtime.Symbol{
 						Value: "+",
-						Position: Position{
+						Position: runtime.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
-					Int64(15),
-					Float64(3.1413),
+					runtime.Int64(15),
+					runtime.Float64(3.1413),
 				},
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -653,20 +654,20 @@ func TestReader_One_List(t *testing.T) {
                       0xF
                       3.1413
 					)`,
-			want: &List{
-				Items: []Value{
-					Symbol{
+			want: &runtime.SliceList{
+				Items: []runtime.Value{
+					runtime.Symbol{
 						Value: "+",
-						Position: Position{
+						Position: runtime.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
-					Int64(15),
-					Float64(3.1413),
+					runtime.Int64(15),
+					runtime.Float64(3.1413),
 				},
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -679,20 +680,20 @@ func TestReader_One_List(t *testing.T) {
                       0xF    ; hex representation of 15
                       3.1413 ; value of math constant pi
                   )`,
-			want: &List{
-				Items: []Value{
-					Symbol{
+			want: &runtime.SliceList{
+				Items: []runtime.Value{
+					runtime.Symbol{
 						Value: "+",
-						Position: Position{
+						Position: runtime.Position{
 							File:   "<string>",
 							Line:   1,
 							Column: 2,
 						},
 					},
-					Int64(15),
-					Float64(3.1413),
+					runtime.Int64(15),
+					runtime.Float64(3.1413),
 				},
-				Position: Position{
+				Position: runtime.Position{
 					File:   "<string>",
 					Line:   1,
 					Column: 1,
@@ -710,7 +711,7 @@ func TestReader_One_List(t *testing.T) {
 type readerTestCase struct {
 	name    string
 	src     string
-	want    Value
+	want    runtime.Value
 	wantErr bool
 }
 
@@ -719,7 +720,7 @@ func executeReaderTests(t *testing.T, tests []readerTestCase) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := NewReader(strings.NewReader(tt.src)).One()
+			got, err := New(strings.NewReader(tt.src)).One()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("One() error = %#v, wantErr %#v", err, tt.wantErr)
 				return

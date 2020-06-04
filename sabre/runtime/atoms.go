@@ -1,4 +1,4 @@
-package core
+package runtime
 
 import (
 	"fmt"
@@ -14,15 +14,20 @@ var (
 	_ Value = String("specimen")
 	_ Value = Symbol{}
 
-	_ Invokable  = Keyword("specimen")
-	_ Comparable = Symbol{}
+	_ Invokable = Keyword("specimen")
 )
 
 // Nil represents a nil value.
 type Nil struct{}
 
 // Eval returns the underlying value.
-func (n Nil) Eval(_ Env) (Value, error) { return n, nil }
+func (n Nil) Eval(_ Runtime) (Value, error) { return n, nil }
+
+// Equals returns true 'other' is also nil.
+func (n Nil) Equals(other Value) bool {
+	_, isNil := other.(Nil)
+	return other == nil || isNil
+}
 
 func (n Nil) String() string { return "nil" }
 
@@ -30,7 +35,13 @@ func (n Nil) String() string { return "nil" }
 type Bool bool
 
 // Eval returns the underlying value.
-func (b Bool) Eval(_ Env) (Value, error) { return b, nil }
+func (b Bool) Eval(_ Runtime) (Value, error) { return b, nil }
+
+// Equals returns true if 'other' is a boolean and has same logical value.
+func (b Bool) Equals(other Value) bool {
+	val, ok := other.(Bool)
+	return ok && (val == b)
+}
 
 func (b Bool) String() string { return fmt.Sprintf("%t", b) }
 
@@ -39,7 +50,13 @@ func (b Bool) String() string { return fmt.Sprintf("%t", b) }
 type Float64 float64
 
 // Eval simply returns itself since Floats evaluate to themselves.
-func (f64 Float64) Eval(_ Env) (Value, error) { return f64, nil }
+func (f64 Float64) Eval(_ Runtime) (Value, error) { return f64, nil }
+
+// Equals returns true if 'other' is also a float and has same value.
+func (f64 Float64) Equals(other Value) bool {
+	val, isFloat := other.(Float64)
+	return isFloat && (val == f64)
+}
 
 func (f64 Float64) String() string { return fmt.Sprintf("%f", f64) }
 
@@ -48,7 +65,14 @@ func (f64 Float64) String() string { return fmt.Sprintf("%f", f64) }
 type Int64 int64
 
 // Eval simply returns itself since Integers evaluate to themselves.
-func (i64 Int64) Eval(_ Env) (Value, error) { return i64, nil }
+func (i64 Int64) Eval(_ Runtime) (Value, error) { return i64, nil }
+
+// Equals returns true if the other value is also an integer and has same
+// value
+func (i64 Int64) Equals(other Value) bool {
+	val, isInt := other.(Int64)
+	return isInt && (val == i64)
+}
 
 func (i64 Int64) String() string { return fmt.Sprintf("%d", i64) }
 
@@ -58,7 +82,14 @@ func (i64 Int64) String() string { return fmt.Sprintf("%d", i64) }
 type Char rune
 
 // Eval simply returns itself since Chracters evaluate to themselves.
-func (char Char) Eval(_ Env) (Value, error) { return char, nil }
+func (char Char) Eval(_ Runtime) (Value, error) { return char, nil }
+
+// Equals returns true if the other value is also a character and has same
+// value.
+func (char Char) Equals(other Value) bool {
+	val, isChar := other.(Char)
+	return isChar && (val == char)
+}
 
 func (char Char) String() string { return fmt.Sprintf("\\%c", rune(char)) }
 
@@ -68,7 +99,13 @@ func (char Char) String() string { return fmt.Sprintf("\\%c", rune(char)) }
 type String string
 
 // Eval simply returns itself since Strings evaluate to themselves.
-func (se String) Eval(_ Env) (Value, error) { return se, nil }
+func (se String) Eval(_ Runtime) (Value, error) { return se, nil }
+
+// Equals returns true if 'other' is string and has same value.
+func (se String) Equals(other Value) bool {
+	val, isStr := other.(String)
+	return isStr && (val == se)
+}
 
 func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
 
@@ -76,12 +113,18 @@ func (se String) String() string { return fmt.Sprintf("\"%s\"", string(se)) }
 type Keyword string
 
 // Eval simply returns itself since Keywords evaluate to themselves.
-func (kw Keyword) Eval(_ Env) (Value, error) { return kw, nil }
+func (kw Keyword) Eval(_ Runtime) (Value, error) { return kw, nil }
+
+// Equals returns true if the other value is keyword and has same value.
+func (kw Keyword) Equals(other Value) bool {
+	val, isKeyword := other.(Keyword)
+	return isKeyword && (val == kw)
+}
 
 func (kw Keyword) String() string { return fmt.Sprintf(":%s", string(kw)) }
 
 // Invoke enables keyword lookup for maps.
-func (kw Keyword) Invoke(scope Env, args ...Value) (Value, error) {
+func (kw Keyword) Invoke(scope Runtime, args ...Value) (Value, error) {
 	if err := VerifyArgCount([]int{1, 2}, len(args)); err != nil {
 		return nil, err
 	}
@@ -101,9 +144,9 @@ func (kw Keyword) Invoke(scope Env, args ...Value) (Value, error) {
 		def = argVals[1]
 	}
 
-	val, err := assocVal.Get(kw)
-	if err != nil || val == nil {
-		return def, err
+	val := assocVal.EntryAt(kw)
+	if val == nil {
+		val = def
 	}
 
 	return val, nil
@@ -116,19 +159,14 @@ type Symbol struct {
 }
 
 // Eval returns the value bound to this symbol in current context.
-func (sym Symbol) Eval(scope Env) (Value, error) {
+func (sym Symbol) Eval(scope Runtime) (Value, error) {
 	return scope.Resolve(sym.Value)
 }
 
-// Compare compares this symbol to the given value. Returns true if
-// the given value is a symbol with same data.
-func (sym Symbol) Compare(v Value) bool {
-	other, ok := v.(Symbol)
-	if !ok {
-		return false
-	}
-
-	return other.Value == sym.Value
+// Equals returns true if the other value is also a symbol and has same value.
+func (sym Symbol) Equals(other Value) bool {
+	val, isSym := other.(Symbol)
+	return isSym && (sym.Value == val.Value)
 }
 
 func (sym Symbol) String() string { return sym.Value }

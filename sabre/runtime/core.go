@@ -1,49 +1,41 @@
-// Package core provides core contracts Sabre works with, builtin types of
-// Sabre and a reader that can read builtins and be extended to read custom
-// value types using reader macros.
-package core
+// Package runtime provides runtime contracts Sabre works with, builtin types of
+// Sabre and a reader that can read builtins and be extended to read custom value
+// types using reader macros. All primitive values implemented are immutable.
+package runtime
 
 import (
 	"errors"
 	"fmt"
 )
 
-var (
-	// ErrSkip can be returned by reader macro to indicate a no-op form which
-	// should be discarded (e.g., Comments).
-	ErrSkip = errors.New("skip expr")
+// ErrNotFound should be returned by an env implementation when a binding is not
+// found or by values that implement Associative when an entry is not found.
+var ErrNotFound = errors.New("not found")
 
-	// ErrEOF is returned by reader when stream ends prematurely to indicate
-	// that more data is needed to complete the current form.
-	ErrEOF = errors.New("unexpected EOF")
-
-	// ErrNotFound should be returned by an env implementation when a binding is
-	// not found or by values that implement Associative when an entry is not
-	// found.
-	ErrNotFound = errors.New("not found")
-)
-
-// Env represents the environment for LISP execution and maintains the value
+// Runtime represents the environment for LISP execution and maintains the value
 // bindings created by the execution.
-type Env interface {
+type Runtime interface {
+	// Eval evaluates the form against this runtime. In most cases, eval
+	// might be dispatched directly to the value.
 	Eval(form Value) (Value, error)
 
 	// Bind binds the value to the symbol.
 	Bind(symbol string, v Value) error
 
-	// Resolve returns the value bound for the the given symbol.
+	// Resolve returns the value bound for the the given symbol. Resolve
+	// returns ErrNotFound if the symbol has no binding.
 	Resolve(symbol string) (Value, error)
 
 	// Parent returns the parent of this environment.
-	Parent() Env
+	Parent() Runtime
 }
 
 // Value represents data/forms in sabre. This includes those emitted by Reader,
 // values obtained as result of an evaluation etc..
 type Value interface {
-	// Eval should evaluate this value against the env and return
-	// the resultant value or an evaluation error.
-	Eval(env Env) (Value, error)
+	// Eval should evaluate this value against the runtime and return the
+	// resultant value or an evaluation error.
+	Eval(rt Runtime) (Value, error)
 
 	// String should return the LISP representation of the value.
 	String() string
@@ -56,18 +48,11 @@ type Invokable interface {
 
 	// Invoke is called when this value appears as first item in a list. Remaining
 	// items of the list will be passed un-evaluated as arguments.
-	Invoke(env Env, args ...Value) (Value, error)
+	Invoke(env Runtime, args ...Value) (Value, error)
 }
 
-// Comparable can be implemented by Value types to support custom comparison logic.
-// See Compare().
-type Comparable interface {
-	Value
-	Compare(other Value) bool
-}
-
-// LazySeq implements a sequence of values that may be realized lazily.
-type LazySeq interface {
+// Seq implements a sequence of values (e.g., List) that may be realized lazily.
+type Seq interface {
 	Value
 
 	// First returns the first value of the sequence if not empty. Returns 'nil'
@@ -84,15 +69,34 @@ type LazySeq interface {
 	// Conj returns a new sequence which includes values from this sequence and
 	// the arguments.
 	Conj(vals ...Value) Seq
-}
-
-// Seq implementations represent a sequence of values such as List, Vector
-// etc.
-type Seq interface {
-	LazySeq
 
 	// Count returns the number of items in the map.
 	Count() int
+}
+
+// Seqable is any value that can be converted to a sequence.
+type Seqable interface {
+	Value
+
+	Seq() Seq
+}
+
+// Vector represents a container for values that provides fast index lookups and
+// iterations.
+type Vector interface {
+	Value
+
+	Seq() Seq
+	// EntryAt returns the item at given index. Returns error if the index
+	// is out of range.
+	EntryAt(index int) (Value, error)
+
+	// Conj returns a new vector with items appended.
+	Conj(items ...Value) Vector
+
+	// Assoc returns a new vector with the value at given index updated.
+	// Returns error if the index is out of range.
+	Assoc(index int, val Value) (Vector, error)
 }
 
 // Map represents any value that can store key-value pairs and provide fast
@@ -100,21 +104,18 @@ type Seq interface {
 type Map interface {
 	Value
 
-	// Count returns the number of items in the map.
-	Count() int
-
-	// Keys returns a sequence of all keys in the map.
+	// Keys returns all the keys in the map as a sequence.
 	Keys() Seq
 
-	// Vals returns a sequence of all values in the map.
+	// Vals returns all the values in the map as a sequence.
 	Vals() Seq
 
-	// HasKey checks if the map contains an entry with the given key.
+	// HasKey returns true if the map contains the given key.
 	HasKey(key Value) bool
 
-	// Get returns the value associated with the given key. Returns
-	// ErrNotFound if the key not found.
-	Get(key Value) (Value, error)
+	// EntryAt returns the value associated with the given key. Returns nil
+	// if the key is not found or is not hashable.
+	EntryAt(key Value) Value
 
 	// Assoc should return a new map which contains all the current values
 	// with the given key-val pair added.
@@ -129,17 +130,17 @@ type Map interface {
 type Set interface {
 	Value
 
-	// Count returns number of items in the set.
-	Count() int
-
-	// Keys returns the items/keys in the set.
-	Keys() Seq
+	// Seq returns a sequence of values from the set.
+	Seq() Seq
 
 	// HasKey returns true if the key is present in the set.
 	HasKey(key Value) bool
 
 	// Conj returns a new set with the vals conjoined.
-	Conj(vals ...Value) (Set, error)
+	Conj(vals ...Value) Set
+
+	// Disj returns a new set with the vals disjoined.
+	Disj(vals ...Value) Set
 }
 
 // Attributable represents any value that supports dynamic attributes.
@@ -196,4 +197,32 @@ func (err Error) Error() string {
 	return fmt.Sprintf("eval-error in '%s' (at line %d:%d): %v",
 		err.File, err.Line, err.Column, err.Cause,
 	)
+}
+
+// Position represents the positional information about a value read
+// by reader.
+type Position struct {
+	File   string
+	Line   int
+	Column int
+}
+
+// GetPos returns the file, line and column values.
+func (pi Position) GetPos() (file string, line, col int) {
+	return pi.File, pi.Line, pi.Column
+}
+
+// SetPos sets the position information.
+func (pi *Position) SetPos(file string, line, col int) {
+	pi.File = file
+	pi.Line = line
+	pi.Column = col
+}
+
+func (pi Position) String() string {
+	if pi.File == "" {
+		pi.File = "<unknown>"
+	}
+
+	return fmt.Sprintf("%s:%d:%d", pi.File, pi.Line, pi.Column)
 }

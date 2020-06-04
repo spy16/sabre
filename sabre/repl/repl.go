@@ -10,12 +10,12 @@ import (
 	"strings"
 
 	"github.com/spy16/sabre"
-	"github.com/spy16/sabre/sabre/core"
+	"github.com/spy16/sabre/sabre/runtime"
 )
 
 // New returns a new instance of REPL with given sabre Scope. Option values
 // can be used to configure REPL input, output etc.
-func New(env core.Env, opts ...Option) *REPL {
+func New(env runtime.Runtime, opts ...Option) *REPL {
 	repl := &REPL{
 		env:              env,
 		currentNamespace: func() string { return "" },
@@ -41,7 +41,7 @@ type NamespacedScope interface {
 
 // REPL implements a read-eval-print loop for a generic Runtime.
 type REPL struct {
-	env              core.Env
+	env              runtime.Runtime
 	input            Input
 	output           io.Writer
 	mapInputErr      ErrMapper
@@ -102,12 +102,12 @@ func (repl *REPL) readEvalPrint() error {
 		return nil
 	}
 
-	res, err := core.EvalAll(repl.env, forms)
+	res, err := runtime.EvalAll(repl.env, forms)
 	if err != nil {
 		return repl.print(err)
 	}
 	if len(res) == 0 {
-		return repl.print(core.Nil{})
+		return repl.print(runtime.Nil{})
 	}
 
 	return repl.print(res[len(res)-1])
@@ -121,7 +121,7 @@ func (repl *REPL) print(v interface{}) error {
 	return repl.printer(repl.output, v)
 }
 
-func (repl *REPL) read() ([]core.Value, error) {
+func (repl *REPL) read() ([]runtime.Value, error) {
 	var src string
 	lineNo := 1
 

@@ -7,8 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/spy16/sabre/sabre"
-	"github.com/spy16/sabre/sabre/core"
+	"github.com/spy16/sabre/sabre/reader"
 )
 
 // Option implementations can be provided to New() to configure the REPL
@@ -18,14 +17,14 @@ type Option func(repl *REPL)
 // ReaderFactory should return an instance of reader when called. This might
 // be called repeatedly. See WithReaderFactory()
 type ReaderFactory interface {
-	NewReader(r io.Reader) *core.Reader
+	NewReader(r io.Reader) *reader.Reader
 }
 
 // ReaderFactoryFunc implements ReaderFactory using a function value.
-type ReaderFactoryFunc func(r io.Reader) *core.Reader
+type ReaderFactoryFunc func(r io.Reader) *reader.Reader
 
 // NewReader simply calls the wrapped function value and returns the result.
-func (factory ReaderFactoryFunc) NewReader(r io.Reader) *core.Reader {
+func (factory ReaderFactoryFunc) NewReader(r io.Reader) *reader.Reader {
 	return factory(r)
 }
 
@@ -86,7 +85,7 @@ func WithPrompts(oneLine, multiLine string) Option {
 // Reader. This is useful when you want REPL to use custom reader instance.
 func WithReaderFactory(factory ReaderFactory) Option {
 	if factory == nil {
-		factory = ReaderFactoryFunc(sabre.NewReader)
+		factory = ReaderFactoryFunc(reader.New)
 	}
 
 	return func(repl *REPL) {

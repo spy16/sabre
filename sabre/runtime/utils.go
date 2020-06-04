@@ -1,4 +1,4 @@
-package core
+package runtime
 
 import (
 	"fmt"
@@ -13,20 +13,25 @@ var (
 	_ Invokable = GoFunc(nil)
 )
 
-// New returns an empty Env with given parent env. Returned env does not support
-// qualified symbol resolution.
-func New(parent Env) Env {
+// New returns an empty runtime with given parent runtime. Returned runtime does not
+// support qualified symbol resolution. parent argument can be nil to make this the
+// root runtime.
+func New(parent Runtime) Runtime {
 	return &mapEnv{
 		scope:  map[string]Value{},
 		parent: parent,
 	}
 }
 
-// Compare compares two values in an identity independent manner. If v1 implements
-// `Comparable` interface then the comparison is delegated to the Compare() method.
-func Compare(v1, v2 Value) bool {
+// Equals compares two values in an identity independent manner. If v1 implements
+// `Comparable` interface then the comparison is delegated to the Equals() method.
+func Equals(v1, v2 Value) bool {
 	if isNil(v1) && isNil(v2) {
 		return true
+	}
+
+	if cmp, ok := v1.(interface{ Equals(other Value) bool }); ok {
+		return cmp.Equals(v2)
 	}
 
 	s1, isV1Seq := v1.(Seq)
@@ -35,19 +40,15 @@ func Compare(v1, v2 Value) bool {
 		return compareSeq(s1, s2)
 	}
 
-	if cmp, ok := v1.(Comparable); ok {
-		return cmp.Compare(v2)
-	}
-
 	return reflect.DeepEqual(v1, v2)
 }
 
 // EvalAll evaluates each value in the list against the given env and returns a list
 // of resultant value.
-func EvalAll(env Env, vals []Value) ([]Value, error) {
+func EvalAll(rt Runtime, vals []Value) ([]Value, error) {
 	var results []Value
 	for _, f := range vals {
-		res, err := env.Eval(f)
+		res, err := rt.Eval(f)
 		if err != nil {
 			return nil, err
 		}
@@ -118,15 +119,18 @@ func VerifyArgCount(arities []int, argCount int) error {
 }
 
 // GoFunc provides a simple Go native function based invokable value.
-type GoFunc func(env Env, args ...Value) (Value, error)
+type GoFunc func(env Runtime, args ...Value) (Value, error)
 
 // Eval simply returns itself.
-func (fn GoFunc) Eval(_ Env) (Value, error) { return fn, nil }
+func (fn GoFunc) Eval(_ Runtime) (Value, error) { return fn, nil }
+
+// Equals always returns false.
+func (fn GoFunc) Equals(other Value) bool { return false }
 
 func (fn GoFunc) String() string { return fmt.Sprintf("GoFunc{}") }
 
 // Invoke simply dispatches the invocation request to the wrapped function.
-func (fn GoFunc) Invoke(env Env, args ...Value) (Value, error) {
+func (fn GoFunc) Invoke(env Runtime, args ...Value) (Value, error) {
 	return fn(env, args...)
 }
 
@@ -136,7 +140,7 @@ func compareSeq(s1, s2 Seq) bool {
 	}
 
 	for s1 != nil && s2 != nil {
-		if !Compare(s1.First(), s2.First()) {
+		if !Equals(s1.First(), s2.First()) {
 			return false
 		}
 		s1 = s1.Next()
@@ -154,7 +158,7 @@ func isNil(v Value) bool {
 type mapEnv struct {
 	mu     sync.RWMutex
 	scope  map[string]Value
-	parent Env
+	parent Runtime
 }
 
 func (env *mapEnv) Eval(form Value) (Value, error) {
@@ -200,4 +204,8 @@ func (env *mapEnv) Resolve(symbol string) (Value, error) {
 	return v, nil
 }
 
-func (env *mapEnv) Parent() Env { return env.parent }
+func (env *mapEnv) Parent() Runtime { return env.parent }
+
+func getPosition(form Value) Position {
+	return Position{}
+}

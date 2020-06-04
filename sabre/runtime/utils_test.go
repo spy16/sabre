@@ -1,4 +1,4 @@
-package core_test
+package runtime_test
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spy16/sabre/sabre/core"
+	"github.com/spy16/sabre/sabre/runtime"
 )
 
 func TestVerifyArgCount(t *testing.T) {
@@ -52,7 +52,7 @@ func TestVerifyArgCount(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.title, func(t *testing.T) {
-			err := core.VerifyArgCount(tt.arities, tt.argC)
+			err := runtime.VerifyArgCount(tt.arities, tt.argC)
 			if tt.wantErr != nil {
 				if err == nil {
 					t.Errorf("VerifyArgCount('%+v', %d) expecting error '%s', got nil",
@@ -71,7 +71,7 @@ func TestCompare(t *testing.T) {
 	t.Parallel()
 
 	table := []struct {
-		v1, v2 core.Value
+		v1, v2 runtime.Value
 		want   bool
 	}{
 		{
@@ -80,83 +80,83 @@ func TestCompare(t *testing.T) {
 			want: true,
 		},
 		{
-			v1:   core.Nil{},
+			v1:   runtime.Nil{},
 			v2:   nil,
 			want: true,
 		},
 		{
 			v1:   nil,
-			v2:   core.Nil{},
+			v2:   runtime.Nil{},
 			want: true,
 		},
 		{
-			v1:   core.Float64(3.1412),
-			v2:   core.Float64(3.1412),
+			v1:   runtime.Float64(3.1412),
+			v2:   runtime.Float64(3.1412),
 			want: true,
 		},
 		{
-			v1:   core.Int64(3),
-			v2:   core.Symbol{Value: "hello"},
+			v1:   runtime.Int64(3),
+			v2:   runtime.Symbol{Value: "hello"},
 			want: false,
 		},
 		{
-			v1:   core.Symbol{Value: "hello"},
-			v2:   core.Int64(3),
+			v1:   runtime.Symbol{Value: "hello"},
+			v2:   runtime.Int64(3),
 			want: false,
 		},
 		{
-			v1:   core.Symbol{Value: "hello"},
-			v2:   core.Symbol{Value: "hello"},
+			v1:   runtime.Symbol{Value: "hello"},
+			v2:   runtime.Symbol{Value: "hello"},
 			want: true,
 		},
 		{
-			v1:   core.Keyword("specimen"),
-			v2:   core.String("specimen"),
+			v1:   runtime.Keyword("specimen"),
+			v2:   runtime.String("specimen"),
 			want: false,
 		},
 		{
-			v1:   core.String("specimen"),
-			v2:   core.Keyword("specimen"),
+			v1:   runtime.String("specimen"),
+			v2:   runtime.Keyword("specimen"),
 			want: false,
 		},
 		{
-			v1: &core.List{Items: []core.Value{
-				core.Float64(10.3),
-				core.String("sample"),
+			v1: &runtime.SliceList{Items: []runtime.Value{
+				runtime.Float64(10.3),
+				runtime.String("sample"),
 			}},
-			v2: &core.List{Items: []core.Value{
-				core.Float64(10.3),
-				core.String("sample"),
+			v2: &runtime.SliceList{Items: []runtime.Value{
+				runtime.Float64(10.3),
+				runtime.String("sample"),
 			}},
 			want: true,
 		},
 		{
-			v1: &core.List{Items: []core.Value{
-				core.Float64(10.3),
-				core.String("sample"),
+			v1: &runtime.SliceList{Items: []runtime.Value{
+				runtime.Float64(10.3),
+				runtime.String("sample"),
 			}},
-			v2: &core.List{Items: []core.Value{
-				core.Float64(10.3),
-			}},
-			want: false,
-		},
-		{
-			v1: &core.List{Items: []core.Value{
-				core.Float64(10.3),
-				core.String("sample"),
-			}},
-			v2: &core.List{Items: []core.Value{
-				core.Float64(10.3),
-				core.Keyword("sample"),
+			v2: &runtime.SliceList{Items: []runtime.Value{
+				runtime.Float64(10.3),
 			}},
 			want: false,
 		},
 		{
-			v1: &core.List{Items: []core.Value{
-				core.Float64(10.3),
-				core.String("sample"),
+			v1: &runtime.SliceList{Items: []runtime.Value{
+				runtime.Float64(10.3),
+				runtime.String("sample"),
 			}},
-			v2:   core.Nil{},
+			v2: &runtime.SliceList{Items: []runtime.Value{
+				runtime.Float64(10.3),
+				runtime.Keyword("sample"),
+			}},
+			want: false,
+		},
+		{
+			v1: &runtime.SliceList{Items: []runtime.Value{
+				runtime.Float64(10.3),
+				runtime.String("sample"),
+			}},
+			v2:   runtime.Nil{},
 			want: false,
 		},
 	}
@@ -164,7 +164,7 @@ func TestCompare(t *testing.T) {
 	for _, tt := range table {
 		title := fmt.Sprintf("%s_%s", reflect.TypeOf(tt.v1), reflect.TypeOf(tt.v1))
 		t.Run(title, func(t *testing.T) {
-			got := core.Compare(tt.v1, tt.v2)
+			got := runtime.Equals(tt.v1, tt.v2)
 			if got != tt.want {
 				t.Errorf("Compare('%+v', '%+v') want=%t, got=%t", tt.v1, tt.v2, tt.want, got)
 			}
@@ -173,19 +173,19 @@ func TestCompare(t *testing.T) {
 }
 
 func Test_mapEnv(t *testing.T) {
-	parent := core.New(nil)
-	_ = parent.Bind("π", core.Float64(3.1412))
+	parent := runtime.New(nil)
+	_ = parent.Bind("π", runtime.Float64(3.1412))
 
-	env := core.New(parent)
-	_ = env.Bind("message", core.String("Hello World!"))
+	env := runtime.New(parent)
+	_ = env.Bind("message", runtime.String("Hello World!"))
 
 	t.Run("EvalNil", func(t *testing.T) {
 		v, err := env.Eval(nil)
 		if err != nil {
 			t.Errorf("mapEnv.Resolve(\"message\"): unexpected error: %v", err)
 		}
-		want := core.Nil{}
-		if !core.Compare(v, want) {
+		want := runtime.Nil{}
+		if !runtime.Equals(v, want) {
 			t.Errorf("mapEnv.Resolve(\"message\") want=%+v, got=%+v", want, v)
 		}
 	})
@@ -195,8 +195,8 @@ func Test_mapEnv(t *testing.T) {
 		if err != nil {
 			t.Errorf("mapEnv.Resolve(\"message\"): unexpected error: %v", err)
 		}
-		want := core.String("Hello World!")
-		if !core.Compare(v, want) {
+		want := runtime.String("Hello World!")
+		if !runtime.Equals(v, want) {
 			t.Errorf("mapEnv.Resolve(\"message\") want=%+v, got=%+v", want, v)
 		}
 	})
@@ -206,8 +206,8 @@ func Test_mapEnv(t *testing.T) {
 		if err != nil {
 			t.Errorf("mapEnv.Resolve(\"π\"): unexpected error: %v", err)
 		}
-		want := core.Float64(3.1412)
-		if !core.Compare(v, want) {
+		want := runtime.Float64(3.1412)
+		if !runtime.Equals(v, want) {
 			t.Errorf("mapEnv.Resolve(\"π\") want=%+v, got=%+v", want, v)
 		}
 	})

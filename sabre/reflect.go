@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/spy16/sabre/sabre/core"
+	"github.com/spy16/sabre/sabre/runtime"
 )
 
 // ValueOf returns Sabre value for the given Go value.
-func ValueOf(v interface{}) core.Value {
+func ValueOf(v interface{}) runtime.Value {
 	return nil
 }
 
 // AccessMember accesses nested member field of the given object.
-func AccessMember(obj core.Value, fields []string) (v core.Value, err error) {
+func AccessMember(obj runtime.Value, fields []string) (v runtime.Value, err error) {
 	if len(fields) == 0 {
 		return obj, nil
 	}
@@ -29,8 +29,8 @@ func AccessMember(obj core.Value, fields []string) (v core.Value, err error) {
 	return v, nil
 }
 
-func accessOne(target core.Value, field string) (core.Value, error) {
-	attr, ok := target.(core.Attributable)
+func accessOne(target runtime.Value, field string) (runtime.Value, error) {
+	attr, ok := target.(runtime.Attributable)
 	if ok {
 		if val := attr.GetAttr(field, nil); val != nil {
 			return val, nil
@@ -49,7 +49,7 @@ func accessOne(target core.Value, field string) (core.Value, error) {
 
 	if isKind(rv.Type(), reflect.Chan, reflect.Array,
 		reflect.Func, reflect.Ptr) && rv.IsNil() {
-		return core.Nil{}, nil
+		return runtime.Nil{}, nil
 	}
 
 	return ValueOf(rVal.Interface()), nil

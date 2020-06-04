@@ -1,4 +1,4 @@
-package core
+package runtime
 
 import (
 	"fmt"
@@ -6,20 +6,20 @@ import (
 )
 
 var (
-	_ Value = (*List)(nil)
-	_ Seq   = (*List)(nil)
+	_ Value = (*SliceList)(nil)
+	_ Seq   = (*SliceList)(nil)
 )
 
-// List represents a list of values. List is backed by a native Go slice. Eval
+// SliceList represents a list of values. SliceList is backed by a native Go slice. Eval
 // leads to invocation of result of evaluation of first entry in the list.
-type List struct {
+type SliceList struct {
 	Position
 	Items []Value
 }
 
 // Eval evaluates the first item in the list and invokes the resultant value with
 // rest of the list as arguments.
-func (sl *List) Eval(env Env) (Value, error) {
+func (sl *SliceList) Eval(env Runtime) (Value, error) {
 	if sl.Count() == 0 {
 		return sl, nil
 	}
@@ -43,23 +43,23 @@ func (sl *List) Eval(env Env) (Value, error) {
 	return target.Invoke(env, args...)
 }
 
-func (sl List) String() string { return SeqString(&sl, "(", ")", " ") }
+func (sl SliceList) String() string { return SeqString(&sl, "(", ")", " ") }
 
 // Count returns the number of items in the list.
-func (sl *List) Count() int { return len(sl.Items) }
+func (sl *SliceList) Count() int { return len(sl.Items) }
 
 // Cons returns a new list with the given item added to the front.
-func (sl *List) Cons(v Value) Seq {
-	return &List{Items: append([]Value{v}, sl.Items...)}
+func (sl *SliceList) Cons(v Value) Seq {
+	return &SliceList{Items: append([]Value{v}, sl.Items...)}
 }
 
 // Conj returns a new list with the given vals appended.
-func (sl *List) Conj(vals ...Value) Seq {
-	return &List{Items: append(sl.Items, vals...)}
+func (sl *SliceList) Conj(vals ...Value) Seq {
+	return &SliceList{Items: append(sl.Items, vals...)}
 }
 
 // First returns the first item in the list or nil if list is empty.
-func (sl *List) First() Value {
+func (sl *SliceList) First() Value {
 	if len(sl.Items) == 0 {
 		return nil
 	}
@@ -68,9 +68,9 @@ func (sl *List) First() Value {
 
 // Next returns a list containing all but first item in the list. Returns
 // nil if the list is empty.
-func (sl *List) Next() Seq {
+func (sl *SliceList) Next() Seq {
 	if len(sl.Items) == 0 {
 		return nil
 	}
-	return &List{Items: append([]Value(nil), sl.Items[1:]...)}
+	return &SliceList{Items: append([]Value(nil), sl.Items[1:]...)}
 }
