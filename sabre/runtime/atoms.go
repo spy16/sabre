@@ -23,7 +23,7 @@ type Nil struct{}
 // Eval returns the underlying value.
 func (n Nil) Eval(_ Runtime) (Value, error) { return n, nil }
 
-// Equals returns true 'other' is also nil.
+// Equals returns true if 'other' is also nil/Nil.
 func (n Nil) Equals(other Value) bool {
 	_, isNil := other.(Nil)
 	return other == nil || isNil
@@ -67,8 +67,7 @@ type Int64 int64
 // Eval simply returns itself since Integers evaluate to themselves.
 func (i64 Int64) Eval(_ Runtime) (Value, error) { return i64, nil }
 
-// Equals returns true if the other value is also an integer and has same
-// value
+// Equals returns true if the other value is also an integer and has same value.
 func (i64 Int64) Equals(other Value) bool {
 	val, isInt := other.(Int64)
 	return isInt && (val == i64)
@@ -84,8 +83,7 @@ type Char rune
 // Eval simply returns itself since Chracters evaluate to themselves.
 func (char Char) Eval(_ Runtime) (Value, error) { return char, nil }
 
-// Equals returns true if the other value is also a character and has same
-// value.
+// Equals returns true if the other value is also a character and has same value.
 func (char Char) Equals(other Value) bool {
 	val, isChar := other.(Char)
 	return isChar && (val == char)

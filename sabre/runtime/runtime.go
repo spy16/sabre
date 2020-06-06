@@ -78,15 +78,15 @@ type Seq interface {
 type Seqable interface {
 	Value
 
+	// Seq returns the implementing value as a sequence.
 	Seq() Seq
 }
 
 // Vector represents a container for values that provides fast index lookups and
 // iterations.
 type Vector interface {
-	Value
+	Seqable
 
-	Seq() Seq
 	// EntryAt returns the item at given index. Returns error if the index
 	// is out of range.
 	EntryAt(index int) (Value, error)
@@ -102,7 +102,7 @@ type Vector interface {
 // Map represents any value that can store key-value pairs and provide fast
 // lookups.
 type Map interface {
-	Value
+	Seqable
 
 	// Keys returns all the keys in the map as a sequence.
 	Keys() Seq
@@ -128,10 +128,7 @@ type Map interface {
 
 // Set represents a container for storing unique values.
 type Set interface {
-	Value
-
-	// Seq returns a sequence of values from the set.
-	Seq() Seq
+	Seqable
 
 	// HasKey returns true if the key is present in the set.
 	HasKey(key Value) bool

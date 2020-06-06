@@ -24,7 +24,7 @@ func New(parent Runtime) Runtime {
 }
 
 // Equals compares two values in an identity independent manner. If v1 implements
-// `Comparable` interface then the comparison is delegated to the Equals() method.
+// `Equals(Value)` method, then the comparison is delegated to it.
 func Equals(v1, v2 Value) bool {
 	if isNil(v1) && isNil(v2) {
 		return true
