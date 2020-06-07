@@ -15,18 +15,21 @@ var ErrNotFound = errors.New("not found")
 // Runtime represents the environment for LISP execution and maintains the value
 // bindings created by the execution.
 type Runtime interface {
-	// Eval evaluates the form against this runtime. In most cases, eval
-	// might be dispatched directly to the value.
+	// Eval evaluates the form in this runtime. Runtime might customize the eval
+	// rules for different values, but in most cases, eval will be dispatched to
+	// to Eval() method of value.
 	Eval(form Value) (Value, error)
 
-	// Bind binds the value to the symbol.
+	// Bind binds the value to the symbol. Returns error if the symbol contains
+	// invalid character or the bind fails for some other reasons.
 	Bind(symbol string, v Value) error
 
-	// Resolve returns the value bound for the the given symbol. Resolve
-	// returns ErrNotFound if the symbol has no binding.
+	// Resolve returns the value bound for the the given symbol. Resolve returns
+	// ErrNotFound if the symbol has no binding.
 	Resolve(symbol string) (Value, error)
 
-	// Parent returns the parent of this environment.
+	// Parent returns the parent of this environment. If returned value is nil,
+	// it is the root Runtime.
 	Parent() Runtime
 }
 
@@ -39,6 +42,17 @@ type Value interface {
 
 	// String should return the LISP representation of the value.
 	String() string
+}
+
+// Hashable represents any value that is hashable and can be used as key in hash
+// based collection types (HashMap, HashSet etc.).
+type Hashable interface {
+	Value
+
+	// Hash should return a byte sequence that incorporates the contents of the
+	// value that should be considered in hashing. Hashing implementations will
+	// use the returned byte sequence to generate the hashcode.
+	Hash() []byte
 }
 
 // Invokable represents a value that can be invoked when it appears as the first
@@ -59,7 +73,7 @@ type Seq interface {
 	// if empty.
 	First() Value
 
-	// Next returns a remaining sequence when the first value of the sequence
+	// Next returns the remaining sequence when the first value of the sequence
 	// is excluded. 'nil' if the sequence is empty or has single item.
 	Next() Seq
 
@@ -67,7 +81,7 @@ type Seq interface {
 	Cons(v Value) Seq
 
 	// Conj returns a new sequence which includes values from this sequence and
-	// the arguments.
+	// the arguments. Position of conjoined values is not part of the contract.
 	Conj(vals ...Value) Seq
 
 	// Count returns the number of items in the map.

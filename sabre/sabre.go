@@ -12,17 +12,15 @@ import (
 
 var _ runtime.Runtime = (*Sabre)(nil)
 
+// ValueOf converts arbitrary Go value to runtime value. This function is an alias
+// for core.ValueOf() provided for convenience.
+var ValueOf = core.ValueOf
+
 // New returns a new root Sabre instance.
 func New() *Sabre {
 	rt := runtime.New(nil)
 	// TODO: add bindings for builtins
 	return &Sabre{Runtime: rt}
-}
-
-// ValueOf converts arbitrary Go value to runtime value. This function is an alias
-// for core.ValueOf() provided for convenience.
-func ValueOf(v interface{}) runtime.Value {
-	return core.ValueOf(v)
 }
 
 // ReadEval reads forms from 'r' until EOF using the default reader instance and
@@ -32,17 +30,7 @@ func ReadEval(rt runtime.Runtime, r io.Reader) (runtime.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	if len(forms) == 0 {
-		return runtime.Nil{}, nil
-	}
-
-	res, err := runtime.EvalAll(rt, forms)
-	if err != nil {
-		return nil, err
-	}
-
-	return res[len(res)-1], nil
+	return rt.Eval(core.Module(forms))
 }
 
 // Sabre implements a sabre runtime with support for qualified symbols.

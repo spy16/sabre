@@ -22,7 +22,7 @@ func (mod Module) Eval(rt runtime.Runtime) (runtime.Value, error) {
 		}
 	}
 
-	if (runtime.Nil{}).Equals(res) {
+	if runtime.Equals(res, nil) {
 		return runtime.Nil{}, nil
 	}
 

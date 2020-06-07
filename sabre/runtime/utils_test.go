@@ -67,7 +67,7 @@ func TestVerifyArgCount(t *testing.T) {
 	}
 }
 
-func TestCompare(t *testing.T) {
+func TestEquals(t *testing.T) {
 	t.Parallel()
 
 	table := []struct {
@@ -87,6 +87,31 @@ func TestCompare(t *testing.T) {
 		{
 			v1:   nil,
 			v2:   runtime.Nil{},
+			want: true,
+		},
+		{
+			v1:   runtime.Bool(true),
+			v2:   runtime.Bool(true),
+			want: true,
+		},
+		{
+			v1:   runtime.Bool(true),
+			v2:   runtime.Bool(false),
+			want: false,
+		},
+		{
+			v1:   runtime.Bool(true),
+			v2:   runtime.Nil{},
+			want: false,
+		},
+		{
+			v1:   runtime.Char('π'),
+			v2:   runtime.Nil{},
+			want: false,
+		},
+		{
+			v1:   runtime.Char('π'),
+			v2:   runtime.Char('π'),
 			want: true,
 		},
 		{

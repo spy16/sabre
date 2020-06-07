@@ -12,9 +12,10 @@ var (
 
 // NewSeq returns a new sequence containing given values.
 func NewSeq(items ...Value) Seq {
-	lst := Seq(&linkedList{
-		count: len(items),
-	})
+	if len(items) == 0 {
+		return Seq((*linkedList)(nil))
+	}
+	lst := Seq(&linkedList{})
 	for i := len(items) - 1; i >= 0; i-- {
 		lst = lst.Cons(items[i])
 	}

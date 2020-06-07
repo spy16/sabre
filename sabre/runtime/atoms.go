@@ -23,12 +23,6 @@ type Nil struct{}
 // Eval returns the underlying value.
 func (n Nil) Eval(_ Runtime) (Value, error) { return n, nil }
 
-// Equals returns true if 'other' is also nil/Nil.
-func (n Nil) Equals(other Value) bool {
-	_, isNil := other.(Nil)
-	return other == nil || isNil
-}
-
 func (n Nil) String() string { return "nil" }
 
 // Bool represents a boolean value.
