@@ -4,30 +4,12 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"sync"
 )
 
 var (
 	_ Value     = GoFunc(nil)
 	_ Invokable = GoFunc(nil)
 )
-
-// New returns an empty runtime with given parent runtime. Returned runtime does not
-// support qualified symbol resolution. parent argument can be nil to make this the
-// root runtime.
-func New(parent Runtime) Runtime {
-	return &mapEnv{
-		scope: map[string]Value{
-			"quote": GoFunc(func(env Runtime, args ...Value) (Value, error) {
-				if len(args) != 1 {
-					return nil, fmt.Errorf("quote requires exactly 1 arg, got %d", len(args))
-				}
-				return args[0], nil
-			}),
-		},
-		parent: parent,
-	}
-}
 
 // Equals compares two values in an identity independent manner. If v1 implements
 // `Equals(Value)` method, then the comparison is delegated to it.
@@ -86,8 +68,25 @@ func ForEach(seq Seq, call func(item Value) bool) {
 	}
 }
 
+// ToSeq returns a Seq from given value if it is a Seq or Seqable.
+func ToSeq(v Value) (Seq, bool) {
+	if isNil(v) {
+		return nil, false
+	}
+	switch s := v.(type) {
+	case Seq:
+		return s, true
+
+	case Seqable:
+		return s.Seq(), true
+
+	default:
+		return nil, false
+	}
+}
+
 // GoFunc provides a simple Go native function based invokable value.
-type GoFunc func(env Runtime, args ...Value) (Value, error)
+type GoFunc func(rt Runtime, args ...Value) (Value, error)
 
 // Eval simply returns itself.
 func (fn GoFunc) Eval(_ Runtime) (Value, error) { return fn, nil }
@@ -127,57 +126,6 @@ func isNil(v Value) bool {
 	_, isNil := v.(Nil)
 	return v == nil || isNil
 }
-
-type mapEnv struct {
-	mu     sync.RWMutex
-	scope  map[string]Value
-	parent Runtime
-}
-
-func (env *mapEnv) Eval(form Value) (Value, error) {
-	if isNil(form) {
-		return Nil{}, nil
-	}
-
-	v, err := form.Eval(env)
-	if err != nil {
-		e := NewErr(false, getPosition(form), err)
-		e.Form = form
-		return nil, e
-	}
-
-	if v == nil {
-		return Nil{}, nil
-	}
-
-	return v, nil
-}
-
-func (env *mapEnv) Bind(symbol string, v Value) error {
-	env.mu.Lock()
-	defer env.mu.Unlock()
-
-	env.scope[symbol] = v
-	return nil
-}
-
-func (env *mapEnv) Resolve(symbol string) (Value, error) {
-	env.mu.RLock()
-	defer env.mu.RUnlock()
-
-	v, found := env.scope[symbol]
-	if !found {
-		if env.parent == nil {
-			return nil, ErrNotFound
-		}
-
-		return env.parent.Resolve(symbol)
-	}
-
-	return v, nil
-}
-
-func (env *mapEnv) Parent() Runtime { return env.parent }
 
 func getPosition(form Value) Position {
 	return Position{}

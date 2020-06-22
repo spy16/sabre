@@ -1,6 +1,6 @@
-// Package runtime provides runtime contracts Sabre works with, builtin types of
-// Sabre and a reader that can read builtins and be extended to read custom value
-// types using reader macros. All primitive values implemented are immutable.
+// Package runtime provides the runtime contracts Sabre works with, builtin types
+// of Sabre and some core functions. All built-in values implemented are immutable.
+// Runtime is self sufficient to build a pure-lisp environment.
 package runtime
 
 import (
@@ -165,13 +165,10 @@ type Attributable interface {
 // NewErr returns a sabre error object with given err as cause. If err is already
 // a sabre Error, simply returns copy of it with given position attached.
 func NewErr(isRead bool, pos Position, err error) Error {
-	if ee, ok := err.(Error); ok {
+	if ee, ok := toErr(err); ok {
+		ee.IsReadErr = isRead
 		ee.Position = pos
 		return ee
-	} else if ee, ok := err.(*Error); ok && ee != nil {
-		err := *ee
-		err.Position = pos
-		return err
 	}
 
 	return Error{
@@ -194,20 +191,15 @@ type Error struct {
 func (err Error) Unwrap() error { return err.Cause }
 
 func (err Error) Error() string {
-	if e, ok := err.Cause.(Error); ok {
-		return e.Error()
+	if err.File == "" {
+		err.File = "<unknown>"
 	}
 
 	if err.IsReadErr {
-		return fmt.Sprintf(
-			"syntax error in '%s' (Line %d Col %d): %v",
-			err.File, err.Line, err.Column, err.Cause,
-		)
+		return fmt.Sprintf("syntax error in '%s': %v", err.Position, err.Cause)
 	}
 
-	return fmt.Sprintf("eval-error in '%s' (at line %d:%d): %v",
-		err.File, err.Line, err.Column, err.Cause,
-	)
+	return fmt.Sprintf("eval-error in '%s': %v", err.Position, err.Cause)
 }
 
 // Position represents the positional information about a value read
@@ -234,6 +226,16 @@ func (pi Position) String() string {
 	if pi.File == "" {
 		pi.File = "<unknown>"
 	}
-
 	return fmt.Sprintf("%s:%d:%d", pi.File, pi.Line, pi.Column)
+}
+
+func toErr(err error) (Error, bool) {
+	switch e := err.(type) {
+	case Error:
+		return e, true
+	case *Error:
+		return *e, true
+	default:
+		return Error{}, false
+	}
 }

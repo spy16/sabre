@@ -10,6 +10,8 @@ import (
 	"github.com/spy16/sabre/runtime"
 )
 
+const sep = "."
+
 var _ runtime.Runtime = (*Sabre)(nil)
 
 // ValueOf converts arbitrary Go value to runtime value. This function is an alias
@@ -41,7 +43,7 @@ type Sabre struct {
 // qualified and the target value does not support attributes.
 func (s *Sabre) Bind(symbol string, v runtime.Value) error {
 	// TODO: Resolve target and check if it is Attributable.
-	if strings.Contains(symbol, ".") {
+	if strings.Contains(symbol, sep) {
 		return fmt.Errorf("cannot bind to qualified symbol")
 	}
 	return s.Runtime.Bind(symbol, v)
@@ -49,10 +51,10 @@ func (s *Sabre) Bind(symbol string, v runtime.Value) error {
 
 // Resolve recursively resolves the fully-qualified symbol and returns the value.
 func (s *Sabre) Resolve(symbol string) (runtime.Value, error) {
-	fields := strings.SplitN(symbol, ".", 2)
+	fields := strings.SplitN(symbol, sep, 2)
 
-	if symbol == "." {
-		fields = []string{"."}
+	if symbol == sep {
+		fields = []string{sep}
 	}
 
 	target, err := s.Runtime.Resolve(fields[0])

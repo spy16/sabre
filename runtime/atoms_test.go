@@ -36,9 +36,11 @@ func TestKeyword_Invoke(t *testing.T) {
 		{
 			title: "WithDefault",
 			args: []runtime.Value{
-				&fakeMap{EntryAtFunc: func(key runtime.Value) runtime.Value {
-					return nil
-				}},
+				&fakeMap{
+					EntryAtFunc: func(key runtime.Value) runtime.Value {
+						return nil
+					},
+				},
 				runtime.Float64(10),
 			},
 			getEnv: func() runtime.Runtime { return runtime.New(nil) },
@@ -209,6 +211,10 @@ type fakeMap struct {
 	runtime.Map
 
 	EntryAtFunc func(key runtime.Value) runtime.Value
+}
+
+func (m *fakeMap) Seq() runtime.Seq {
+	return runtime.NewSeq()
 }
 
 func (m *fakeMap) Eval(rt runtime.Runtime) (runtime.Value, error) {

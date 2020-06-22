@@ -28,6 +28,9 @@ type linkedList struct {
 	value Value
 	next  *linkedList
 	count int
+
+	// state for special form invocations
+	specialInvoke func() (Value, error)
 }
 
 // Eval evaluates the first item in the list and invokes the resultant value with
@@ -35,6 +38,11 @@ type linkedList struct {
 func (sl *linkedList) Eval(rt Runtime) (Value, error) {
 	if sl.Count() == 0 {
 		return sl, nil
+	}
+
+	// special form invocation is available
+	if sl.specialInvoke != nil {
+		return sl.specialInvoke()
 	}
 
 	v, err := rt.Eval(sl.First())
@@ -47,13 +55,7 @@ func (sl *linkedList) Eval(rt Runtime) (Value, error) {
 		return nil, fmt.Errorf("value of type '%s' is not invokable", reflect.TypeOf(target))
 	}
 
-	var args []Value
-	ForEach(sl.next, func(item Value) bool {
-		args = append(args, item)
-		return false
-	})
-
-	return target.Invoke(rt, args...)
+	return target.Invoke(rt, toSlice(sl.next)...)
 }
 
 func (sl *linkedList) String() string { return SeqString(sl, "(", ")", " ") }
