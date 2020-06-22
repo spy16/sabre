@@ -117,8 +117,8 @@ func (kw Keyword) String() string { return fmt.Sprintf(":%s", string(kw)) }
 
 // Invoke enables keyword lookup for maps.
 func (kw Keyword) Invoke(scope Runtime, args ...Value) (Value, error) {
-	if err := VerifyArgCount([]int{1, 2}, len(args)); err != nil {
-		return nil, err
+	if len(args) != 1 && len(args) != 2 {
+		return nil, fmt.Errorf("keyword invoke requires 1 or 2 arguments, got %d", len(args))
 	}
 
 	argVals, err := EvalAll(scope, args)

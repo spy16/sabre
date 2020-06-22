@@ -19,7 +19,7 @@ var ValueOf = core.ValueOf
 // New returns a new root Sabre instance.
 func New() *Sabre {
 	rt := runtime.New(nil)
-	// TODO: add bindings for builtins
+	_ = rt.Bind("def", runtime.GoFunc(core.Def))
 	return &Sabre{Runtime: rt}
 }
 

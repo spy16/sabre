@@ -1,12 +1,70 @@
 package core_test
 
 import (
+	"errors"
 	"reflect"
 	"testing"
 
 	"github.com/spy16/sabre/core"
 	"github.com/spy16/sabre/runtime"
 )
+
+func TestVerifyArgCount(t *testing.T) {
+	t.Parallel()
+
+	table := []struct {
+		title   string
+		argC    int
+		arities []int
+		wantErr error
+	}{
+		{
+			title:   "ExtraArgs",
+			argC:    1,
+			arities: []int{},
+			wantErr: errors.New("call requires no arguments, got 1"),
+		},
+		{
+			title:   "InsufficientArgs",
+			argC:    0,
+			arities: []int{1},
+			wantErr: errors.New("call requires exactly 1 argument(s), got 0"),
+		},
+		{
+			title:   "ArgCountMismatch",
+			argC:    0,
+			arities: []int{1, 5},
+			wantErr: errors.New("call requires 1 or 5 argument(s), got 0"),
+		},
+		{
+			title:   "ManyArities",
+			argC:    4,
+			arities: []int{0, 1, 2, 3, 5},
+			wantErr: errors.New("wrong number of arguments (4) passed"),
+		},
+		{
+			title:   "Success",
+			argC:    2,
+			arities: []int{1, 2, 3, 5},
+			wantErr: nil,
+		},
+	}
+
+	for _, tt := range table {
+		t.Run(tt.title, func(t *testing.T) {
+			err := core.VerifyArgCount(tt.arities, tt.argC)
+			if tt.wantErr != nil {
+				if err == nil {
+					t.Errorf("VerifyArgCount('%+v', %d) expecting error '%s', got nil",
+						tt.arities, tt.argC, tt.wantErr)
+				} else if tt.wantErr.Error() != err.Error() {
+					t.Errorf("VerifyArgCount('%+v', %d) want=%s, got=%s",
+						tt.arities, tt.argC, tt.wantErr, err)
+				}
+			}
+		})
+	}
+}
 
 func TestModule_Eval(t *testing.T) {
 	t.Parallel()
