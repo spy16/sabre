@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/runtime"
 )
 
 func TestList_Eval(t *testing.T) {
@@ -29,12 +29,21 @@ func TestList_Eval(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			title:  "NonInvokable",
+			title:  "InvokableNoArgs",
 			getEnv: func() runtime.Runtime { return runtime.New(nil) },
 			form: runtime.NewSeq(runtime.GoFunc(func(env runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
 				return runtime.String("called"), nil
 			})),
 			want:    runtime.String("called"),
+			wantErr: false,
+		},
+		{
+			title:  "InvokableWithArgs",
+			getEnv: func() runtime.Runtime { return runtime.New(nil) },
+			form: runtime.NewSeq(runtime.GoFunc(func(env runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
+				return args[0], nil
+			}), runtime.String("hello")),
+			want:    runtime.String("hello"),
 			wantErr: false,
 		},
 	})

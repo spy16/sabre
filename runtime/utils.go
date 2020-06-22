@@ -18,7 +18,14 @@ var (
 // root runtime.
 func New(parent Runtime) Runtime {
 	return &mapEnv{
-		scope:  map[string]Value{},
+		scope: map[string]Value{
+			"quote": GoFunc(func(env Runtime, args ...Value) (Value, error) {
+				if len(args) != 1 {
+					return nil, fmt.Errorf("quote requires exactly 1 arg, got %d", len(args))
+				}
+				return args[0], nil
+			}),
+		},
 		parent: parent,
 	}
 }
@@ -124,12 +131,17 @@ type GoFunc func(env Runtime, args ...Value) (Value, error)
 // Eval simply returns itself.
 func (fn GoFunc) Eval(_ Runtime) (Value, error) { return fn, nil }
 
-// Equals always returns false.
-func (fn GoFunc) Equals(other Value) bool { return false }
+// Equals returns true if the 'other' value is a GoFunc and has the same
+// memory address (pointer value).
+func (fn GoFunc) Equals(other Value) bool {
+	gf, ok := other.(GoFunc)
+	return ok && reflect.ValueOf(fn).Pointer() == reflect.ValueOf(gf).Pointer()
+}
 
 func (fn GoFunc) String() string { return fmt.Sprintf("GoFunc{}") }
 
 // Invoke simply dispatches the invocation request to the wrapped function.
+// Wrapped function value receives un-evaluated list of arguments.
 func (fn GoFunc) Invoke(env Runtime, args ...Value) (Value, error) {
 	return fn(env, args...)
 }

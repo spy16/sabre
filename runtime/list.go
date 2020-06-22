@@ -76,11 +76,13 @@ func (sl *linkedList) Cons(v Value) Seq {
 
 // Conj returns a new list with all the items added at the head of the list.
 func (sl *linkedList) Conj(items ...Value) Seq {
+	var res Seq
 	if sl == nil {
-		sl = &linkedList{}
+		res = &linkedList{}
+	} else {
+		res = sl
 	}
 
-	res := Seq(sl)
 	for _, item := range items {
 		res = res.Cons(item)
 	}

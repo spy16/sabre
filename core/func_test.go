@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spy16/sabre/sabre/core"
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/core"
+	"github.com/spy16/sabre/runtime"
 )
 
 func TestMultiFn_Eval(t *testing.T) {

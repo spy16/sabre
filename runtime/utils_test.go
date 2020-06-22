@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/runtime"
 )
 
 func TestVerifyArgCount(t *testing.T) {
@@ -236,4 +236,18 @@ func Test_mapEnv(t *testing.T) {
 			t.Errorf("mapEnv.Resolve(\"π\") want=%+v, got=%+v", want, v)
 		}
 	})
+}
+
+func TestGoFunc_Equals(t *testing.T) {
+	f1 := runtime.GoFunc(func(env runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
+		return runtime.Nil{}, nil
+	})
+	if !f1.Equals(f1) {
+		t.Errorf("GoFunc.Equals() expecting true, got false")
+	}
+
+	f2 := runtime.GoFunc(nil)
+	if f1.Equals(f2) {
+		t.Errorf("GoFunc.Equals() expecting false, got true")
+	}
 }

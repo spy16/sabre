@@ -3,7 +3,7 @@ package core
 import (
 	"strings"
 
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/runtime"
 )
 
 // Module is a convenience wrapper for evaluating multiple values. Evaluation

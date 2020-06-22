@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/spy16/sabre"
 )
@@ -10,10 +11,14 @@ import (
 func main() {
 	// Setup the environment available for your scripts. NewScope(nil)
 	// starts with no bindings.
-	scope := sabre.NewScope(nil)
-	scope.BindGo("api", &API{name: "foo"})
-	scope.BindGo("console-print", printToConsole)
-	scope.BindGo("value-of-pi", valueOfPi)
+	rt := sabre.New()
+	bind := func(sym string, v interface{}) {
+		_ = rt.Bind(sym, sabre.ValueOf(v))
+	}
+
+	bind("api", &API{name: "foo"})
+	bind("console-print", printToConsole)
+	bind("value-of-pi", valueOfPi)
 
 	// userProgram can be read from a file, command-line, a network socket
 	// etc. and can contain calls that return/simply have side effects.
@@ -23,7 +28,7 @@ func main() {
 		(value-of-pi)
 	`
 
-	res, err := sabre.ReadEvalStr(scope, userProgram)
+	res, err := sabre.ReadEval(rt, strings.NewReader(userProgram))
 	if err != nil {
 		panic(err)
 	}

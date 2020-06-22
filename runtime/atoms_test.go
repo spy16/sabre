@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/runtime"
 )
 
 func TestKeyword_Invoke(t *testing.T) {

@@ -14,11 +14,11 @@ const program = `
 `
 
 func main() {
-	scope := sabre.New()
-	scope.BindGo("sum", sum)
-	scope.BindGo("printf", fmt.Printf)
+	rt := sabre.New()
+	_ = rt.Bind("sum", sabre.ValueOf(sum))
+	_ = rt.Bind("printf", sabre.ValueOf(fmt.Printf))
 
-	repl.New(scope,
+	_ = repl.New(rt,
 		repl.WithPrompts("=>", ">"),
 	).Loop(context.Background())
 }

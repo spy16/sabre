@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/runtime"
 )
 
 var (
@@ -130,7 +130,7 @@ func (fn *Fn) Equals(other runtime.Value) bool {
 	}
 
 	sameArgs := reflect.DeepEqual(fn.Args, otherFn.Args)
-	bothVariadic := (fn.Variadic == otherFn.Variadic)
+	bothVariadic := fn.Variadic == otherFn.Variadic
 	return bothVariadic && sameArgs && runtime.Equals(fn.Body, otherFn.Body)
 }
 

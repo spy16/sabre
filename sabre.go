@@ -1,78 +1,65 @@
-// Package sabre provides data structures, reader for reading LISP source
-// into data structures and functions for evluating forms against a context.
 package sabre
 
 import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/spy16/sabre/core"
+	"github.com/spy16/sabre/reader"
+	"github.com/spy16/sabre/runtime"
 )
 
-// Eval evaluates the given form against the scope and returns the result
-// of evaluation.
-func Eval(scope Scope, form Value) (Value, error) {
-	if form == nil {
-		return Nil{}, nil
-	}
+var _ runtime.Runtime = (*Sabre)(nil)
 
-	v, err := form.Eval(scope)
-	if err != nil {
-		return v, newEvalErr(form, err)
-	}
+// ValueOf converts arbitrary Go value to runtime value. This function is an alias
+// for core.ValueOf() provided for convenience.
+var ValueOf = core.ValueOf
 
-	return v, nil
+// New returns a new root Sabre instance.
+func New() *Sabre {
+	rt := runtime.New(nil)
+	// TODO: add bindings for builtins
+	return &Sabre{Runtime: rt}
 }
 
-// ReadEval consumes data from reader 'r' till EOF, parses into forms
-// and evaluates all the forms obtained and returns the result.
-func ReadEval(scope Scope, r io.Reader) (Value, error) {
-	mod, err := NewReader(r).All()
+// ReadEval reads forms from 'r' until EOF using the default reader instance and
+// evaluates all forms against the runtime. Returns the result of the last eval.
+func ReadEval(rt runtime.Runtime, r io.Reader) (runtime.Value, error) {
+	forms, err := reader.New(r).All()
 	if err != nil {
 		return nil, err
 	}
-
-	return Eval(scope, mod)
+	return rt.Eval(core.Module(forms))
 }
 
-// ReadEvalStr is a convenience wrapper for Eval that reads forms from
-// string and evaluates for result.
-func ReadEvalStr(scope Scope, src string) (Value, error) {
-	return ReadEval(scope, strings.NewReader(src))
+// Sabre implements a sabre runtime with support for qualified symbols.
+type Sabre struct {
+	runtime.Runtime
 }
 
-// Scope implementation is responsible for managing value bindings.
-type Scope interface {
-	Parent() Scope
-	Bind(symbol string, v Value) error
-	Resolve(symbol string) (Value, error)
+// Bind creates a binding for symbol to value. Bind throws error if the symbol is
+// qualified and the target value does not support attributes.
+func (s *Sabre) Bind(symbol string, v runtime.Value) error {
+	// TODO: Resolve target and check if it is Attributable.
+	if strings.Contains(symbol, ".") {
+		return fmt.Errorf("cannot bind to qualified symbol")
+	}
+	return s.Runtime.Bind(symbol, v)
 }
 
-func newEvalErr(v Value, err error) EvalError {
-	if ee, ok := err.(EvalError); ok {
-		return ee
-	} else if ee, ok := err.(*EvalError); ok && ee != nil {
-		return *ee
+// Resolve recursively resolves the fully-qualified symbol and returns the value.
+func (s *Sabre) Resolve(symbol string) (runtime.Value, error) {
+	fields := strings.SplitN(symbol, ".", 2)
+
+	if symbol == "." {
+		fields = []string{"."}
 	}
 
-	return EvalError{
-		Position: getPosition(v),
-		Cause:    err,
-		Form:     v,
+	target, err := s.Runtime.Resolve(fields[0])
+	if len(fields) == 1 || err != nil {
+		return target, err
 	}
-}
 
-// EvalError represents error during evaluation.
-type EvalError struct {
-	Position
-	Cause error
-	Form  Value
-}
-
-// Unwrap returns the underlying cause of this error.
-func (ee EvalError) Unwrap() error { return ee.Cause }
-
-func (ee EvalError) Error() string {
-	return fmt.Sprintf("eval-error in '%s' (at line %d:%d): %v",
-		ee.File, ee.Line, ee.Column, ee.Cause,
-	)
+	return core.AccessMember(target, fields[1:])
 }

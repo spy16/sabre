@@ -1,5 +1,5 @@
-// Package repl provides a REPL implementation and options to expose Sabre
-// features through a read-eval-print-loop.
+// Package repl provides facilities to build an interactive REPL using sabre
+// Runtime instance.
 package repl
 
 import (
@@ -9,19 +9,20 @@ import (
 	"io"
 	"strings"
 
-	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/reader"
+	"github.com/spy16/sabre/runtime"
 )
 
-// New returns a new instance of REPL with given sabre Scope. Option values
+// New returns a new instance of REPL with given sabre Runtime. Option values
 // can be used to configure REPL input, output etc.
-func New(scope sabre.Scope, opts ...Option) *REPL {
+func New(rt runtime.Runtime, opts ...Option) *REPL {
 	repl := &REPL{
-		scope:            scope,
-		currentNamespace: func() string { return "" },
+		rt:        rt,
+		currentNS: func() string { return "" },
 	}
 
-	if ns, ok := scope.(NamespacedScope); ok {
-		repl.currentNamespace = ns.CurrentNS
+	if ns, ok := rt.(NamespacedRuntime); ok {
+		repl.currentNS = ns.CurrentNS
 	}
 
 	for _, option := range withDefaults(opts) {
@@ -31,21 +32,22 @@ func New(scope sabre.Scope, opts ...Option) *REPL {
 	return repl
 }
 
-// NamespacedScope can be implemented by sabre.Scope implementations to allow
+// NamespacedRuntime can be implemented by Runtime implementations to allow
 // namespace based isolation (similar to Clojure). REPL will call CurrentNS()
 // method to get the current Namespace and display it as part of input prompt.
-type NamespacedScope interface {
+type NamespacedRuntime interface {
+	runtime.Runtime
 	CurrentNS() string
 }
 
 // REPL implements a read-eval-print loop for a generic Runtime.
 type REPL struct {
-	scope            sabre.Scope
-	input            Input
-	output           io.Writer
-	mapInputErr      ErrMapper
-	currentNamespace func() string
-	factory          ReaderFactory
+	rt          runtime.Runtime
+	input       Input
+	output      io.Writer
+	mapInputErr ErrMapper
+	currentNS   func() string
+	factory     ReaderFactory
 
 	banner      string
 	prompt      string
@@ -67,7 +69,7 @@ func (repl *REPL) Loop(ctx context.Context) error {
 	repl.printBanner()
 	repl.setPrompt(false)
 
-	if repl.scope == nil {
+	if repl.rt == nil {
 		return errors.New("scope is not set")
 	}
 
@@ -87,26 +89,29 @@ func (repl *REPL) Loop(ctx context.Context) error {
 
 // readEval reads one form from the input, evaluates it and prints the result.
 func (repl *REPL) readEvalPrint() error {
-	form, err := repl.read()
+	forms, err := repl.read()
 	if err != nil {
 		switch err.(type) {
-		case sabre.ReadError, sabre.EvalError:
-			repl.print(err)
+		case runtime.Error:
+			_ = repl.print(err)
 		default:
 			return err
 		}
 	}
 
-	if form == nil {
+	if len(forms) == 0 {
 		return nil
 	}
 
-	v, err := sabre.Eval(repl.scope, form)
+	res, err := runtime.EvalAll(repl.rt, forms)
 	if err != nil {
 		return repl.print(err)
 	}
+	if len(res) == 0 {
+		return repl.print(runtime.Nil{})
+	}
 
-	return repl.print(v)
+	return repl.print(res[len(res)-1])
 }
 
 func (repl *REPL) Write(b []byte) (int, error) {
@@ -117,7 +122,7 @@ func (repl *REPL) print(v interface{}) error {
 	return repl.printer(repl.output, v)
 }
 
-func (repl *REPL) read() (sabre.Value, error) {
+func (repl *REPL) read() ([]runtime.Value, error) {
 	var src string
 	lineNo := 1
 
@@ -141,7 +146,7 @@ func (repl *REPL) read() (sabre.Value, error) {
 
 		form, err := rd.All()
 		if err != nil {
-			if errors.Is(err, sabre.ErrEOF) {
+			if errors.Is(err, reader.ErrEOF) {
 				lineNo++
 				continue
 			}
@@ -158,7 +163,7 @@ func (repl *REPL) setPrompt(multiline bool) {
 		return
 	}
 
-	nsPrefix := repl.currentNamespace()
+	nsPrefix := repl.currentNS()
 	prompt := repl.prompt
 
 	if multiline {

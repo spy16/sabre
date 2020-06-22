@@ -17,7 +17,7 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/runtime"
 )
 
 const dispatchTrigger = '#'

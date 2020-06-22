@@ -150,7 +150,7 @@ type Set interface {
 	// Conj returns a new set with the vals conjoined.
 	Conj(vals ...Value) Set
 
-	// Disj returns a new set with the vals disjoined.
+	// Disj returns a new set with the vals dis-joined.
 	Disj(vals ...Value) Set
 }
 

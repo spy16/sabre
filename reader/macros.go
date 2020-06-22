@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/spy16/sabre/sabre/runtime"
+	"github.com/spy16/sabre/runtime"
 )
 
 // Macro implementations can be plugged into the Reader to extend, override
@@ -28,7 +28,7 @@ func SetReader(setEnd rune, factory func() runtime.Set) Macro {
 // VectorReader implements the reader macro for reading vector from source.
 func VectorReader(vecEnd rune, factory func() runtime.Value) Macro {
 	return func(rd *Reader, _ rune) (runtime.Value, error) {
-		forms, err := rd.Container(vecEnd, "vector")
+		forms, err := rd.Container(vecEnd, "Vector")
 		if err != nil {
 			return nil, err
 		}
@@ -46,7 +46,7 @@ func VectorReader(vecEnd rune, factory func() runtime.Value) Macro {
 // is used to construct the map and `Assoc` is called for every pair read.
 func MapReader(mapEnd rune, factory func() runtime.Map) Macro {
 	return func(rd *Reader, _ rune) (runtime.Value, error) {
-		forms, err := rd.Container(mapEnd, "map")
+		forms, err := rd.Container(mapEnd, "Map")
 		if err != nil {
 			return nil, err
 		}
