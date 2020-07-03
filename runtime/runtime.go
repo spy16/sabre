@@ -44,17 +44,6 @@ type Value interface {
 	String() string
 }
 
-// Hashable represents any value that is hashable and can be used as key in hash
-// based collection types (HashMap, HashSet etc.).
-type Hashable interface {
-	Value
-
-	// Hash should return a byte sequence that incorporates the contents of the
-	// value that should be considered in hashing. Hashing implementations will
-	// use the returned byte sequence to generate the hashcode.
-	Hash() []byte
-}
-
 // Invokable represents a value that can be invoked when it appears as the first
 // entry in a list. For example, Keyword uses this to enable lookups in maps.
 type Invokable interface {
@@ -77,9 +66,6 @@ type Seq interface {
 	// is excluded. 'nil' if the sequence is empty or has single item.
 	Next() Seq
 
-	// Cons returns a new sequence with the given value added as the first.
-	Cons(v Value) Seq
-
 	// Conj returns a new sequence which includes values from this sequence and
 	// the arguments. Position of conjoined values is not part of the contract.
 	Conj(vals ...Value) Seq
@@ -100,6 +86,9 @@ type Seqable interface {
 // iterations.
 type Vector interface {
 	Seqable
+
+	// Count returns the number of elements in the vector.
+	Count() int
 
 	// EntryAt returns the item at given index. Returns error if the index
 	// is out of range.
@@ -162,6 +151,33 @@ type Attributable interface {
 	SetAttr(name string, val Value) (Attributable, error)
 }
 
+// Position represents the positional information about a value read
+// by reader.
+type Position struct {
+	File   string
+	Line   int
+	Column int
+}
+
+// GetPos returns the file, line and column values.
+func (pi Position) GetPos() (file string, line, col int) {
+	return pi.File, pi.Line, pi.Column
+}
+
+// SetPos sets the position information.
+func (pi *Position) SetPos(file string, line, col int) {
+	pi.File = file
+	pi.Line = line
+	pi.Column = col
+}
+
+func (pi Position) String() string {
+	if pi.File == "" {
+		pi.File = "<unknown>"
+	}
+	return fmt.Sprintf("%s:%d:%d", pi.File, pi.Line, pi.Column)
+}
+
 // NewErr returns a sabre error object with given err as cause. If err is already
 // a sabre Error, simply returns copy of it with given position attached.
 func NewErr(isRead bool, pos Position, err error) Error {
@@ -200,33 +216,6 @@ func (err Error) Error() string {
 	}
 
 	return fmt.Sprintf("eval-error in '%s': %v", err.Position, err.Cause)
-}
-
-// Position represents the positional information about a value read
-// by reader.
-type Position struct {
-	File   string
-	Line   int
-	Column int
-}
-
-// GetPos returns the file, line and column values.
-func (pi Position) GetPos() (file string, line, col int) {
-	return pi.File, pi.Line, pi.Column
-}
-
-// SetPos sets the position information.
-func (pi *Position) SetPos(file string, line, col int) {
-	pi.File = file
-	pi.Line = line
-	pi.Column = col
-}
-
-func (pi Position) String() string {
-	if pi.File == "" {
-		pi.File = "<unknown>"
-	}
-	return fmt.Sprintf("%s:%d:%d", pi.File, pi.Line, pi.Column)
 }
 
 func toErr(err error) (Error, bool) {

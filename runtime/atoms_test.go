@@ -179,10 +179,6 @@ func Test_String(t *testing.T) {
 			want: `\π`,
 		},
 		{
-			val:  runtime.Char('😎'),
-			want: `\😎`,
-		},
-		{
 			val:  runtime.Keyword("specimen"),
 			want: ":specimen",
 		},

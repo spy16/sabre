@@ -11,6 +11,22 @@ var (
 	_ Invokable = GoFunc(nil)
 )
 
+// Cons returns a new seq with `v` added as the first and `seq` as the rest. Seq
+// can be nil as well.
+func Cons(v Value, seq Seq) Seq {
+	newSeq := &LinkedList{
+		first: v,
+		rest:  seq,
+		count: 1,
+	}
+
+	if seq != nil {
+		newSeq.count = seq.Count() + 1
+	}
+
+	return newSeq
+}
+
 // Equals compares two values in an identity independent manner. If v1 implements
 // `Equals(Value)` method, then the comparison is delegated to it.
 func Equals(v1, v2 Value) bool {
@@ -69,7 +85,7 @@ func ForEach(seq Seq, call func(item Value) bool) {
 }
 
 // ToSeq returns a Seq from given value if it is a Seq or Seqable.
-func ToSeq(v Value) (Seq, bool) {
+func ToSeq(v Value) (seq Seq, ok bool) {
 	if isNil(v) {
 		return nil, false
 	}
@@ -98,7 +114,9 @@ func (fn GoFunc) Equals(other Value) bool {
 	return ok && reflect.ValueOf(fn).Pointer() == reflect.ValueOf(gf).Pointer()
 }
 
-func (fn GoFunc) String() string { return fmt.Sprintf("GoFunc{}") }
+func (fn GoFunc) String() string {
+	return fmt.Sprintf("GoFunc{%p}", fn)
+}
 
 // Invoke simply dispatches the invocation request to the wrapped function.
 // Wrapped function value receives un-evaluated list of arguments.
@@ -106,11 +124,19 @@ func (fn GoFunc) Invoke(env Runtime, args ...Value) (Value, error) {
 	return fn(env, args...)
 }
 
+func isNil(v Value) bool {
+	_, isNil := v.(Nil)
+	return v == nil || isNil
+}
+
+func getPosition(_ Value) Position {
+	return Position{}
+}
+
 func compareSeq(s1, s2 Seq) bool {
 	if s1.Count() != s2.Count() {
 		return false
 	}
-
 	for s1 != nil && s2 != nil {
 		if !Equals(s1.First(), s2.First()) {
 			return false
@@ -118,15 +144,5 @@ func compareSeq(s1, s2 Seq) bool {
 		s1 = s1.Next()
 		s2 = s2.Next()
 	}
-
 	return true
-}
-
-func isNil(v Value) bool {
-	_, isNil := v.(Nil)
-	return v == nil || isNil
-}
-
-func getPosition(form Value) Position {
-	return Position{}
 }

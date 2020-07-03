@@ -11,33 +11,18 @@ func New(parent Runtime) Runtime {
 	return &mapRuntime{
 		scope:  map[string]Value{},
 		parent: parent,
-		specials: map[string]specialForm{
-			"do":    doForm,
-			"def":   defForm,
-			"cond":  condForm,
-			"quote": quoteForm,
-		},
 	}
 }
 
 type mapRuntime struct {
-	mu       sync.RWMutex
-	scope    map[string]Value
-	parent   Runtime
-	specials map[string]specialForm
+	mu     sync.RWMutex
+	scope  map[string]Value
+	parent Runtime
 }
-
-type specialForm func(rt Runtime, args ...Value) (specialInvoke, error)
-
-type specialInvoke func() (Value, error)
 
 func (rt *mapRuntime) Eval(form Value) (Value, error) {
 	if isNil(form) {
 		return Nil{}, nil
-	}
-
-	if err := rt.analyze(form); err != nil {
-		return nil, err
 	}
 
 	v, err := form.Eval(rt)
@@ -75,40 +60,6 @@ func (rt *mapRuntime) Resolve(symbol string) (Value, error) {
 }
 
 func (rt *mapRuntime) Parent() Runtime { return rt.parent }
-
-func (rt *mapRuntime) analyze(form Value) error {
-	if list, isList := form.(*linkedList); isList {
-		return rt.analyzeList(list)
-	}
-	if seq, ok := ToSeq(form); !ok {
-		var err error
-		ForEach(seq, func(item Value) bool {
-			err = rt.analyze(item)
-			return err != nil // break if error
-		})
-		return err
-	}
-	return nil
-}
-
-func (rt *mapRuntime) analyzeList(list *linkedList) (err error) {
-	if list.Count() == 0 {
-		return nil
-	}
-
-	sym, isSymbol := list.First().(Symbol)
-	if !isSymbol {
-		return nil
-	}
-
-	special, found := rt.specials[sym.Value]
-	if !found {
-		return nil
-	}
-
-	list.specialInvoke, err = special(rt, toSlice(list.Next())...)
-	return err
-}
 
 func toSlice(seq Seq) []Value {
 	var slice []Value

@@ -58,7 +58,7 @@ func Test_linkedList(t *testing.T) {
 	conjCount := seq1.Conj(runtime.Nil{}).Count()
 	assert(t, conjCount == 1, "Seq.Count() expected 1, got %d", conjCount)
 
-	seq2 := seq1.Cons(runtime.Int64(0))
+	seq2 := runtime.Cons(runtime.Int64(0), seq1)
 	assert(t, seq2.Count() == 1, "Seq.Count() expected 1, got %d", seq2.Count())
 	assert(t, seq1.Count() == 0, "Seq.Count() expected 0, got %d", seq1.Count())
 
