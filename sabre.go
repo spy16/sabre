@@ -18,9 +18,13 @@ var _ runtime.Runtime = (*Sabre)(nil)
 // for core.ValueOf() provided for convenience.
 var ValueOf = core.ValueOf
 
-// New returns a new root Sabre instance.
+// New returns a new root Sabre instance with built-in special forms.
 func New() *Sabre {
 	rt := runtime.New(nil)
+	_ = rt.Bind("do", runtime.GoFunc(doForm))
+	_ = rt.Bind("let", runtime.GoFunc(letForm))
+	_ = rt.Bind("def", runtime.GoFunc(defForm))
+	_ = rt.Bind("cond", runtime.GoFunc(condForm))
 	return &Sabre{Runtime: rt}
 }
 
