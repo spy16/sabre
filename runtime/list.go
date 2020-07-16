@@ -22,7 +22,7 @@ func NewSeq(items ...Value) Seq {
 	return lst
 }
 
-// LinkedList implements Seq using an immutable linked-list.
+// LinkedList implements an immutable Sequ using linked-list data structure.
 type LinkedList struct {
 	Position
 	first Value

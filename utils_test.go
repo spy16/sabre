@@ -1,11 +1,11 @@
-package core_test
+package sabre_test
 
 import (
 	"errors"
 	"reflect"
 	"testing"
 
-	"github.com/spy16/sabre/core"
+	"github.com/spy16/sabre"
 	"github.com/spy16/sabre/runtime"
 )
 
@@ -52,7 +52,7 @@ func TestVerifyArgCount(t *testing.T) {
 
 	for _, tt := range table {
 		t.Run(tt.title, func(t *testing.T) {
-			err := core.VerifyArgCount(tt.arities, tt.argC)
+			err := sabre.VerifyArgCount(tt.arities, tt.argC)
 			if tt.wantErr != nil {
 				if err == nil {
 					t.Errorf("VerifyArgCount('%+v', %d) expecting error '%s', got nil",
@@ -71,7 +71,7 @@ func TestModule_Eval(t *testing.T) {
 
 	table := []struct {
 		title   string
-		module  core.Module
+		module  sabre.Module
 		want    runtime.Value
 		wantErr bool
 	}{
@@ -83,25 +83,25 @@ func TestModule_Eval(t *testing.T) {
 		},
 		{
 			title:   "EmptyModule",
-			module:  core.Module{},
+			module:  sabre.Module{},
 			want:    runtime.Nil{},
 			wantErr: false,
 		},
 		{
 			title:   "SingleForm",
-			module:  core.Module{runtime.Int64(0)},
+			module:  sabre.Module{runtime.Int64(0)},
 			want:    runtime.Int64(0),
 			wantErr: false,
 		},
 		{
 			title:   "MultipleForms",
-			module:  core.Module{runtime.Int64(0), runtime.Bool(true)},
+			module:  sabre.Module{runtime.Int64(0), runtime.Bool(true)},
 			want:    runtime.Bool(true),
 			wantErr: false,
 		},
 		{
 			title:   "EvalError",
-			module:  core.Module{runtime.Symbol{Value: "blah"}},
+			module:  sabre.Module{runtime.Symbol{Value: "blah"}},
 			want:    nil,
 			wantErr: true,
 		},
@@ -122,7 +122,7 @@ func TestModule_Eval(t *testing.T) {
 }
 
 func TestModule_String(t *testing.T) {
-	m := core.Module{
+	m := sabre.Module{
 		runtime.NewSeq(runtime.Int64(0), runtime.Keyword("hello")),
 		runtime.Bool(true),
 	}

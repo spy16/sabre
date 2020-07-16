@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 
-	"github.com/spy16/sabre/core"
 	"github.com/spy16/sabre/runtime"
 )
 
@@ -45,11 +44,11 @@ func letForm(rt runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
 		}
 	}
 
-	return letRT.Eval(core.Module(args[1:]))
+	return letRT.Eval(Module(args[1:]))
 }
 
 func defForm(rt runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
-	if err := core.VerifyArgCount([]int{2}, len(args)); err != nil {
+	if err := VerifyArgCount([]int{2}, len(args)); err != nil {
 		return nil, err
 	}
 

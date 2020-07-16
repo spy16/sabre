@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/spy16/sabre"
@@ -20,9 +21,9 @@ func main() {
 	}
 
 	if shouldDiscount {
-		// apply discount for the order
+		fmt.Println("apply discount")
 	} else {
-		// don't apply discount
+		fmt.Println("don't apply discount")
 	}
 }
 

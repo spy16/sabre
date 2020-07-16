@@ -5,7 +5,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/spy16/sabre/core"
 	"github.com/spy16/sabre/reader"
 	"github.com/spy16/sabre/runtime"
 )
@@ -13,10 +12,6 @@ import (
 const sep = "."
 
 var _ runtime.Runtime = (*Sabre)(nil)
-
-// ValueOf converts arbitrary Go value to runtime value. This function is an alias
-// for core.ValueOf() provided for convenience.
-var ValueOf = core.ValueOf
 
 // New returns a new root Sabre instance with built-in special forms.
 func New() *Sabre {
@@ -35,7 +30,7 @@ func ReadEval(rt runtime.Runtime, r io.Reader) (runtime.Value, error) {
 	if err != nil {
 		return nil, err
 	}
-	return rt.Eval(core.Module(forms))
+	return rt.Eval(Module(forms))
 }
 
 // Sabre implements a sabre runtime with support for qualified symbols.
@@ -66,5 +61,5 @@ func (s *Sabre) Resolve(symbol string) (runtime.Value, error) {
 		return target, err
 	}
 
-	return core.AccessMember(target, fields[1:])
+	return AccessMember(target, fields[1:])
 }

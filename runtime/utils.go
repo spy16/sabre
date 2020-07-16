@@ -1,7 +1,6 @@
 package runtime
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 )
@@ -99,29 +98,6 @@ func ToSeq(v Value) (seq Seq, ok bool) {
 	default:
 		return nil, false
 	}
-}
-
-// GoFunc provides a simple Go native function based invokable value.
-type GoFunc func(rt Runtime, args ...Value) (Value, error)
-
-// Eval simply returns itself.
-func (fn GoFunc) Eval(_ Runtime) (Value, error) { return fn, nil }
-
-// Equals returns true if the 'other' value is a GoFunc and has the same
-// memory address (pointer value).
-func (fn GoFunc) Equals(other Value) bool {
-	gf, ok := other.(GoFunc)
-	return ok && reflect.ValueOf(fn).Pointer() == reflect.ValueOf(gf).Pointer()
-}
-
-func (fn GoFunc) String() string {
-	return fmt.Sprintf("GoFunc{%p}", fn)
-}
-
-// Invoke simply dispatches the invocation request to the wrapped function.
-// Wrapped function value receives un-evaluated list of arguments.
-func (fn GoFunc) Invoke(env Runtime, args ...Value) (Value, error) {
-	return fn(env, args...)
 }
 
 func isNil(v Value) bool {

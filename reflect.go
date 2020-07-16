@@ -1,4 +1,4 @@
-package core
+package sabre
 
 import (
 	"fmt"
@@ -78,7 +78,7 @@ func AccessMember(obj runtime.Value, fields []string) (runtime.Value, error) {
 	return v, nil
 }
 
-// Any can be used to wrap arbitrary Go value into Sabre scope.
+// Any can be used to wrap arbitrary Go value.
 type Any struct{ V reflect.Value }
 
 // Eval returns itself.
@@ -94,7 +94,7 @@ func (t Type) Eval(_ runtime.Runtime) (runtime.Value, error) { return t, nil }
 
 func (t Type) String() string { return fmt.Sprintf("%v", t.T) }
 
-// Invoke creates zero value of the given type.
+// Invoke creates zero value of the wrapped type.
 func (t Type) Invoke(scope runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
 	if isKind(t.T, reflect.Interface, reflect.Chan, reflect.Func) {
 		return nil, fmt.Errorf("type '%s' cannot be initialized", t.T)
@@ -113,8 +113,7 @@ func (t Type) Invoke(scope runtime.Runtime, args ...runtime.Value) (runtime.Valu
 	return ValueOf(reflect.New(t.T).Elem().Interface()), nil
 }
 
-// reflectFn creates a wrapper Fn for the given Go function value using
-// reflection.
+// reflectFn creates a wrapper Fn for the given Go function value using reflection.
 func reflectFn(rv reflect.Value) runtime.Invokable {
 	fw := wrapFunc(rv)
 	return runtime.GoFunc(

@@ -137,17 +137,3 @@ func TestEquals(t *testing.T) {
 		})
 	}
 }
-
-func TestGoFunc_Equals(t *testing.T) {
-	f1 := runtime.GoFunc(func(env runtime.Runtime, args ...runtime.Value) (runtime.Value, error) {
-		return runtime.Nil{}, nil
-	})
-	if !f1.Equals(f1) {
-		t.Errorf("GoFunc.Equals() expecting true, got false")
-	}
-
-	f2 := runtime.GoFunc(nil)
-	if f1.Equals(f2) {
-		t.Errorf("GoFunc.Equals() expecting false, got true")
-	}
-}

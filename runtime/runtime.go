@@ -17,7 +17,7 @@ var ErrNotFound = errors.New("not found")
 type Runtime interface {
 	// Eval evaluates the form in this runtime. Runtime might customize the eval
 	// rules for different values, but in most cases, eval will be dispatched to
-	// to Eval() method of value.
+	// Eval() method of value.
 	Eval(form Value) (Value, error)
 
 	// Bind binds the value to the symbol. Returns error if the symbol contains
