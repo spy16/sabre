@@ -1,182 +1,138 @@
-package sabre_test
+package sabre
 
 import (
 	"reflect"
 	"testing"
 
-	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/runtime"
 )
 
 func TestMultiFn_Eval(t *testing.T) {
-	executeEvalTests(t, []evalTestCase{
-		{
-			name:  "Valid",
-			value: sabre.MultiFn{},
-			want:  sabre.MultiFn{},
+	m := MultiFn{
+		Name: "hello",
+		Functions: []runtime.Fn{
+			{
+				Args:     []string{"a", "b"},
+				Variadic: true,
+				Body:     nil,
+			},
 		},
-	})
+	}
+
+	got, err := m.Eval(nil)
+	if err != nil {
+		t.Errorf("MultiFn.Eval() unexpected error: %+v", err)
+	}
+
+	if !reflect.DeepEqual(m, got) {
+		t.Errorf("MultiFn.Eval() want=%+v, got=%+v", m, got)
+	}
 }
 
 func TestMultiFn_String(t *testing.T) {
-	executeStringTestCase(t, []stringTestCase{
-		{
-			value: sabre.MultiFn{
-				Name: "hello",
+	m := MultiFn{
+		Name: "hello",
+		Functions: []runtime.Fn{
+			{
+				Args:     []string{"a", "b"},
+				Variadic: true,
+				Body: runtime.NewSeq(
+					runtime.Symbol{Value: "do"},
+					runtime.Float64(0.12345),
+				),
 			},
-			want: "(hello)",
 		},
-	})
+	}
+
+	want := "(defn hello\n  (fn [a & b] (do 0.123450)))"
+	got := m.String()
+	if want != got {
+		t.Errorf("MultiFn.String() want=`%s`, got=`%s`", want, got)
+	}
+}
+
+func TestMultiFn_Equals(t *testing.T) {
+	m := MultiFn{
+		Name: "hello",
+		Functions: []runtime.Fn{
+			{
+				Args:     []string{"a", "b"},
+				Variadic: true,
+				Body: runtime.NewSeq(
+					runtime.Symbol{Value: "do"},
+					runtime.Float64(0.12345),
+				),
+			},
+		},
+	}
+
+	if !m.Equals(m) {
+		t.Errorf("MultiFn.Equals() want=true, got=false")
+	}
 }
 
 func TestMultiFn_Invoke(t *testing.T) {
 	t.Parallel()
 
 	table := []struct {
-		name     string
-		getScope func() sabre.Scope
-		multiFn  sabre.MultiFn
-		args     []sabre.Value
-		want     sabre.Value
-		wantErr  bool
+		name       string
+		getRuntime func() runtime.Runtime
+		multiFn    MultiFn
+		args       []runtime.Value
+		want       runtime.Value
+		wantErr    bool
 	}{
 		{
 			name: "WrongArity",
-			multiFn: sabre.MultiFn{
+			multiFn: MultiFn{
 				Name: "arityOne",
-				Methods: []sabre.Fn{
+				Functions: []runtime.Fn{
 					{
 						Args: []string{"arg1"},
 					},
 				},
 			},
-			args:    []sabre.Value{},
+			args:    []runtime.Value{},
 			wantErr: true,
 		},
 		{
 			name: "VariadicArity",
-			multiFn: sabre.MultiFn{
+			multiFn: MultiFn{
 				Name: "arityMany",
-				Methods: []sabre.Fn{
+				Functions: []runtime.Fn{
 					{
 						Args:     []string{"args"},
 						Variadic: true,
 					},
 				},
 			},
-			args: []sabre.Value{},
-			want: sabre.Nil{},
+			args: []runtime.Value{},
+			want: runtime.Nil{},
 		},
 		{
-			name:     "ArgEvalFailure",
-			getScope: func() sabre.Scope { return sabre.NewScope(nil) },
-			multiFn: sabre.MultiFn{
+			name:       "ArgEvalFailure",
+			getRuntime: func() runtime.Runtime { return runtime.New(nil) },
+			multiFn: MultiFn{
 				Name: "arityOne",
-				Methods: []sabre.Fn{
+				Functions: []runtime.Fn{
 					{
 						Args: []string{"arg1"},
 					},
 				},
 			},
-			args:    []sabre.Value{sabre.Symbol{Value: "argVal"}},
+			args:    []runtime.Value{runtime.Symbol{Value: "argVal"}},
 			wantErr: true,
 		},
-		{
-			name: "Macro",
-			getScope: func() sabre.Scope {
-				scope := sabre.NewScope(nil)
-				scope.Bind("argVal", sabre.String("hello"))
-				return scope
-			},
-			multiFn: sabre.MultiFn{
-				Name:    "arityOne",
-				IsMacro: true,
-				Methods: []sabre.Fn{
-					{
-						Args: []string{"arg1"},
-						Body: sabre.Int64(10),
-					},
-				},
-			},
-			args: []sabre.Value{sabre.Symbol{Value: "argVal"}},
-			want: sabre.Int64(10),
-		},
 	}
 
 	for _, tt := range table {
 		t.Run(tt.name, func(t *testing.T) {
-			var scope sabre.Scope
-			if tt.getScope != nil {
-				scope = tt.getScope()
+			var rt runtime.Runtime
+			if tt.getRuntime != nil {
+				rt = tt.getRuntime()
 			}
 
-			got, err := tt.multiFn.Invoke(scope, tt.args...)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Invoke() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Invoke() got = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestFn_Invoke(t *testing.T) {
-	t.Parallel()
-
-	table := []struct {
-		name     string
-		getScope func() sabre.Scope
-		fn       sabre.Fn
-		args     []sabre.Value
-		want     sabre.Value
-		wantErr  bool
-	}{
-		{
-			name: "GoFuncWrap",
-			fn: sabre.Fn{
-				Func: func(scope sabre.Scope, args []sabre.Value) (sabre.Value, error) {
-					return sabre.Int64(10), nil
-				},
-			},
-			want: sabre.Int64(10),
-		},
-		{
-			name: "NoBody",
-			fn: sabre.Fn{
-				Args: []string{"test"},
-			},
-			args: []sabre.Value{sabre.Bool(true)},
-			want: sabre.Nil{},
-		},
-		{
-			name: "VariadicMatch",
-			fn: sabre.Fn{
-				Args:     []string{"test"},
-				Variadic: true,
-			},
-			args: []sabre.Value{},
-			want: sabre.Nil{},
-		},
-		{
-			name: "VariadicMatch",
-			fn: sabre.Fn{
-				Args:     []string{"test"},
-				Variadic: true,
-			},
-			args: []sabre.Value{sabre.Int64(10), sabre.Bool(true)},
-			want: sabre.Nil{},
-		},
-	}
-
-	for _, tt := range table {
-		t.Run(tt.name, func(t *testing.T) {
-			var scope sabre.Scope
-			if tt.getScope != nil {
-				scope = tt.getScope()
-			}
-
-			got, err := tt.fn.Invoke(scope, tt.args...)
+			got, err := tt.multiFn.Invoke(rt, tt.args...)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Invoke() error = %v, wantErr %v", err, tt.wantErr)
 				return

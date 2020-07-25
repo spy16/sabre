@@ -1,7 +1,11 @@
 package main
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/spy16/sabre"
+	"github.com/spy16/sabre/runtime"
 )
 
 func main() {
@@ -17,36 +21,39 @@ func main() {
 	}
 
 	if shouldDiscount {
-		// apply discount for the order
+		fmt.Println("apply discount")
 	} else {
-		// don't apply discount
+		fmt.Println("don't apply discount")
 	}
 }
 
 func runDiscountingRule(rule string, user string) (bool, error) {
-	// Define a scope with no bindings. (not even special forms)
-	scope := sabre.NewScope(nil)
+	// Define a rt with no bindings. (not even special forms)
+	rt := sabre.New()
+
+	bind := func(sym string, v interface{}) {
+		_ = rt.Bind(sym, sabre.ValueOf(v))
+	}
 
 	// Define and expose your rules which ideally should have no
 	// side effects.
-	scope.BindGo("and", and)
-	scope.BindGo("or", or)
-	scope.BindGo("regular-user?", isRegularUser)
-	scope.BindGo("minimum-cart-price?", isMinCartPrice)
-	scope.BindGo("not-blacklisted?", isNotBlacklisted)
+	bind("and", and)
+	bind("regular-user?", isRegularUser)
+	bind("minimum-cart-price?", isMinCartPrice)
+	bind("not-blacklisted?", isNotBlacklisted)
 
 	// Bind current user name
-	scope.BindGo("current-user", user)
+	bind("current-user", user)
 
-	shouldDiscount, err := sabre.ReadEvalStr(scope, rule)
+	shouldDiscount, err := sabre.ReadEval(rt, strings.NewReader(rule))
 	return isTruthy(shouldDiscount), err
 }
 
-func isTruthy(v sabre.Value) bool {
-	if v == nil || v == (sabre.Nil{}) {
+func isTruthy(v runtime.Value) bool {
+	if v == nil || v == (runtime.Nil{}) {
 		return false
 	}
-	if b, ok := v.(sabre.Bool); ok {
+	if b, ok := v.(runtime.Bool); ok {
 		return bool(b)
 	}
 	return true
