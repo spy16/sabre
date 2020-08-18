@@ -45,12 +45,6 @@ var (
 		'v':  '\v',
 	}
 
-	predefSymbols = map[string]runtime.Value{
-		"nil":   runtime.Nil{},
-		"true":  runtime.Bool(true),
-		"false": runtime.Bool(false),
-	}
-
 	charLiterals = map[string]rune{
 		"tab":       '\t',
 		"space":     ' ',
@@ -65,23 +59,17 @@ var (
 // supports only primitive data  types from runtime  package by default. Support for
 // custom forms can be added using SetMacro(). File name is inferred from the value &
 // type information of 'r' OR can be set manually on the Reader instance returned.
-func New(r io.Reader) *Reader {
-	return &Reader{
+func New(r io.Reader, opts ...Option) *Reader {
+	rd := &Reader{
 		File: inferFileName(r),
 		rs:   bufio.NewReader(r),
-		macros: map[rune]Macro{
-			'"':  readString,
-			';':  readComment,
-			':':  readKeyword,
-			'\\': readCharacter,
-			'(':  readList,
-			')':  UnmatchedDelimiter(),
-			'\'': quoteFormReader("quote"),
-			'~':  quoteFormReader("unquote"),
-			'`':  quoteFormReader("syntax-quote"),
-		},
-		dispatch: map[rune]Macro{},
 	}
+
+	for _, option := range withDefaults(opts) {
+		option(rd)
+	}
+
+	return rd
 }
 
 // Reader consumes characters from a stream and parses them into symbolic expressions
@@ -94,9 +82,10 @@ type Reader struct {
 	buf         []rune
 	line, col   int
 	lastCol     int
-	macros      map[rune]Macro
-	dispatch    map[rune]Macro
+	macros      MacroTable
+	dispatch    MacroTable
 	dispatching bool
+	predef      map[string]runtime.Value
 }
 
 // All consumes characters from stream until EOF and returns a list of all the forms
@@ -364,7 +353,8 @@ func (rd *Reader) readOne() (runtime.Value, error) {
 		return nil, err
 	}
 
-	if predefVal, found := predefSymbols[v.(runtime.Symbol).String()]; found {
+	// TODO(performance):  type assertion necessary given the above call to `readSymbol`?
+	if predefVal, found := rd.predef[v.(runtime.Symbol).String()]; found {
 		return predefVal, nil
 	}
 

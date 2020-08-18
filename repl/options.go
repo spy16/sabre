@@ -85,7 +85,9 @@ func WithPrompts(oneLine, multiLine string) Option {
 // Reader. This is useful when you want REPL to use custom reader instance.
 func WithReaderFactory(factory ReaderFactory) Option {
 	if factory == nil {
-		factory = ReaderFactoryFunc(reader.New)
+		factory = ReaderFactoryFunc(func(r io.Reader) *reader.Reader {
+			return reader.New(r)
+		})
 	}
 
 	return func(repl *REPL) {
