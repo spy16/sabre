@@ -13,7 +13,7 @@ clean:
 
 test:
 	@echo "Running tests..."
-	@go test -cover ./ ./runtime/... ./reader/...
+	@go test -cover ./ ./runtime/... ./reader/... ./sabre/...
 
 test-verbose:
 	@echo "Running tests..."

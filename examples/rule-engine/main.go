@@ -28,7 +28,7 @@ func main() {
 }
 
 func runDiscountingRule(rule string, user string) (bool, error) {
-	// Define a rt with no bindings. (not even special forms)
+	// Define a runtime with no bindings. (not even special forms)
 	rt := sabre.New()
 
 	bind := func(sym string, v interface{}) {
@@ -42,7 +42,7 @@ func runDiscountingRule(rule string, user string) (bool, error) {
 	bind("minimum-cart-price?", isMinCartPrice)
 	bind("not-blacklisted?", isNotBlacklisted)
 
-	// Bind current user name
+	// bind current user name
 	bind("current-user", user)
 
 	shouldDiscount, err := sabre.ReadEval(rt, strings.NewReader(rule))

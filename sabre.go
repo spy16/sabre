@@ -41,14 +41,14 @@ type Sabre struct {
 // Bind creates a binding for symbol to value. Bind throws error if the symbol is
 // qualified and the target value does not support attributes.
 func (s *Sabre) Bind(symbol string, v runtime.Value) error {
-	// TODO: Resolve target and check if it is Attributable.
+	// TODO: resolve target and check if it is Attributable.
 	if strings.Contains(symbol, sep) {
 		return fmt.Errorf("cannot bind to qualified symbol")
 	}
 	return s.Runtime.Bind(symbol, v)
 }
 
-// Resolve recursively resolves the fully-qualified symbol and returns the value.
+// resolve recursively resolves the fully-qualified symbol and returns the value.
 func (s *Sabre) Resolve(symbol string) (runtime.Value, error) {
 	fields := strings.SplitN(symbol, sep, 2)
 

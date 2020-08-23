@@ -24,7 +24,7 @@ type Runtime interface {
 	// invalid character or the bind fails for some other reasons.
 	Bind(symbol string, v Value) error
 
-	// Resolve returns the value bound for the the given symbol. Resolve returns
+	// resolve returns the value bound for the the given symbol. resolve returns
 	// ErrNotFound if the symbol has no binding.
 	Resolve(symbol string) (Value, error)
 
@@ -159,7 +159,7 @@ type Position struct {
 	Column int
 }
 
-// GetPos returns the file, line and column values.
+// Pos returns the file, line and column values.
 func (pi Position) GetPos() (file string, line, col int) {
 	return pi.File, pi.Line, pi.Column
 }
