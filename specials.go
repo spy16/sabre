@@ -59,6 +59,11 @@ var (
 		Name:  "syntax-quote",
 		Parse: parseSyntaxQuote,
 	}
+
+	Recur = SpecialForm{
+		Name: "recur",
+		Parse: parseRecur,
+	}
 )
 
 func fnParser(isMacro bool) func(scope Scope, forms []Value) (*Fn, error) {
@@ -255,6 +260,25 @@ func parseSyntaxQuote(scope Scope, forms []Value) (*Fn, error) {
 	return &Fn{
 		Func: func(scope Scope, _ []Value) (Value, error) {
 			return recursiveQuote(scope, forms[0])
+		},
+	}, nil
+}
+
+func parseRecur(scope Scope, forms []Value) (*Fn, error) {
+
+	return &Fn{
+		Func: func(scope Scope, args []Value) (Value, error) {
+			symbol := Symbol{
+				Value: "recur",
+			}
+
+			results, err := evalValueList(scope, args)
+			if err != nil {
+				return nil, err
+			}
+
+			results = append([]Value{symbol}, results...)
+			return &List{Values: results}, nil
 		},
 	}, nil
 }

@@ -69,7 +69,37 @@ func (multiFn MultiFn) Invoke(scope Scope, args ...Value) (Value, error) {
 		return nil, err
 	}
 
-	return fn.Invoke(scope, argVals...)
+	result, err := fn.Invoke(scope, argVals...)
+
+	if !isRecur(result) {
+		return result, err
+	}
+
+	for isRecur(result) {
+		args = result.(*List).Values[1:]
+		result, err = fn.Invoke(scope, args...)
+	}
+
+	return result, err
+}
+
+func isRecur(value Value) bool {
+
+	list, ok := value.(*List)
+	if !ok {
+		return false
+	}
+
+	sym, ok := list.First().(Symbol)
+	if !ok {
+		return false
+	}
+
+	if sym.Value != "recur" {
+		return false
+	}
+
+	return true
 }
 
 // Expand executes the macro body and returns the result of the expansion.

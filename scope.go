@@ -32,6 +32,7 @@ func New() *MapScope {
 	scope.Bind("if", If)
 	scope.Bind("do", Do)
 	scope.Bind("def", Def)
+	scope.Bind("recur", Recur)
 
 	return scope
 }
