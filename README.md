@@ -2,7 +2,7 @@
 
 [![GoDoc](https://godoc.org/github.com/spy16/sabre?status.svg)](https://godoc.org/github.com/spy16/sabre) [![Go Report Card](https://goreportcard.com/badge/github.com/spy16/sabre)](https://goreportcard.com/report/github.com/spy16/sabre) [![Build Status](https://travis-ci.org/spy16/sabre.svg?branch=master)](https://travis-ci.org/spy16/sabre)
 
-**DEPRECATED**: *This repository is deprecated in favour much better [slurp](github.com/spy16/slurp) project.*
+**DEPRECATED**: *This repository is deprecated in favour much better [slurp](github.com/spy16/slurp) project and will be archived/removed soon.*
 
 Sabre is highly customizable, embeddable LISP engine for Go.
 
